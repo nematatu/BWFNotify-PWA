@@ -1,0 +1,34 @@
+{
+	"$schema": "./node_modules/wrangler/config-schema.json",
+	"name": "bwfnotify-pwa",
+	"main": "src/index.ts",
+	"workers_dev": true,
+	"preview_urls": false,
+	"compatibility_date": "2026-07-17",
+	"compatibility_flags": ["nodejs_compat"],
+	"assets": {
+		"directory": "./public",
+		"not_found_handling": "single-page-application",
+		"run_worker_first": ["/api/*", "/__scheduled"]
+	},
+	"observability": {
+		"enabled": true,
+		"logs": {
+			"enabled": true,
+			"head_sampling_rate": 1
+		}
+	},
+	"triggers": {
+		"crons": ["*/1 * * * *"]
+	},
+	"secrets": {
+		"required": ["VAPID_PUBLIC_KEY", "VAPID_PRIVATE_KEY", "VAPID_SUBJECT"]
+	},
+	"kv_namespaces": [
+		{
+			"binding": "NOTIFIED_MATCHES",
+			"id": "2099ab6e1ad94bfea30573265cd4d75e",
+			"preview_id": "5cc23ea8239d43d2b656a848cdbdc1dd"
+		}
+	]
+}

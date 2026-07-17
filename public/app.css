@@ -1,0 +1,236 @@
+:root {
+	color-scheme: light;
+	font-family:
+		-apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans JP", sans-serif;
+	font-synthesis: none;
+	color: #111111;
+	background: #ffffff;
+}
+
+* {
+	box-sizing: border-box;
+}
+
+body {
+	min-width: 320px;
+	margin: 0;
+	background: #ffffff;
+}
+
+button,
+input {
+	font: inherit;
+}
+
+button {
+	min-height: 36px;
+	padding: 0 12px;
+	border: 1px solid #b8b8b8;
+	border-radius: 4px;
+	color: #111111;
+	background: #ffffff;
+	cursor: pointer;
+}
+
+button:hover {
+	background: #f3f3f3;
+}
+
+button:focus-visible {
+	outline: 2px solid #111111;
+	outline-offset: 2px;
+}
+
+button:disabled {
+	cursor: default;
+	opacity: 0.55;
+}
+
+main {
+	width: min(100%, 680px);
+	margin: 0 auto;
+	padding: 24px 20px 48px;
+}
+
+h1,
+h2,
+p {
+	margin: 0;
+}
+
+h1 {
+	font-size: 20px;
+	font-weight: 700;
+	line-height: 1.4;
+}
+
+h2 {
+	font-size: 16px;
+	font-weight: 700;
+	line-height: 1.5;
+}
+
+.app-header {
+	padding: 4px 0 24px;
+	border-bottom: 1px solid #d8d8d8;
+}
+
+.notification-settings,
+.section-heading {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 16px;
+}
+
+.notification-controls {
+	display: flex;
+	align-items: center;
+	gap: 12px;
+}
+
+#test-notification-button {
+	white-space: nowrap;
+}
+
+.notification-settings {
+	padding: 20px 0;
+	border-bottom: 1px solid #d8d8d8;
+}
+
+.notification-settings p,
+#last-updated,
+.match-tournament,
+.match-meta,
+.empty-state {
+	color: #666666;
+}
+
+.notification-settings p,
+#last-updated {
+	margin-top: 2px;
+	font-size: 13px;
+	line-height: 1.5;
+}
+
+.switch {
+	position: relative;
+	display: inline-flex;
+	flex: 0 0 auto;
+	width: 42px;
+	height: 24px;
+}
+
+.switch input {
+	position: absolute;
+	opacity: 0;
+	pointer-events: none;
+}
+
+.switch-track {
+	position: absolute;
+	inset: 0;
+	border-radius: 12px;
+	background: #aaaaaa;
+}
+
+input:focus-visible + .switch-track {
+	outline: 2px solid #111111;
+	outline-offset: 2px;
+}
+
+.switch-track::after {
+	position: absolute;
+	top: 3px;
+	left: 3px;
+	width: 18px;
+	height: 18px;
+	border-radius: 50%;
+	background: #ffffff;
+	content: "";
+	transition: transform 120ms ease;
+}
+
+.switch input:checked + .switch-track {
+	background: #111111;
+}
+
+.switch input:checked + .switch-track::after {
+	transform: translateX(18px);
+}
+
+.switch input:disabled + .switch-track {
+	opacity: 0.5;
+}
+
+.matches {
+	padding-top: 28px;
+}
+
+.match-list {
+	margin-top: 16px;
+	border-top: 1px solid #d8d8d8;
+}
+
+.match {
+	padding: 16px 0;
+	border-bottom: 1px solid #d8d8d8;
+}
+
+.match-tournament {
+	font-size: 13px;
+	line-height: 1.5;
+}
+
+.match-players {
+	margin-top: 4px;
+	font-size: 15px;
+	font-weight: 600;
+	line-height: 1.6;
+	overflow-wrap: anywhere;
+}
+
+.match-meta {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 4px 12px;
+	margin-top: 6px;
+	font-size: 12px;
+	line-height: 1.5;
+}
+
+.empty-state {
+	padding: 24px 0;
+	font-size: 14px;
+	line-height: 1.6;
+}
+
+.error {
+	color: #b00020;
+}
+
+.visually-hidden {
+	position: absolute;
+	width: 1px;
+	height: 1px;
+	padding: 0;
+	margin: -1px;
+	overflow: hidden;
+	clip: rect(0, 0, 0, 0);
+	white-space: nowrap;
+	border: 0;
+}
+
+@media (max-width: 540px) {
+	main {
+		padding: 18px 16px 36px;
+	}
+
+	.app-header {
+		padding-bottom: 18px;
+	}
+
+	.matches {
+		padding-top: 24px;
+	}
+}
