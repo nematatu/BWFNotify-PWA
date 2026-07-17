@@ -4,11 +4,13 @@
 		<meta charset="utf-8" />
 		<meta name="viewport" content="width=device-width, initial-scale=1" />
 		<meta name="theme-color" content="#ffffff" />
-		<meta name="description" content="日本人選手が出場するBWFライブ試合の通知" />
-		<link rel="manifest" href="/manifest.webmanifest" />
-		<link rel="icon" href="/icons/icon.svg" type="image/svg+xml" />
-		<link rel="apple-touch-icon" href="/icons/icon-192.png" />
-		<link rel="stylesheet" href="/app.css" />
+		<meta name="apple-mobile-web-app-capable" content="yes" />
+		<meta name="apple-mobile-web-app-status-bar-style" content="default" />
+		<meta name="description" content="日本人選手が出場するBWFライブ試合と試合予定の通知" />
+		<link rel="manifest" href="/pwa/manifest.webmanifest" />
+		<link rel="icon" href="/pwa/icons/icon.svg" type="image/svg+xml" />
+		<link rel="apple-touch-icon" href="/pwa/icons/icon-192.png" />
+		<link rel="stylesheet" href="/view/app.css?v=19" />
 		<title>BWF 日本人選手通知</title>
 	</head>
 	<body>
@@ -23,6 +25,9 @@
 					<p id="notification-status" role="status">確認中</p>
 				</div>
 				<div class="notification-controls">
+					<button id="install-app-button" type="button" hidden>
+						ホーム画面に追加
+					</button>
 					<button id="test-notification-button" type="button" disabled>
 						テスト通知
 					</button>
@@ -33,18 +38,46 @@
 					</label>
 				</div>
 			</section>
+			<dialog id="install-help-dialog">
+				<h2>ホーム画面に追加</h2>
+				<p>
+					ブラウザの共有またはメニューから「ホーム画面に追加」を選び、追加したBWF通知を開いてください。
+				</p>
+				<form method="dialog">
+					<button type="submit">閉じる</button>
+				</form>
+			</dialog>
 
 			<section class="matches" aria-labelledby="matches-heading">
 				<div class="section-heading">
-					<h2 id="matches-heading">ライブ中の試合</h2>
-					<button id="refresh-button" type="button">再読み込み</button>
+					<h2 id="matches-heading">試合</h2>
+					<div class="match-controls">
+						<label class="visually-hidden" for="sort-order">ソート順</label>
+						<select id="sort-order" aria-label="ソート順">
+							<option value="time-asc">時間が早い順</option>
+							<option value="time-desc">時間が遅い順</option>
+							<option value="tournament">大会名順</option>
+						</select>
+						<button id="refresh-button" type="button">再読み込み</button>
+					</div>
 				</div>
 				<p id="last-updated">未取得</p>
-				<div id="match-list" class="match-list" aria-live="polite">
-					<p class="empty-state">読み込み中</p>
+				<div class="match-columns">
+					<div class="match-group">
+						<h3>ライブ中</h3>
+						<div id="live-match-list" class="match-list" aria-live="polite">
+							<p class="empty-state">読み込み中</p>
+						</div>
+					</div>
+					<div class="match-group">
+						<h3>ライブ予定</h3>
+						<div id="scheduled-match-list" class="match-list" aria-live="polite">
+							<p class="empty-state">読み込み中</p>
+						</div>
+					</div>
 				</div>
 			</section>
 		</main>
-		<script type="module" src="/app.js"></script>
+		<script type="module" src="/view/app.js?v=19"></script>
 	</body>
 </html>

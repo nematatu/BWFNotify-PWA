@@ -2,7 +2,7 @@
 	"id": "/",
 	"name": "BWF 日本人選手通知",
 	"short_name": "BWF通知",
-	"description": "日本人選手が出場するBWFライブ試合の通知",
+	"description": "日本人選手が出場するBWFライブ試合と試合予定の通知",
 	"lang": "ja",
 	"start_url": "/",
 	"scope": "/",
@@ -11,13 +11,13 @@
 	"theme_color": "#ffffff",
 	"icons": [
 		{
-			"src": "/icons/icon-192.png",
+			"src": "/pwa/icons/icon-192.png",
 			"sizes": "192x192",
 			"type": "image/png",
 			"purpose": "any maskable"
 		},
 		{
-			"src": "/icons/icon-512.png",
+			"src": "/pwa/icons/icon-512.png",
 			"sizes": "512x512",
 			"type": "image/png",
 			"purpose": "any maskable"

@@ -1,12 +1,13 @@
-const CACHE_NAME = "bwfnotify-shell-v2";
+const CACHE_NAME = "bwfnotify-shell-v19";
 const APP_SHELL = [
 	"/",
-	"/app.css",
-	"/app.js",
-	"/manifest.webmanifest",
-	"/icons/icon.svg",
-	"/icons/icon-192.png",
-	"/icons/icon-512.png",
+	"/view/app.css?v=19",
+	"/view/app.js?v=19",
+	"/view/match-groups.js?v=19",
+	"/pwa/manifest.webmanifest",
+	"/pwa/icons/icon.svg",
+	"/pwa/icons/icon-192.png",
+	"/pwa/icons/icon-512.png",
 ];
 
 self.addEventListener("install", (event) => {
@@ -78,8 +79,8 @@ self.addEventListener("push", (event) => {
 	event.waitUntil(
 		self.registration.showNotification(payload.title, {
 			body: payload.body,
-			icon: "/icons/icon-192.png",
-			badge: "/icons/icon-192.png",
+			icon: "/pwa/icons/icon-192.png",
+			badge: "/pwa/icons/icon-192.png",
 			tag: payload.tag,
 			data: { url: payload.url || "/" },
 		}),

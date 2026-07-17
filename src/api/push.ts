@@ -1,9 +1,10 @@
 import webpush, { type PushSubscription } from "web-push";
-import type { DeliveryResult, LiveMatch, StoredSubscription } from "./types";
-import { object, optionalString } from "./utils";
+import type { DeliveryResult, MatchSummary, StoredSubscription } from "../type";
+import { object, optionalString } from "../utils";
 
 const SUBSCRIPTION_PREFIX = "push:subscription:";
 const MAX_USER_AGENT_LENGTH = 240;
+const MAX_EXCLUDED_MATCH_IDS = 50;
 
 export function parsePushSubscription(value: unknown): PushSubscription | null {
 	const item = object(value);
@@ -30,16 +31,41 @@ export async function saveSubscription(
 	kv: KVNamespace,
 	subscription: PushSubscription,
 	userAgent?: string,
-): Promise<void> {
-	const record: StoredSubscription = {
+): Promise<StoredSubscription> {
+	const key = await subscriptionKey(subscription.endpoint);
+	const existing = await kv.get<StoredSubscription>(key, "json");
+	const record = mergeSubscriptionRecord(subscription, existing, userAgent);
+	await kv.put(key, JSON.stringify(record));
+	return record;
+}
+
+export function mergeSubscriptionRecord(
+	subscription: PushSubscription,
+	existing?: StoredSubscription | null,
+	userAgent?: string,
+): StoredSubscription {
+	return {
 		...subscription,
-		createdAt: new Date().toISOString(),
+		createdAt: existing?.createdAt || new Date().toISOString(),
 		userAgent: userAgent?.slice(0, MAX_USER_AGENT_LENGTH),
+		excludedMatchIds: validStoredExcludedMatchIds(existing?.excludedMatchIds),
 	};
-	await kv.put(
-		await subscriptionKey(subscription.endpoint),
-		JSON.stringify(record),
-	);
+}
+
+export async function updateSubscriptionExclusions(
+	kv: KVNamespace,
+	endpoint: string,
+	excludedMatchIds: string[],
+): Promise<StoredSubscription | null> {
+	const key = await subscriptionKey(endpoint);
+	const existing = await kv.get<StoredSubscription>(key, "json");
+	if (!existing || existing.endpoint !== endpoint) {
+		return null;
+	}
+
+	const updated = { ...existing, excludedMatchIds };
+	await kv.put(key, JSON.stringify(updated));
+	return updated;
 }
 
 export async function deleteSubscription(
@@ -49,58 +75,16 @@ export async function deleteSubscription(
 	await kv.delete(await subscriptionKey(endpoint));
 }
 
-export async function getSavedSubscription(
-	kv: KVNamespace,
-	subscription: PushSubscription,
-): Promise<StoredSubscription | null> {
-	const saved = await kv.get<StoredSubscription>(
-		await subscriptionKey(subscription.endpoint),
-		"json",
-	);
-	if (
-		!saved ||
-		saved.endpoint !== subscription.endpoint ||
-		saved.keys.p256dh !== subscription.keys.p256dh ||
-		saved.keys.auth !== subscription.keys.auth
-	) {
-		return null;
-	}
-	return saved;
-}
-
 export async function sendPushNotifications(
 	env: Env,
-	matches: LiveMatch[],
+	matches: MatchSummary[],
 ): Promise<DeliveryResult> {
 	const subscriptions = await listSubscriptions(env.NOTIFIED_MATCHES);
-	const payload = JSON.stringify(notificationPayload(matches));
-	return deliverNotifications(env, subscriptions, payload, "bwf-live");
-}
-
-export async function sendTestPushNotification(
-	env: Env,
-	subscription: PushSubscription,
-): Promise<DeliveryResult> {
-	const payload = JSON.stringify({
-		title: "BWF 通知テスト",
-		body: "通知は正常に設定されています",
-		url: "/",
-		tag: "bwf-test",
-	});
-	return deliverNotifications(env, [subscription], payload, "bwf-test");
-}
-
-async function deliverNotifications(
-	env: Env,
-	subscriptions: PushSubscription[],
-	payload: string,
-	topic: string,
-): Promise<DeliveryResult> {
 	const result: DeliveryResult = { sent: 0, failed: 0, removed: 0 };
 	const options = {
 		TTL: 60 * 60,
 		urgency: "high" as const,
-		topic,
+		topic: "bwf-live",
 		contentEncoding: "aes128gcm" as const,
 		vapidDetails: {
 			subject: env.VAPID_SUBJECT,
@@ -110,6 +94,11 @@ async function deliverNotifications(
 	};
 
 	for (const subscription of subscriptions) {
+		const eligibleMatches = matchesForSubscription(subscription, matches);
+		if (eligibleMatches.length === 0) {
+			continue;
+		}
+		const payload = JSON.stringify(notificationPayload(eligibleMatches));
 		try {
 			await webpush.sendNotification(subscription, payload, options);
 			result.sent += 1;
@@ -136,7 +125,37 @@ async function deliverNotifications(
 	return result;
 }
 
-export function notificationPayload(matches: LiveMatch[]) {
+export function parseExcludedMatchIds(value: unknown): string[] | null {
+	if (!Array.isArray(value) || value.length > MAX_EXCLUDED_MATCH_IDS) {
+		return null;
+	}
+
+	const ids = new Set<string>();
+	for (const item of value) {
+		if (
+			typeof item !== "string" ||
+			item.length < 1 ||
+			item.length > 128 ||
+			!/^[A-Za-z0-9._:-]+$/.test(item)
+		) {
+			return null;
+		}
+		ids.add(item);
+	}
+	return [...ids];
+}
+
+export function matchesForSubscription(
+	subscription: StoredSubscription,
+	matches: MatchSummary[],
+): MatchSummary[] {
+	const excluded = new Set(
+		validStoredExcludedMatchIds(subscription.excludedMatchIds),
+	);
+	return matches.filter((match) => !excluded.has(match.id));
+}
+
+export function notificationPayload(matches: MatchSummary[]) {
 	const lines = matches.slice(0, 3).map((match) => {
 		const card = match.players.length
 			? match.players.join(" vs ")
@@ -189,7 +208,7 @@ async function subscriptionKey(endpoint: string): Promise<string> {
 	return `${SUBSCRIPTION_PREFIX}${hash}`;
 }
 
-function isAllowedPushEndpoint(endpoint: string): boolean {
+export function isAllowedPushEndpoint(endpoint: string): boolean {
 	try {
 		const url = new URL(endpoint);
 		if (url.protocol !== "https:" || endpoint.length > 2048) {
@@ -207,6 +226,10 @@ function isAllowedPushEndpoint(endpoint: string): boolean {
 	} catch {
 		return false;
 	}
+}
+
+function validStoredExcludedMatchIds(value: unknown): string[] {
+	return parseExcludedMatchIds(value) || [];
 }
 
 function isBase64Url(value: string, min: number, max: number): boolean {

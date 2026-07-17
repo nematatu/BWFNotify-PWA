@@ -1,10 +1,13 @@
 import { describe, expect, test } from "bun:test";
 import webpush from "web-push";
 import {
-	getSavedSubscription,
+	matchesForSubscription,
+	mergeSubscriptionRecord,
 	notificationPayload,
+	parseExcludedMatchIds,
 	parsePushSubscription,
-} from "../src/push";
+} from "../src/api/push";
+import type { MatchSummary, StoredSubscription } from "../src/type";
 
 const validKeys = {
 	p256dh: "A".repeat(87),
@@ -41,6 +44,8 @@ describe("notificationPayload", () => {
 				id: "1",
 				tournament: "Japan Open",
 				players: ["Player A", "Player B"],
+				teams: [],
+				eventType: "live",
 				status: "Live",
 			},
 		]);
@@ -51,24 +56,62 @@ describe("notificationPayload", () => {
 	});
 });
 
-describe("getSavedSubscription", () => {
-	test("accepts only an exact saved subscription", async () => {
-		const saved = {
-			endpoint: "https://fcm.googleapis.com/fcm/send/example",
-			keys: validKeys,
-			createdAt: "2026-07-18T00:00:00.000Z",
-		};
-		const kv = {
-			get: async () => saved,
-		} as unknown as KVNamespace;
+describe("notification exclusions", () => {
+	const matches: MatchSummary[] = [
+		{
+			id: "included",
+			tournament: "Japan Open",
+			players: ["Player A", "Player B"],
+			teams: [],
+			eventType: "live",
+			status: "Live",
+		},
+		{
+			id: "excluded",
+			tournament: "Japan Open",
+			players: ["Player C", "Player D"],
+			teams: [],
+			eventType: "live",
+			status: "Live",
+		},
+	];
+	const subscription: StoredSubscription = {
+		endpoint: "https://fcm.googleapis.com/fcm/send/example",
+		keys: validKeys,
+		createdAt: "2026-07-18T00:00:00.000Z",
+		excludedMatchIds: ["excluded"],
+	};
 
-		expect(await getSavedSubscription(kv, saved)).toEqual(saved);
+	test("accepts and deduplicates valid match IDs", () => {
+		expect(parseExcludedMatchIds(["one", "one", "two:3"])).toEqual([
+			"one",
+			"two:3",
+		]);
+		expect(parseExcludedMatchIds(["invalid id"])).toBeNull();
+	});
+
+	test("notifies every match by default", () => {
 		expect(
-			await getSavedSubscription(kv, {
-				...saved,
-				keys: { ...validKeys, auth: "C".repeat(22) },
-			}),
-		).toBeNull();
+			matchesForSubscription(
+				{ ...subscription, excludedMatchIds: [] },
+				matches,
+			),
+		).toEqual(matches);
+	});
+
+	test("removes excluded matches for each subscription", () => {
+		expect(matchesForSubscription(subscription, matches)).toEqual([matches[0]]);
+	});
+
+	test("preserves exclusions when the browser subscription is saved again", () => {
+		const saved = mergeSubscriptionRecord(
+			{ endpoint: subscription.endpoint, keys: validKeys },
+			subscription,
+			"test browser",
+		);
+		expect(saved.excludedMatchIds).toEqual(["excluded"]);
+		expect(saved.createdAt).toBe(subscription.createdAt);
+		expect(saved.userAgent).toBe("test browser");
 	});
 });
 
