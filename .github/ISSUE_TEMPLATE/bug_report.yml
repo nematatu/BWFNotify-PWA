@@ -1,0 +1,73 @@
+name: バグ報告
+description: 再現可能な不具合を報告します
+title: "bug: "
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        報告ありがとうございます。秘密鍵、Pushエンドポイント、個人情報は記載しないでください。
+  - type: textarea
+    id: summary
+    attributes:
+      label: 概要
+      description: 発生している問題を簡潔に記載してください。
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: 再現手順
+      description: 最小限の手順を番号付きで記載してください。
+      placeholder: |
+        1. …を開く
+        2. …を操作する
+        3. …が発生する
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: 期待する動作
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: 実際の動作
+    validations:
+      required: true
+  - type: dropdown
+    id: device
+    attributes:
+      label: 端末
+      options:
+        - iPhone / iPad
+        - Android
+        - Windows
+        - macOS
+        - Linux
+        - その他
+    validations:
+      required: true
+  - type: input
+    id: os-browser
+    attributes:
+      label: OS・ブラウザとバージョン
+      placeholder: "例: iOS 18.5 / ホーム画面から起動したSafari PWA"
+    validations:
+      required: true
+  - type: textarea
+    id: evidence
+    attributes:
+      label: 画像・ログ
+      description: 必要に応じて添付してください。秘密情報は必ず伏せてください。
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: 確認
+      options:
+        - label: 同じ内容のIssueがないことを確認しました。
+          required: true
+        - label: 秘密鍵、Pushエンドポイント、個人情報を含めていません。
+          required: true
