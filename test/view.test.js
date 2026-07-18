@@ -159,11 +159,26 @@ describe("page structure", () => {
 	test("uses square cards without decorative partial color borders", async () => {
 		const css = await Bun.file("public/view/app.css").text();
 		expect(css).toContain(
-			".match {\n\tmargin-bottom: 18px;\n\tborder: 1px solid #444444;\n\tborder-radius: 0;",
+			".match {\n\tmargin-bottom: 18px;\n\tborder: 1px solid #bcbcbc;\n\tborder-radius: 0;",
 		);
 		expect(css).not.toContain(".live-match {");
 		expect(css).not.toContain("border-top: 4px solid #d71920");
 		expect(css).not.toContain("border-bottom: 3px solid #d71920");
+	});
+
+	test("uses a light interface without permanent dark surfaces", async () => {
+		const css = await Bun.file("public/view/app.css").text();
+		expect(css).toContain("color-scheme: light");
+		expect(css).toContain("background: rgb(255 255 255 / 82%)");
+		for (const darkBackground of [
+			"#080808",
+			"#0b0b0b",
+			"#171717",
+			"#1b1b1b",
+			"#222222",
+		]) {
+			expect(css).not.toContain(`background: ${darkBackground}`);
+		}
 	});
 
 	test("includes complete OGP metadata", async () => {

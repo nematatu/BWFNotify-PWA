@@ -222,10 +222,18 @@ for (const viewport of [
 	}) => {
 		await page.setViewportSize(viewport);
 		await preparePage(page);
+		await expect(page.locator("main")).toHaveCSS(
+			"background-color",
+			"rgb(255, 255, 255)",
+		);
+		await expect(page.locator(".notification-settings")).toHaveCSS(
+			"background-color",
+			"rgb(247, 247, 247)",
+		);
 		const card = page.locator(".match:has(.matchup)").first();
 		await expect(card).toHaveCSS("border-radius", "0px");
 		await expect(card).toHaveCSS("border-top-width", "1px");
-		await expect(card).toHaveCSS("border-top-color", "rgb(68, 68, 68)");
+		await expect(card).toHaveCSS("border-top-color", "rgb(188, 188, 188)");
 
 		const layout = await page
 			.locator(".matchup")
