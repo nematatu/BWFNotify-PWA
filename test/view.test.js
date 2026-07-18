@@ -91,12 +91,43 @@ describe("live score updates", () => {
 		expect(merged[0].youtubeUrl).toBe(
 			"https://www.youtube.com/watch?v=abcdefghijk",
 		);
+		expect(merged[0].scoreChangedTeam).toBe(1);
 	});
 
 	test("removes a live match when it is no longer returned", () => {
 		expect(mergeLiveMatches([{ id: "live", eventType: "live" }], [])).toEqual(
 			[],
 		);
+	});
+
+	test("uses the last rally winner when multiple points changed", () => {
+		const [merged] = mergeLiveMatches(
+			[
+				{
+					id: "live",
+					eventType: "live",
+					scores: [{ game: 1, team1: 10, team2: 8 }],
+				},
+			],
+			[
+				{
+					id: "live",
+					eventType: "live",
+					scores: [{ game: 1, team1: 12, team2: 10, lastPointWinner: 2 }],
+				},
+			],
+		);
+		expect(merged.scoreChangedTeam).toBe(2);
+	});
+
+	test("does not repeat the score animation when the score is unchanged", () => {
+		const match = {
+			id: "live",
+			eventType: "live",
+			scores: [{ game: 1, team1: 12, team2: 10, lastPointWinner: 2 }],
+		};
+		const [merged] = mergeLiveMatches([match], [match]);
+		expect(merged.scoreChangedTeam).toBeUndefined();
 	});
 
 	test("does not preserve an obsolete YouTube search URL", () => {
@@ -203,7 +234,8 @@ describe("page structure", () => {
 		expect(html).toContain("<h1>ライブスコア</h1>");
 		expect(html).toContain("<p>日本人選手</p>");
 		expect(script).toContain('live.textContent = "ライブ中"');
-		expect(script).toContain('serve.textContent = "サーブ"');
+		expect(script).toContain('shuttle.alt = "サーブ"');
+		expect(script).not.toContain('serve.textContent = "サーブ"');
 		expect(script).toContain('label.textContent = "対戦成績"');
 		expect(script).toContain("function displayCourt(value)");
 		expect(script).toContain("Number(number)");

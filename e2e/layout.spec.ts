@@ -180,7 +180,15 @@ async function preparePage(page: Page) {
 		route.fulfill({
 			json: {
 				checkedAt: "2026-07-18T09:00:10.000Z",
-				matches: [doublesMatch],
+				matches: [
+					{
+						...doublesMatch,
+						scores: [
+							{ game: 1, team1: 21, team2: 18 },
+							{ game: 2, team1: 12, team2: 9, servingTeam: 1 },
+						],
+					},
+				],
 			},
 		}),
 	);
@@ -271,6 +279,14 @@ for (const viewport of [
 		expect(
 			Math.abs((layout[0].flag?.top || 0) - (layout[1].flag?.top || 0)),
 		).toBeLessThan(0.5);
+		await expect(page.locator(".shuttle-indicator")).toHaveCount(1);
+		await expect(page.locator(".serve-label")).toHaveCount(0);
+		await expect(page.locator(".shuttle-indicator")).toHaveAttribute(
+			"alt",
+			"サーブ",
+		);
+		await expect(page.locator(".score-updated")).toHaveCount(1);
+		await expect(page.locator(".score-updated strong")).toHaveText("12");
 		if (process.env.CAPTURE_LAYOUT === "1") {
 			await page.screenshot({
 				path: `/tmp/bwfnotify-layout-${viewport.name}.png`,

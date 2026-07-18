@@ -35,6 +35,7 @@ export function mergeLiveMatches(currentMatches, freshMatches) {
 	const mergedLive = freshLive.map((fresh) => {
 		const current = currentById.get(fresh.id);
 		const merged = { ...current, ...fresh };
+		merged.scoreChangedTeam = changedScoreTeam(current, fresh);
 		if (current?.h2h && !fresh.h2h) {
 			merged.h2h = current.h2h;
 		}
@@ -49,6 +50,31 @@ export function mergeLiveMatches(currentMatches, freshMatches) {
 		(match) => match.eventType === "scheduled" && !freshLiveIds.has(match.id),
 	);
 	return [...mergedLive, ...scheduled];
+}
+
+function changedScoreTeam(current, fresh) {
+	const previous = current?.scores?.at(-1);
+	const next = fresh?.scores?.at(-1);
+	if (!previous || !next) {
+		return undefined;
+	}
+	const unchanged =
+		previous.game === next.game &&
+		previous.team1 === next.team1 &&
+		previous.team2 === next.team2;
+	if (unchanged) {
+		return undefined;
+	}
+	if (next.lastPointWinner === 1 || next.lastPointWinner === 2) {
+		return next.lastPointWinner;
+	}
+	if (next.team1 > previous.team1 && next.team2 === previous.team2) {
+		return 1;
+	}
+	if (next.team2 > previous.team2 && next.team1 === previous.team1) {
+		return 2;
+	}
+	return undefined;
 }
 
 function isDirectYoutubeUrl(value) {

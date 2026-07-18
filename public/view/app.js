@@ -3,7 +3,7 @@ import {
 	mergeLiveMatches,
 	sortedMatches,
 	tournamentGroups,
-} from "./match-groups.js?v=32";
+} from "./match-groups.js?v=33";
 
 const LIVE_REFRESH_INTERVAL_MS = 15_000;
 const FULL_REFRESH_INTERVAL_MS = 2 * 60_000;
@@ -665,9 +665,9 @@ function matchElement(match, showTournament = false) {
 	matchup.className = "matchup";
 	if (teams.length >= 2) {
 		matchup.append(
-			teamElement(teams[0], "left", currentScore?.servingTeam === 1),
+			teamElement(teams[0], "left"),
 			matchCentreElement(match, currentScore),
-			teamElement(teams[1], "right", currentScore?.servingTeam === 2),
+			teamElement(teams[1], "right"),
 		);
 	} else {
 		const unavailable = document.createElement("p");
@@ -693,12 +693,21 @@ function matchCentreElement(match, currentScore) {
 		game.textContent = `第${currentScore.game}ゲーム`;
 		const score = document.createElement("div");
 		score.className = "current-score";
-		const team1Score = document.createElement("strong");
-		team1Score.textContent = String(currentScore.team1);
+		const team1Score = scoreSideElement(
+			currentScore.team1,
+			1,
+			currentScore.servingTeam === 1,
+			match.scoreChangedTeam === 1,
+		);
 		const separator = document.createElement("span");
+		separator.className = "score-separator";
 		separator.textContent = "-";
-		const team2Score = document.createElement("strong");
-		team2Score.textContent = String(currentScore.team2);
+		const team2Score = scoreSideElement(
+			currentScore.team2,
+			2,
+			currentScore.servingTeam === 2,
+			match.scoreChangedTeam === 2,
+		);
 		score.append(team1Score, separator, team2Score);
 		centre.append(game, score);
 	} else {
@@ -708,6 +717,23 @@ function matchCentreElement(match, currentScore) {
 		centre.append(versus);
 	}
 	return centre;
+}
+
+function scoreSideElement(value, team, serving, changed) {
+	const side = document.createElement("span");
+	side.className = `score-side score-team-${team}${changed ? " score-updated" : ""}`;
+	const score = document.createElement("strong");
+	score.textContent = String(value);
+	if (serving) {
+		const shuttle = document.createElement("img");
+		shuttle.className = "shuttle-indicator";
+		shuttle.src = "/view/shuttle.svg";
+		shuttle.alt = "サーブ";
+		team === 1 ? side.append(shuttle, score) : side.append(score, shuttle);
+	} else {
+		side.append(score);
+	}
+	return side;
 }
 
 function gameScoresElement(scores) {
@@ -819,7 +845,7 @@ function matchTeams(match) {
 		: [];
 }
 
-function teamElement(team, side, serving) {
+function teamElement(team, side) {
 	const players = Array.isArray(team.players) ? team.players : [];
 	const isJapanese =
 		team.countryCode === "JPN" || players.some((player) => player.isJapanese);
@@ -868,12 +894,6 @@ function teamElement(team, side, serving) {
 		names.append(name);
 	});
 	element.append(names);
-	if (serving) {
-		const serve = document.createElement("span");
-		serve.className = "serve-label";
-		serve.textContent = "サーブ";
-		element.append(serve);
-	}
 	return element;
 }
 
