@@ -3,7 +3,7 @@ import {
 	mergeLiveMatches,
 	sortedMatches,
 	tournamentGroups,
-} from "./match-groups.js?v=29";
+} from "./match-groups.js?v=30";
 
 const LIVE_REFRESH_INTERVAL_MS = 15_000;
 const FULL_REFRESH_INTERVAL_MS = 2 * 60_000;
@@ -607,7 +607,7 @@ function tournamentHeroElement(match, name) {
 	text.append(title);
 	if (match?.tournamentCategory) {
 		const category = document.createElement("p");
-		category.textContent = match.tournamentCategory;
+		category.textContent = displayTournamentCategory(match.tournamentCategory);
 		text.append(category);
 	}
 	info.append(text);
@@ -629,7 +629,7 @@ function matchElement(match, showTournament = false) {
 	if (match.eventType === "live") {
 		const live = document.createElement("strong");
 		live.className = "live-label";
-		live.textContent = "LIVE";
+		live.textContent = "ライブ中";
 		meta.append(live);
 	} else {
 		const time = document.createElement("strong");
@@ -637,7 +637,7 @@ function matchElement(match, showTournament = false) {
 		time.textContent = formatMatchTime(match.startTime);
 		meta.append(time);
 	}
-	for (const value of [match.round, match.court]) {
+	for (const value of [displayRound(match.round), displayCourt(match.court)]) {
 		if (value) {
 			const span = document.createElement("span");
 			span.textContent = String(value);
@@ -687,7 +687,7 @@ function matchCentreElement(match, currentScore) {
 	if (match.eventType === "live" && currentScore) {
 		const game = document.createElement("span");
 		game.className = "current-game";
-		game.textContent = `GAME ${currentScore.game}`;
+		game.textContent = `第${currentScore.game}ゲーム`;
 		const score = document.createElement("div");
 		score.className = "current-score";
 		const team1Score = document.createElement("strong");
@@ -701,7 +701,7 @@ function matchCentreElement(match, currentScore) {
 	} else {
 		const versus = document.createElement("strong");
 		versus.className = "versus";
-		versus.textContent = "VS";
+		versus.textContent = "vs";
 		centre.append(versus);
 	}
 	return centre;
@@ -714,7 +714,7 @@ function gameScoresElement(scores) {
 		const game = document.createElement("div");
 		game.className = "game-score";
 		const label = document.createElement("span");
-		label.textContent = `G${score.game}`;
+		label.textContent = `第${score.game}ゲーム`;
 		const value = document.createElement("strong");
 		value.textContent = `${score.team1} - ${score.team2}`;
 		game.append(label, value);
@@ -745,7 +745,7 @@ function matchTournamentElement(match) {
 	text.append(name);
 	if (match.tournamentCategory) {
 		const category = document.createElement("p");
-		category.textContent = match.tournamentCategory;
+		category.textContent = displayTournamentCategory(match.tournamentCategory);
 		text.append(category);
 	}
 	tournament.append(text);
@@ -868,7 +868,7 @@ function teamElement(team, side, serving) {
 	if (serving) {
 		const serve = document.createElement("span");
 		serve.className = "serve-label";
-		serve.textContent = "SERVE";
+		serve.textContent = "サーブ";
 		element.append(serve);
 	}
 	return element;
@@ -892,7 +892,7 @@ function headToHeadElement(h2h, teams) {
 	const summary = document.createElement("div");
 	summary.className = "h2h-scoreline";
 	const label = document.createElement("span");
-	label.textContent = "HEAD TO HEAD";
+	label.textContent = "対戦成績";
 	const score = document.createElement("strong");
 	score.textContent = `${h2h.team1Wins} - ${h2h.team2Wins}`;
 	summary.append(label, score);
@@ -907,7 +907,7 @@ function headToHeadElement(h2h, teams) {
 			"前回対戦",
 			formatPreviousDate(h2h.previous.date),
 			h2h.previous.tournament,
-			h2h.previous.round,
+			displayRound(h2h.previous.round),
 		]
 			.filter(Boolean)
 			.join(" · ");
@@ -956,13 +956,13 @@ function youtubeLink(value) {
 	link.href = url.toString();
 	link.target = "_blank";
 	link.rel = "noopener noreferrer";
-	link.append("YouTube LIVE");
+	link.append("配信を見る");
 	const external = document.createElement("span");
 	external.className = "external-mark";
 	external.textContent = "↗";
 	external.setAttribute("aria-hidden", "true");
 	link.append(external);
-	link.setAttribute("aria-label", "YouTubeで試合映像を開く");
+	link.setAttribute("aria-label", "試合配信を開く");
 	return link;
 }
 
@@ -1020,6 +1020,67 @@ function safeHttpsUrl(value) {
 	} catch {
 		return null;
 	}
+}
+
+function displayRound(value) {
+	if (!value) {
+		return "";
+	}
+	const round = String(value).trim();
+	const normalized = round.toUpperCase().replace(/[-_]+/g, " ");
+	const labels = {
+		FINAL: "決勝",
+		FINALS: "決勝",
+		F: "決勝",
+		SF: "準決勝",
+		SEMIFINAL: "準決勝",
+		"SEMI FINAL": "準決勝",
+		SEMIFINALS: "準決勝",
+		"SEMI FINALS": "準決勝",
+		QF: "準々決勝",
+		QUARTERFINAL: "準々決勝",
+		"QUARTER FINAL": "準々決勝",
+		QUARTERFINALS: "準々決勝",
+		"QUARTER FINALS": "準々決勝",
+	};
+	if (labels[normalized]) {
+		return labels[normalized];
+	}
+	const numbered = normalized.match(/^(?:R|ROUND OF )(16|32|64|128)$/);
+	if (numbered) {
+		return `ベスト${numbered[1]}`;
+	}
+	if (normalized.includes("QUALIF")) {
+		return "予選";
+	}
+	return round;
+}
+
+function displayCourt(value) {
+	if (!value) {
+		return "";
+	}
+	const court = String(value).trim();
+	const number = court.match(/\d+/)?.[0];
+	if (number) {
+		return `第${Number(number)}コート`;
+	}
+	return /stream/i.test(court) ? "配信コート" : court;
+}
+
+function displayTournamentCategory(value) {
+	const category = String(value || "").trim();
+	const worldTour = category.match(/BWF WORLD TOUR SUPER\s*(\d+)/i);
+	if (worldTour) {
+		return `ワールドツアー スーパー${worldTour[1]}`;
+	}
+	const labels = {
+		"BWF WORLD TOUR FINALS": "ワールドツアーファイナルズ",
+		"INTERNATIONAL CHALLENGE": "国際チャレンジ",
+		"INTERNATIONAL SERIES": "国際シリーズ",
+		"FUTURE SERIES": "フューチャーシリーズ",
+	};
+	return labels[category.toUpperCase()] || category;
 }
 
 function formatPreviousDate(value) {

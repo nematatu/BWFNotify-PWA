@@ -168,10 +168,24 @@ describe("page structure", () => {
 	test("uses YouTube links and removes the previous BWF match link", async () => {
 		const script = await Bun.file("public/view/app.js").text();
 		expect(script).toContain("youtubeLink(match.youtubeUrl)");
-		expect(script).toContain('link.append("YouTube LIVE")');
+		expect(script).toContain('link.append("配信を見る")');
 		expect(script).not.toContain("YouTube検索");
 		expect(script).not.toContain("match.matchUrl");
 		expect(script).not.toContain("BWFの試合掲載ページ");
+	});
+
+	test("uses clear Japanese labels instead of decorative English", async () => {
+		const html = await Bun.file("public/index.html").text();
+		const script = await Bun.file("public/view/app.js").text();
+		expect(html).toContain("<h1>ライブスコア</h1>");
+		expect(html).toContain("<p>日本人選手</p>");
+		expect(script).toContain('live.textContent = "ライブ中"');
+		expect(script).toContain('serve.textContent = "サーブ"');
+		expect(script).toContain('label.textContent = "対戦成績"');
+		expect(script).toContain("function displayCourt(value)");
+		expect(script).toContain("Number(number)");
+		expect(script).not.toContain('live.textContent = "LIVE"');
+		expect(script).not.toContain('label.textContent = "HEAD TO HEAD"');
 	});
 
 	test("uses BWF tournament media in each time-sorted match", async () => {
