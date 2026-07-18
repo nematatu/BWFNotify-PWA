@@ -3,7 +3,7 @@ import {
 	mergeLiveMatches,
 	sortedMatches,
 	tournamentGroups,
-} from "./match-groups.js?v=31";
+} from "./match-groups.js?v=32";
 
 const LIVE_REFRESH_INTERVAL_MS = 15_000;
 const FULL_REFRESH_INTERVAL_MS = 2 * 60_000;
@@ -389,10 +389,11 @@ async function sendTestNotification() {
 					.find((team) => team.players.some((player) => player.isJapanese))
 					?.players.find((player) => player.isJapanese)?.photoUrl
 			: undefined;
+		const notificationImage = proxiedImageUrl(imageUrl);
 		const options = {
 			body: "通知は正常に表示できます",
-			icon: "/pwa/icons/icon-192.png",
-			...(imageUrl ? { image: imageUrl } : {}),
+			icon: notificationImage || "/pwa/icons/icon-192.png",
+			...(notificationImage ? { image: notificationImage } : {}),
 			tag: `bwf-test-${Date.now()}`,
 			data: { url: match?.youtubeUrl || "/" },
 		};

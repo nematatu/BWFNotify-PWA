@@ -1,9 +1,9 @@
-const CACHE_NAME = "bwfnotify-shell-v31";
+const CACHE_NAME = "bwfnotify-shell-v32";
 const APP_SHELL = [
 	"/",
-	"/view/app.css?v=31",
-	"/view/app.js?v=31",
-	"/view/match-groups.js?v=31",
+	"/view/app.css?v=32",
+	"/view/app.js?v=32",
+	"/view/match-groups.js?v=32",
 	"/pwa/manifest.webmanifest",
 	"/pwa/icons/icon.svg",
 	"/pwa/icons/icon-192.png",
@@ -77,12 +77,13 @@ self.addEventListener("push", (event) => {
 		}
 	}
 
+	const mediaUrl = notificationMediaUrl(payload.image);
 	event.waitUntil(
 		self.registration.showNotification(payload.title, {
 			body: payload.body,
-			icon: "/pwa/icons/icon-192.png",
+			icon: mediaUrl || "/pwa/icons/icon-192.png",
 			badge: "/pwa/icons/icon-192.png",
-			...(safeImageUrl(payload.image) ? { image: payload.image } : {}),
+			...(mediaUrl ? { image: mediaUrl } : {}),
 			tag: payload.tag,
 			data: { url: payload.url || "/" },
 		}),
@@ -113,10 +114,16 @@ function requiredResponse(response) {
 	return response;
 }
 
-function safeImageUrl(value) {
+function notificationMediaUrl(value) {
 	try {
-		return new URL(String(value)).protocol === "https:";
+		const image = new URL(String(value));
+		if (image.protocol !== "https:") {
+			return null;
+		}
+		const proxy = new URL("/api/media", self.location.origin);
+		proxy.searchParams.set("url", image.toString());
+		return proxy.toString();
 	} catch {
-		return false;
+		return null;
 	}
 }

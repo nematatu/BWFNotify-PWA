@@ -136,6 +136,29 @@ describe("page structure", () => {
 		]) {
 			expect(html).toContain(property);
 		}
+		expect(html).toContain('content="summary_large_image"');
+		expect(html).toContain("/pwa/og-image.png");
+		expect(html).toContain('property="og:image:width" content="1200"');
+		expect(html).toContain('property="og:image:height" content="630"');
+		const image = new Uint8Array(
+			await Bun.file("public/pwa/og-image.png").arrayBuffer(),
+		);
+		const view = new DataView(image.buffer, image.byteOffset, image.byteLength);
+		expect(view.getUint32(16)).toBe(1200);
+		expect(view.getUint32(20)).toBe(630);
+	});
+
+	test("uses the Japanese player photo for notification image and icon", async () => {
+		const app = await Bun.file("public/view/app.js").text();
+		const worker = await Bun.file("public/pwa/sw.js").text();
+		expect(app).toContain(
+			"const notificationImage = proxiedImageUrl(imageUrl)",
+		);
+		expect(app).toContain(
+			'icon: notificationImage || "/pwa/icons/icon-192.png"',
+		);
+		expect(worker).toContain("notificationMediaUrl(payload.image)");
+		expect(worker).toContain('new URL("/api/media", self.location.origin)');
 	});
 
 	test("separates live and scheduled matches in one tab panel", async () => {

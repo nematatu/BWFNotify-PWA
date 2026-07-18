@@ -45,15 +45,14 @@ describe("notificationPayload", () => {
 			players: ["Player A", "Player B"],
 			teams: [],
 			scores: [],
-			youtubeUrl:
-				"https://www.youtube.com/results?search_query=Japan+Open+BWF+TV",
+			youtubeUrl: "https://www.youtube.com/watch?v=abcdefghijk",
 			eventType: "live",
 			status: "Live",
 		});
 
 		expect(payload.title).toBe("Player A vs Player B が始まりました");
 		expect(payload.body).toBe("Japan Open");
-		expect(payload.url).toContain("youtube.com/results");
+		expect(payload.url).toBe("https://www.youtube.com/watch?v=abcdefghijk");
 		expect(payload.tag).toBe("bwf-live:1");
 	});
 
@@ -74,7 +73,7 @@ describe("notificationPayload", () => {
 				},
 			],
 			scores: [],
-			youtubeUrl: "https://www.youtube.com/results?search_query=photo",
+			youtubeUrl: "https://www.youtube.com/watch?v=photo000001",
 			eventType: "live",
 			status: "Live",
 		});
@@ -88,7 +87,7 @@ describe("notificationPayload", () => {
 			players: ["Player A", "Player B"],
 			teams: [],
 			scores: [],
-			youtubeUrl: "https://www.youtube.com/results?search_query=match+one",
+			youtubeUrl: "https://www.youtube.com/watch?v=matchone001",
 			eventType: "live",
 			status: "Live",
 		};
@@ -96,7 +95,7 @@ describe("notificationPayload", () => {
 		const second = notificationPayload({
 			...base,
 			id: "two",
-			youtubeUrl: "https://www.youtube.com/results?search_query=match+two",
+			youtubeUrl: "https://www.youtube.com/watch?v=matchtwo002",
 		});
 
 		expect(first.url).not.toBe(second.url);
@@ -112,7 +111,7 @@ describe("notification exclusions", () => {
 			players: ["Player A", "Player B"],
 			teams: [],
 			scores: [],
-			youtubeUrl: "https://www.youtube.com/results?search_query=included",
+			youtubeUrl: "https://www.youtube.com/watch?v=included001",
 			eventType: "live",
 			status: "Live",
 		},
@@ -122,7 +121,7 @@ describe("notification exclusions", () => {
 			players: ["Player C", "Player D"],
 			teams: [],
 			scores: [],
-			youtubeUrl: "https://www.youtube.com/results?search_query=excluded",
+			youtubeUrl: "https://www.youtube.com/watch?v=excluded001",
 			eventType: "live",
 			status: "Live",
 		},
