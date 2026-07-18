@@ -38,12 +38,33 @@ export function mergeLiveMatches(currentMatches, freshMatches) {
 		if (current?.h2h && !fresh.h2h) {
 			merged.h2h = current.h2h;
 		}
+		if (!fresh.youtubeUrl) {
+			merged.youtubeUrl = isDirectYoutubeUrl(current?.youtubeUrl)
+				? current.youtubeUrl
+				: "";
+		}
 		return merged;
 	});
 	const scheduled = currentMatches.filter(
 		(match) => match.eventType === "scheduled" && !freshLiveIds.has(match.id),
 	);
 	return [...mergedLive, ...scheduled];
+}
+
+function isDirectYoutubeUrl(value) {
+	try {
+		const url = new URL(value);
+		return (
+			(url.hostname === "youtu.be" && /^\/[\w-]{11}$/.test(url.pathname)) ||
+			(["youtube.com", "www.youtube.com", "m.youtube.com"].includes(
+				url.hostname,
+			) &&
+				url.pathname === "/watch" &&
+				/^[\w-]{11}$/.test(url.searchParams.get("v") || ""))
+		);
+	} catch {
+		return false;
+	}
 }
 
 function compareStartTime(left, right) {

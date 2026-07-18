@@ -4,7 +4,10 @@ import {
 	extractJapaneseMatches,
 	parseHeadToHead,
 } from "../src/api/bwf";
-import { japanesePlayerName } from "../src/config/japanese-player-names";
+import {
+	japanesePlayerName,
+	japanesePlayerRomanizedNames,
+} from "../src/config/japanese-player-names";
 import type { BwfMatch } from "../src/type";
 import { adjacentDates } from "../src/utils";
 
@@ -198,8 +201,7 @@ describe("extractJapaneseMatches", () => {
 		expect(result?.tournamentLogoUrl).toBe(
 			"https://img.bwfbadminton.com/logo.png",
 		);
-		expect(result?.youtubeUrl).toContain("youtube.com/results");
-		expect(result?.youtubeUrl).toContain("Japan+Open");
+		expect(result?.youtubeUrl).toBe("");
 		expect(result?.tournamentHeaderImageUrl).toBe(
 			"https://img.bwfbadminton.com/header.jpg",
 		);
@@ -225,6 +227,12 @@ describe("Japanese player dictionary", () => {
 		["Hina OSAWA", "大澤陽奈"],
 	] as const)("maps %s to %s", (source, expected) => {
 		expect(japanesePlayerName(source)).toBe(expected);
+	});
+
+	test("keeps romanized aliases for YouTube title matching", () => {
+		expect(japanesePlayerRomanizedNames("奈良岡功大")).toContain(
+			"KODAI NARAOKA",
+		);
 	});
 });
 

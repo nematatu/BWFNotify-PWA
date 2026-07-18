@@ -1,9 +1,9 @@
-const CACHE_NAME = "bwfnotify-shell-v28";
+const CACHE_NAME = "bwfnotify-shell-v29";
 const APP_SHELL = [
 	"/",
-	"/view/app.css?v=28",
-	"/view/app.js?v=28",
-	"/view/match-groups.js?v=28",
+	"/view/app.css?v=29",
+	"/view/app.js?v=29",
+	"/view/match-groups.js?v=29",
 	"/pwa/manifest.webmanifest",
 	"/pwa/icons/icon.svg",
 	"/pwa/icons/icon-192.png",

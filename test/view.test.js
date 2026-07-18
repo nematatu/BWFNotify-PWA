@@ -71,6 +71,7 @@ describe("live score updates", () => {
 			{
 				id: "live",
 				eventType: "live",
+				youtubeUrl: "https://www.youtube.com/watch?v=abcdefghijk",
 				scores: [{ game: 1, team1: 10, team2: 8 }],
 				h2h: { team1Wins: 2, team2Wins: 1 },
 			},
@@ -87,12 +88,29 @@ describe("live score updates", () => {
 		expect(merged.map((match) => match.id)).toEqual(["live", "scheduled"]);
 		expect(merged[0].scores[0].team1).toBe(11);
 		expect(merged[0].h2h).toEqual({ team1Wins: 2, team2Wins: 1 });
+		expect(merged[0].youtubeUrl).toBe(
+			"https://www.youtube.com/watch?v=abcdefghijk",
+		);
 	});
 
 	test("removes a live match when it is no longer returned", () => {
 		expect(mergeLiveMatches([{ id: "live", eventType: "live" }], [])).toEqual(
 			[],
 		);
+	});
+
+	test("does not preserve an obsolete YouTube search URL", () => {
+		const [merged] = mergeLiveMatches(
+			[
+				{
+					id: "live",
+					eventType: "live",
+					youtubeUrl: "https://www.youtube.com/results?search_query=match",
+				},
+			],
+			[{ id: "live", eventType: "live", youtubeUrl: "" }],
+		);
+		expect(merged.youtubeUrl).toBe("");
 	});
 
 	test("polls live scores only while the page is active", async () => {
@@ -150,6 +168,8 @@ describe("page structure", () => {
 	test("uses YouTube links and removes the previous BWF match link", async () => {
 		const script = await Bun.file("public/view/app.js").text();
 		expect(script).toContain("youtubeLink(match.youtubeUrl)");
+		expect(script).toContain('link.append("YouTube LIVE")');
+		expect(script).not.toContain("YouTube検索");
 		expect(script).not.toContain("match.matchUrl");
 		expect(script).not.toContain("BWFの試合掲載ページ");
 	});

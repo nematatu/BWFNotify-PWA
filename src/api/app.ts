@@ -86,6 +86,7 @@ app.get("/api/live", (c) =>
 		matches: (
 			await fetchJapaneseMatches(undefined, [], {
 				upstreamCacheTtlSeconds: LIVE_CACHE_TTL_SECONDS,
+				resolveYoutubeStreams: false,
 			})
 		).filter((match) => match.eventType === "live"),
 	})),

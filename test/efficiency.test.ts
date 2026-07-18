@@ -73,3 +73,10 @@ describe("KV state persistence", () => {
 		expect(config.triggers.crons).toEqual(["*/2 * * * *"]);
 	});
 });
+
+describe("YouTube discovery load", () => {
+	test("keeps per-user live polling free of YouTube discovery", async () => {
+		const source = await Bun.file("src/api/app.ts").text();
+		expect(source).toContain("resolveYoutubeStreams: false");
+	});
+});

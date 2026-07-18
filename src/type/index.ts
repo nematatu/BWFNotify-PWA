@@ -98,6 +98,7 @@ export type MatchSummary = {
 	round?: string;
 	court?: string;
 	startTime?: string;
+	tournamentDate?: string;
 	h2h?: HeadToHeadSummary;
 };
 

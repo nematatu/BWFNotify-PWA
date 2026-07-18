@@ -3,7 +3,7 @@ import {
 	mergeLiveMatches,
 	sortedMatches,
 	tournamentGroups,
-} from "./match-groups.js?v=28";
+} from "./match-groups.js?v=29";
 
 const LIVE_REFRESH_INTERVAL_MS = 15_000;
 const FULL_REFRESH_INTERVAL_MS = 2 * 60_000;
@@ -938,10 +938,17 @@ function teamLabel(team) {
 
 function youtubeLink(value) {
 	const url = safeHttpsUrl(value);
-	if (
-		!url ||
-		!["www.youtube.com", "youtube.com", "youtu.be"].includes(url.hostname)
-	) {
+	if (!url) {
+		return null;
+	}
+	const isDirect =
+		(url.hostname === "youtu.be" && /^\/[\w-]{11}$/.test(url.pathname)) ||
+		(["www.youtube.com", "youtube.com", "m.youtube.com"].includes(
+			url.hostname,
+		) &&
+			url.pathname === "/watch" &&
+			/^[\w-]{11}$/.test(url.searchParams.get("v") || ""));
+	if (!isDirect) {
 		return null;
 	}
 	const link = document.createElement("a");
@@ -949,13 +956,13 @@ function youtubeLink(value) {
 	link.href = url.toString();
 	link.target = "_blank";
 	link.rel = "noopener noreferrer";
-	link.append("YouTube");
+	link.append("YouTube LIVE");
 	const external = document.createElement("span");
 	external.className = "external-mark";
 	external.textContent = "↗";
 	external.setAttribute("aria-hidden", "true");
 	link.append(external);
-	link.setAttribute("aria-label", "YouTubeで試合映像を探す");
+	link.setAttribute("aria-label", "YouTubeで試合映像を開く");
 	return link;
 }
 

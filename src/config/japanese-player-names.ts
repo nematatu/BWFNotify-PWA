@@ -44,8 +44,23 @@ const JAPANESE_PLAYER_NAMES: Record<string, string> = {
 	"YUSHI TANAKA": "田中湧士",
 };
 
+const ROMANIZED_NAMES_BY_JAPANESE = Object.entries(
+	JAPANESE_PLAYER_NAMES,
+).reduce<Map<string, string[]>>((names, [romanized, japanese]) => {
+	const values = names.get(japanese) || [];
+	if (!values.includes(romanized)) {
+		values.push(romanized);
+	}
+	names.set(japanese, values);
+	return names;
+}, new Map());
+
 export function japanesePlayerName(name: string): string | undefined {
 	return JAPANESE_PLAYER_NAMES[normalizeName(name)];
+}
+
+export function japanesePlayerRomanizedNames(name: string): string[] {
+	return ROMANIZED_NAMES_BY_JAPANESE.get(name.trim()) || [];
 }
 
 function normalizeName(name: string): string {

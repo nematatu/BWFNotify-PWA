@@ -7,6 +7,7 @@ import { env } from "cloudflare:workers";
 import { afterEach, describe, expect, test } from "vitest";
 import worker from "../src";
 import { runNotificationCheck } from "../src/api/app";
+import { resolveYoutubeStreamUrls } from "../src/api/youtube";
 import type { MatchSummary } from "../src/type";
 
 const liveMatch: MatchSummary = {
@@ -145,5 +146,37 @@ describe("Worker integration", () => {
 
 		expect(restored.newMatches).toBe(0);
 		expect(notificationCalls).toBe(1);
+	});
+
+	test("caches a missing official stream without using KV", async () => {
+		let youtubeRequests = 0;
+		const match: MatchSummary = {
+			...liveMatch,
+			id: `missing-stream-${crypto.randomUUID()}`,
+			youtubeUrl: "",
+			tournament: "DAIHATSU Japan Open 2026",
+			tournamentCategory: "HSBC BWF World Tour Super 750",
+			tournamentDate: "2026-07-18",
+			court: "Court 1",
+			eventType: "scheduled",
+		};
+		const fetcher = async (input: RequestInfo | URL) => {
+			youtubeRequests += 1;
+			return String(input).includes("oembed")
+				? Response.json({
+						title: "DAIHATSU Japan Open 2026 - 17 July - Court 2",
+						author_url: "https://www.youtube.com/@BWF",
+					})
+				: new Response('"videoId":"wrong123456"');
+		};
+
+		const first = await resolveYoutubeStreamUrls([match], fetcher);
+		const afterFirst = youtubeRequests;
+		const second = await resolveYoutubeStreamUrls([match], fetcher);
+
+		expect(first[0]?.youtubeUrl).toBe("");
+		expect(second[0]?.youtubeUrl).toBe("");
+		expect(afterFirst).toBeGreaterThan(0);
+		expect(youtubeRequests).toBe(afterFirst);
 	});
 });

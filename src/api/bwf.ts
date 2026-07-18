@@ -17,7 +17,7 @@ import {
 	optionalString,
 	todayJst,
 } from "../utils";
-import { resolveYoutubeMatchUrl } from "./youtube";
+import { resolveYoutubeMatchUrl, resolveYoutubeStreamUrls } from "./youtube";
 
 const BWF_LIVE_URL =
 	"https://extranet-lv.bwfbadminton.com/api/match-center/vue-current-live";
@@ -40,6 +40,7 @@ type Tournament = {
 
 type FetchJapaneseMatchesOptions = {
 	upstreamCacheTtlSeconds?: number;
+	resolveYoutubeStreams?: boolean;
 };
 
 export async function fetchJapaneseMatches(
@@ -83,7 +84,16 @@ export async function fetchJapaneseMatches(
 		throw new Error("BWF day matches are unavailable");
 	}
 
-	const summaries = extractJapaneseMatches(matches);
+	const knownById = new Map(knownMatches.map((match) => [match.id, match]));
+	const extracted = extractJapaneseMatches(matches).map((match) => ({
+		...match,
+		youtubeUrl:
+			resolveYoutubeMatchUrl(match, knownById.get(match.id)?.youtubeUrl) || "",
+	}));
+	const summaries =
+		options.resolveYoutubeStreams === false
+			? extracted
+			: await resolveYoutubeStreamUrls(extracted);
 	return cache
 		? enrichWithHeadToHead(summaries, cache, knownMatches)
 		: summaries;
@@ -136,6 +146,7 @@ export function extractJapaneseMatches(matches: BwfMatch[]): MatchSummary[] {
 			round: match.roundName || match.matchTypeValue,
 			court: match.courtName,
 			startTime: match.matchTimeUtc || match.matchTime,
+			tournamentDate: match.matchTime?.match(/^\d{4}-\d{2}-\d{2}/)?.[0],
 		};
 		summary.youtubeUrl = resolveYoutubeMatchUrl(summary);
 		result.push(summary);
