@@ -95,30 +95,33 @@ export async function sendPushNotifications(
 
 	for (const subscription of subscriptions) {
 		const eligibleMatches = matchesForSubscription(subscription, matches);
-		if (eligibleMatches.length === 0) {
-			continue;
-		}
-		const payload = JSON.stringify(notificationPayload(eligibleMatches));
-		try {
-			await webpush.sendNotification(subscription, payload, options);
-			result.sent += 1;
-		} catch (error) {
-			const status =
-				error instanceof webpush.WebPushError ? error.statusCode : undefined;
-			if (status === 404 || status === 410) {
-				await deleteSubscription(env.NOTIFIED_MATCHES, subscription.endpoint);
-				result.removed += 1;
-				continue;
-			}
+		for (const match of eligibleMatches) {
+			try {
+				await webpush.sendNotification(
+					subscription,
+					JSON.stringify(notificationPayload(match)),
+					{ ...options, topic: notificationTopic(match) },
+				);
+				result.sent += 1;
+			} catch (error) {
+				const status =
+					error instanceof webpush.WebPushError ? error.statusCode : undefined;
+				if (status === 404 || status === 410) {
+					await deleteSubscription(env.NOTIFIED_MATCHES, subscription.endpoint);
+					result.removed += 1;
+					break;
+				}
 
-			result.failed += 1;
-			console.error(
-				JSON.stringify({
-					event: "push-delivery-error",
-					status,
-					error: error instanceof Error ? error.message : String(error),
-				}),
-			);
+				result.failed += 1;
+				console.error(
+					JSON.stringify({
+						event: "push-delivery-error",
+						matchId: match.id,
+						status,
+						error: error instanceof Error ? error.message : String(error),
+					}),
+				);
+			}
 		}
 	}
 
@@ -155,26 +158,28 @@ export function matchesForSubscription(
 	return matches.filter((match) => !excluded.has(match.id));
 }
 
-export function notificationPayload(matches: MatchSummary[]) {
-	const lines = matches.slice(0, 3).map((match) => {
-		const card = match.players.length
-			? match.players.join(" vs ")
-			: "対戦カード未定";
-		return `${match.tournament}: ${card}`;
-	});
-	if (matches.length > lines.length) {
-		lines.push(`ほか${matches.length - lines.length}試合`);
-	}
-
+export function notificationPayload(match: MatchSummary) {
+	const card = match.players.length
+		? match.players.join(" vs ")
+		: "対戦カード未定";
+	const details = [match.tournament, match.court].filter(Boolean).join(" / ");
 	return {
-		title:
-			matches.length === 1
-				? "日本人選手の試合が始まりました"
-				: `日本人選手の試合が${matches.length}件始まりました`,
-		body: lines.join("\n").slice(0, 2800),
-		url: "/",
-		tag: "bwf-live",
+		title: `${card} が始まりました`,
+		body: details || "日本人選手の試合が始まりました",
+		url: match.youtubeUrl || "/",
+		image: notificationImage(match),
+		tag: `bwf-live:${match.id}`,
 	};
+}
+
+function notificationImage(match: MatchSummary) {
+	return match.teams
+		.find((team) => team.players.some((player) => player.isJapanese))
+		?.players.find((player) => player.isJapanese)?.photoUrl;
+}
+
+function notificationTopic(match: MatchSummary): string {
+	return `bwf-${match.id}`.replace(/[^A-Za-z0-9_-]/g, "-").slice(0, 32);
 }
 
 async function listSubscriptions(

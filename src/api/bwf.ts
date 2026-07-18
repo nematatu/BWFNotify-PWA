@@ -17,6 +17,7 @@ import {
 	optionalString,
 	todayJst,
 } from "../utils";
+import { resolveYoutubeMatchUrl } from "./youtube";
 
 const BWF_LIVE_URL =
 	"https://extranet-lv.bwfbadminton.com/api/match-center/vue-current-live";
@@ -32,6 +33,9 @@ type Tournament = {
 	code: string;
 	name?: string;
 	logoUrl?: string;
+	headerImageUrl?: string;
+	headerImageMobileUrl?: string;
+	category?: string;
 	link?: string;
 };
 
@@ -41,16 +45,34 @@ export async function fetchJapaneseMatches(
 	const tournaments = tournamentsFrom(await fetchBwfJson(BWF_LIVE_URL));
 	const dates = adjacentDates(todayJst());
 	const matches: BwfMatch[] = [];
+	let successfulDayRequests = 0;
 
 	for (const tournament of tournaments) {
 		for (const date of dates) {
-			const payload = await fetchBwfJson(dayMatchesUrl(tournament.code, date));
-			matches.push(
-				...array(payload)
-					.map((value) => parseMatch(value, tournament))
-					.filter(isPresent),
-			);
+			try {
+				const payload = await fetchBwfJson(
+					dayMatchesUrl(tournament.code, date),
+				);
+				successfulDayRequests += 1;
+				matches.push(
+					...array(payload)
+						.map((value) => parseMatch(value, tournament))
+						.filter(isPresent),
+				);
+			} catch (error) {
+				console.error(
+					JSON.stringify({
+						event: "bwf-day-matches-error",
+						tournamentCode: tournament.code,
+						date,
+						error: error instanceof Error ? error.message : String(error),
+					}),
+				);
+			}
 		}
+	}
+	if (successfulDayRequests === 0) {
+		throw new Error("BWF day matches are unavailable");
 	}
 
 	const summaries = extractJapaneseMatches(matches);
@@ -72,26 +94,41 @@ export function extractJapaneseMatches(matches: BwfMatch[]): MatchSummary[] {
 		}
 
 		seen.add(match.id);
-		const teams = [match.team1, match.team2]
-			.map(toTeamSummary)
-			.filter(isPresent)
+		const teamsWithSource = [match.team1, match.team2]
+			.map((team, sourceIndex) => ({
+				team: toTeamSummary(team),
+				sourceIndex,
+			}))
+			.filter(
+				(value): value is { team: MatchTeamSummary; sourceIndex: number } =>
+					value.team != null,
+			)
 			.sort(
 				(left, right) =>
-					Number(teamIsJapanese(right)) - Number(teamIsJapanese(left)),
+					Number(teamIsJapanese(right.team)) -
+					Number(teamIsJapanese(left.team)),
 			);
-		result.push({
+		const teams = teamsWithSource.map(({ team }) => team);
+		const players = teams.map(teamName).filter(Boolean);
+		const summary: MatchSummary = {
 			id: match.id,
 			tournament: match.tournamentName || "BWF",
 			tournamentLogoUrl: match.tournamentLogoUrl,
-			matchUrl: matchPageUrl(match),
-			players: teams.map(teamName).filter(Boolean),
+			tournamentHeaderImageUrl: match.tournamentHeaderImageUrl,
+			tournamentHeaderImageMobileUrl: match.tournamentHeaderImageMobileUrl,
+			tournamentCategory: match.tournamentCategory,
+			youtubeUrl: "",
+			players,
 			teams,
+			scores: matchScores(match.score, teamsWithSource[0]?.sourceIndex === 1),
 			eventType: type,
 			status: type === "live" ? displayStatus(match) : "",
 			round: match.roundName || match.matchTypeValue,
 			court: match.courtName,
 			startTime: match.matchTimeUtc || match.matchTime,
-		});
+		};
+		summary.youtubeUrl = resolveYoutubeMatchUrl(summary);
+		result.push(summary);
 	}
 
 	return result.sort((left, right) => {
@@ -139,6 +176,9 @@ function tournamentsFrom(payload: unknown): Tournament[] {
 			code: optionalString(item.code) || "",
 			name: optionalString(item.name),
 			logoUrl: optionalString(item.tmtLogo),
+			headerImageUrl: optionalString(item.tmtHeaderImage),
+			headerImageMobileUrl: optionalString(item.tmtHeaderImageMobile),
+			category: optionalString(object(item.category_model).name),
 			link: optionalString(item.tmtLink),
 		}))
 		.filter((item) => /^[0-9A-F-]{36}$/i.test(item.code));
@@ -155,6 +195,9 @@ function parseMatch(value: unknown, tournament: Tournament): BwfMatch | null {
 		id: String(rawId),
 		tournamentName: optionalString(item.tournamentName) || tournament.name,
 		tournamentLogoUrl: tournament.logoUrl,
+		tournamentHeaderImageUrl: tournament.headerImageUrl,
+		tournamentHeaderImageMobileUrl: tournament.headerImageMobileUrl,
+		tournamentCategory: tournament.category,
 		tournamentLink: tournament.link,
 		matchStatus: optionalString(item.matchStatus),
 		matchStatusValue: optionalString(item.matchStatusValue),
@@ -168,7 +211,21 @@ function parseMatch(value: unknown, tournament: Tournament): BwfMatch | null {
 		matchTypeValue: optionalString(item.matchTypeValue),
 		team1: parseTeam(item.team1),
 		team2: parseTeam(item.team2),
+		score: array(item.score).map(parseGameScore).filter(isPresent),
 	};
+}
+
+function parseGameScore(value: unknown) {
+	const item = object(value);
+	const set = optionalNumber(item.set);
+	const home = optionalNumber(item.home);
+	const away = optionalNumber(item.away);
+	if (set == null || home == null || away == null) {
+		return null;
+	}
+	const lastPointWinner = optionalTeamNumber(item.lastPointWinner);
+	const serve = optionalTeamNumber(item.serve);
+	return { set, home, away, lastPointWinner, serve };
 }
 
 function parseTeam(value: unknown): BwfTeam | undefined {
@@ -258,25 +315,25 @@ function teamIsJapanese(team: MatchTeamSummary): boolean {
 	);
 }
 
-function matchPageUrl(match: BwfMatch): string | undefined {
-	if (!match.tournamentLink) {
-		return undefined;
-	}
+function matchScores(score: BwfMatch["score"], swapTeams: boolean) {
+	return (score || []).map((game) => ({
+		game: game.set,
+		team1: swapTeams ? game.away : game.home,
+		team2: swapTeams ? game.home : game.away,
+		lastPointWinner: swapTeamNumber(game.lastPointWinner, swapTeams),
+		servingTeam: swapTeamNumber(game.serve, swapTeams),
+	}));
+}
 
-	try {
-		const link = new URL(match.tournamentLink);
-		const localDate = match.matchTime?.match(/^\d{4}-\d{2}-\d{2}/)?.[0];
-		if (
-			localDate &&
-			link.hostname.endsWith("bwfbadminton.com") &&
-			link.pathname.replace(/\/$/, "").endsWith("/results")
-		) {
-			link.pathname = `${link.pathname.replace(/\/$/, "")}/${localDate}`;
-		}
-		return link.toString();
-	} catch {
-		return undefined;
-	}
+function optionalTeamNumber(value: unknown): 1 | 2 | undefined {
+	return value === 1 || value === 2 ? value : undefined;
+}
+
+function swapTeamNumber(
+	value: 1 | 2 | undefined,
+	swapTeams: boolean,
+): 1 | 2 | undefined {
+	return value == null || !swapTeams ? value : value === 1 ? 2 : 1;
 }
 
 async function enrichWithHeadToHead(
@@ -490,21 +547,25 @@ function statusCandidates(match: BwfMatch): string[] {
 }
 
 async function fetchBwfJson(url: string): Promise<unknown> {
-	const response = await fetch(url, {
-		headers: {
+	const headerOptions: HeadersInit[] = [
+		{
 			accept: "application/json,text/plain,*/*",
-			"accept-language": "ja,en-US;q=0.9,en;q=0.8",
+			"accept-language": "en-US,en;q=0.9",
 			referer: "https://bwfbadminton.com/",
 			"user-agent":
 				"Mozilla/5.0 (Macintosh; Intel Mac OS X 14_0) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
 		},
-	});
-
-	if (!response.ok) {
-		throw new Error(`BWF request failed with status ${response.status}`);
+		{ accept: "application/json,text/plain,*/*" },
+	];
+	let lastStatus = 0;
+	for (const headers of headerOptions) {
+		const response = await fetch(url, { headers });
+		if (response.ok) {
+			return response.json();
+		}
+		lastStatus = response.status;
 	}
-
-	return response.json();
+	throw new Error(`BWF request failed with status ${lastStatus}`);
 }
 
 function dayMatchesUrl(tournamentCode: string, date: string): string {

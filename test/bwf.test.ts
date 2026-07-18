@@ -141,19 +141,41 @@ describe("extractJapaneseMatches", () => {
 					countryCode: "JPN",
 					players: [{ id: "2", nameDisplay: "Akane YAMAGUCHI" }],
 				},
+				score: [
+					{
+						set: 1,
+						home: 18,
+						away: 21,
+						serve: 2,
+						lastPointWinner: 2,
+					},
+				],
 			},
 		])[0];
 
 		expect(result?.players).toEqual(["山口茜", "Player A"]);
 		expect(result?.teams[0]?.countryCode).toBe("JPN");
+		expect(result?.scores).toEqual([
+			{
+				game: 1,
+				team1: 21,
+				team2: 18,
+				servingTeam: 1,
+				lastPointWinner: 1,
+			},
+		]);
 	});
 
-	test("builds the official tournament day link and preserves media", () => {
+	test("builds a YouTube link and preserves BWF media", () => {
 		const result = extractJapaneseMatches([
 			{
 				id: "media",
 				tournamentName: "Japan Open",
 				tournamentLogoUrl: "https://img.bwfbadminton.com/logo.png",
+				tournamentHeaderImageUrl: "https://img.bwfbadminton.com/header.jpg",
+				tournamentHeaderImageMobileUrl:
+					"https://img.bwfbadminton.com/header-mobile.jpg",
+				tournamentCategory: "HSBC BWF World Tour Super 750",
 				tournamentLink:
 					"https://bwfworldtour.bwfbadminton.com/tournament/5213/daihatsu-japan-open-2026/results/",
 				matchStatus: "N",
@@ -176,9 +198,15 @@ describe("extractJapaneseMatches", () => {
 		expect(result?.tournamentLogoUrl).toBe(
 			"https://img.bwfbadminton.com/logo.png",
 		);
-		expect(result?.matchUrl).toBe(
-			"https://bwfworldtour.bwfbadminton.com/tournament/5213/daihatsu-japan-open-2026/results/2026-07-18",
+		expect(result?.youtubeUrl).toContain("youtube.com/results");
+		expect(result?.youtubeUrl).toContain("Japan+Open");
+		expect(result?.tournamentHeaderImageUrl).toBe(
+			"https://img.bwfbadminton.com/header.jpg",
 		);
+		expect(result?.tournamentHeaderImageMobileUrl).toBe(
+			"https://img.bwfbadminton.com/header-mobile.jpg",
+		);
+		expect(result?.tournamentCategory).toBe("HSBC BWF World Tour Super 750");
 		expect(result?.teams[0]?.players[0]).toMatchObject({
 			id: "88405",
 			name: "古賀輝",

@@ -18,6 +18,9 @@ export type BwfMatch = {
 	id: string;
 	tournamentName?: string;
 	tournamentLogoUrl?: string;
+	tournamentHeaderImageUrl?: string;
+	tournamentHeaderImageMobileUrl?: string;
+	tournamentCategory?: string;
 	tournamentLink?: string;
 	matchStatus?: string;
 	matchStatusValue?: string;
@@ -30,6 +33,15 @@ export type BwfMatch = {
 	matchTypeValue?: string;
 	team1?: BwfTeam;
 	team2?: BwfTeam;
+	score?: BwfGameScore[];
+};
+
+export type BwfGameScore = {
+	set: number;
+	home: number;
+	away: number;
+	lastPointWinner?: 1 | 2;
+	serve?: 1 | 2;
 };
 
 export type MatchPlayerSummary = {
@@ -62,13 +74,25 @@ export type HeadToHeadSummary = {
 	previous?: PreviousMeeting;
 };
 
+export type MatchGameScore = {
+	game: number;
+	team1: number;
+	team2: number;
+	lastPointWinner?: 1 | 2;
+	servingTeam?: 1 | 2;
+};
+
 export type MatchSummary = {
 	id: string;
 	tournament: string;
 	tournamentLogoUrl?: string;
-	matchUrl?: string;
+	tournamentHeaderImageUrl?: string;
+	tournamentHeaderImageMobileUrl?: string;
+	tournamentCategory?: string;
+	youtubeUrl: string;
 	players: string[];
 	teams: MatchTeamSummary[];
+	scores: MatchGameScore[];
 	eventType: "live" | "scheduled";
 	status: string;
 	round?: string;

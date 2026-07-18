@@ -2,20 +2,33 @@ import {
 	DEFAULT_SORT_ORDER,
 	sortedMatches,
 	tournamentGroups,
-} from "./match-groups.js?v=19";
+} from "./match-groups.js?v=22";
 
 const toggle = document.querySelector("#notification-toggle");
 const notificationStatus = document.querySelector("#notification-status");
 const testNotificationButton = document.querySelector(
 	"#test-notification-button",
 );
-const installAppButton = document.querySelector("#install-app-button");
-const installHelpDialog = document.querySelector("#install-help-dialog");
+const installOverlay = document.querySelector("#install-overlay");
+const installOverlayClose = document.querySelector("#install-overlay-close");
+const installOverlayDismiss = document.querySelector(
+	"#install-overlay-dismiss",
+);
+const installAction = document.querySelector("#install-action");
+const installStepTitle = document.querySelector("#install-step-title");
+const installStepDescription = document.querySelector(
+	"#install-step-description",
+);
+const permissionOverlay = document.querySelector("#permission-overlay");
+const permissionCancel = document.querySelector("#permission-cancel");
+const permissionConfirm = document.querySelector("#permission-confirm");
 const lastUpdated = document.querySelector("#last-updated");
-const liveMatchList = document.querySelector("#live-match-list");
-const scheduledMatchList = document.querySelector("#scheduled-match-list");
+const matchList = document.querySelector("#match-list");
 const refreshButton = document.querySelector("#refresh-button");
 const sortOrderSelect = document.querySelector("#sort-order");
+const matchTabs = [...document.querySelectorAll("[data-match-view]")];
+const liveCount = document.querySelector("#live-count");
+const scheduledCount = document.querySelector("#scheduled-count");
 
 let registration;
 let vapidPublicKey;
@@ -23,22 +36,34 @@ let currentMatches = [];
 let currentSubscription = null;
 let excludedMatchIds = new Set();
 let savingMatchPreferences = false;
-let installPrompt = null;
+let currentMatchView = "live";
+let viewSelectedByUser = false;
+let deferredInstallPrompt = null;
 
 window.addEventListener("beforeinstallprompt", (event) => {
 	event.preventDefault();
-	installPrompt = event;
-	installAppButton.hidden = false;
+	deferredInstallPrompt = event;
+	configureInstallGuidance();
+	if (isMobileBrowserDisplay()) {
+		showInstallOverlay();
+	}
 });
 
 window.addEventListener("appinstalled", () => {
-	installPrompt = null;
-	installAppButton.hidden = true;
+	deferredInstallPrompt = null;
+	hideInstallOverlay();
 });
 
-void initialize();
-
 toggle.addEventListener("change", () => {
+	if (
+		toggle.checked &&
+		"Notification" in window &&
+		Notification.permission === "default"
+	) {
+		toggle.checked = false;
+		showPermissionOverlay();
+		return;
+	}
 	void updateNotificationSubscription(toggle.checked);
 });
 
@@ -55,8 +80,69 @@ testNotificationButton.addEventListener("click", () => {
 	void sendTestNotification();
 });
 
-installAppButton.addEventListener("click", () => {
-	void installApp();
+for (const tab of matchTabs) {
+	tab.addEventListener("click", () => {
+		currentMatchView = tab.dataset.matchView;
+		viewSelectedByUser = true;
+		renderCurrentMatches();
+	});
+}
+
+for (const control of [installOverlayClose, installOverlayDismiss]) {
+	control.addEventListener("click", () => hideInstallOverlay(true));
+}
+
+installAction.addEventListener("click", async () => {
+	if (!deferredInstallPrompt) {
+		return;
+	}
+	installAction.disabled = true;
+	try {
+		await deferredInstallPrompt.prompt();
+		const choice = await deferredInstallPrompt.userChoice;
+		deferredInstallPrompt = null;
+		if (choice.outcome === "accepted") {
+			hideInstallOverlay();
+		} else {
+			configureInstallGuidance();
+			installOverlayDismiss.focus();
+		}
+	} finally {
+		installAction.disabled = false;
+	}
+});
+
+installOverlay.addEventListener("click", (event) => {
+	if (event.target === installOverlay) {
+		hideInstallOverlay(true);
+	}
+});
+
+installOverlay.addEventListener("keydown", (event) => {
+	const controls = [installOverlayClose];
+	if (!installAction.hidden) {
+		controls.push(installAction);
+	}
+	controls.push(installOverlayDismiss);
+	trapOverlayFocus(event, controls, () => hideInstallOverlay(true));
+});
+
+permissionCancel.addEventListener("click", () => {
+	hidePermissionOverlay();
+	toggle.checked = false;
+});
+
+permissionConfirm.addEventListener("click", () => {
+	hidePermissionOverlay();
+	toggle.checked = true;
+	void updateNotificationSubscription(true);
+});
+
+permissionOverlay.addEventListener("keydown", (event) => {
+	trapOverlayFocus(event, [permissionCancel, permissionConfirm], () => {
+		hidePermissionOverlay();
+		toggle.checked = false;
+	});
 });
 
 document.addEventListener("visibilitychange", () => {
@@ -65,14 +151,49 @@ document.addEventListener("visibilitychange", () => {
 	}
 });
 
+void initialize();
+
 async function initialize() {
+	configureInstallGuidance();
 	const savedSortOrder = localStorage.getItem("bwf-sort-order");
 	sortOrderSelect.value = ["time-asc", "time-desc", "tournament"].includes(
 		savedSortOrder,
 	)
 		? savedSortOrder
 		: DEFAULT_SORT_ORDER;
+	if (isMobileBrowserDisplay()) {
+		showInstallOverlay();
+	}
 	await Promise.all([initializeNotifications(), loadStatus()]);
+}
+
+function configureInstallGuidance() {
+	if (deferredInstallPrompt) {
+		installStepTitle.textContent = "ホーム画面に追加";
+		installStepDescription.textContent =
+			"下のボタンを押すと、ブラウザの追加確認が開きます。";
+		installAction.hidden = false;
+		return;
+	}
+
+	installAction.hidden = true;
+	const userAgent = navigator.userAgent;
+	if (/\bGSA\//.test(userAgent)) {
+		installStepTitle.textContent = "SafariまたはChromeで開く";
+		installStepDescription.textContent =
+			"Googleアプリのメニューから外部ブラウザで開き、共有またはブラウザメニューの「ホーム画面に追加」を選びます。";
+		return;
+	}
+	if (isIosDevice()) {
+		installStepTitle.textContent = "共有メニューを開く";
+		installStepDescription.textContent =
+			"共有メニューから「ホーム画面に追加」を選びます。追加後はホーム画面のアイコンから起動します。";
+		return;
+	}
+
+	installStepTitle.textContent = "ブラウザのメニューを開く";
+	installStepDescription.textContent =
+		"メニューの「アプリをインストール」または「ホーム画面に追加」を選びます。";
 }
 
 async function initializeNotifications() {
@@ -80,7 +201,6 @@ async function initializeNotifications() {
 		setNotificationStatus("通知にはHTTPS接続が必要です", true);
 		return;
 	}
-
 	if (!("serviceWorker" in navigator)) {
 		showInstallRequired();
 		return;
@@ -98,7 +218,6 @@ async function initializeNotifications() {
 		const config = await api("/api/config");
 		vapidPublicKey = config.vapidPublicKey;
 		const subscription = await registration.pushManager.getSubscription();
-
 		if (subscription && Notification.permission === "granted") {
 			await saveSubscription(subscription);
 			toggle.checked = true;
@@ -107,7 +226,7 @@ async function initializeNotifications() {
 		} else if (Notification.permission === "denied") {
 			setNotificationStatus("ブラウザ設定で拒否されています", true);
 		} else {
-			setNotificationStatus("無効");
+			setNotificationStatus("オフ");
 		}
 		toggle.disabled = Notification.permission === "denied";
 	} catch (error) {
@@ -117,20 +236,86 @@ async function initializeNotifications() {
 
 function showInstallRequired() {
 	setNotificationStatus("ホーム画面版で通知を利用できます");
-	installAppButton.hidden = false;
 	toggle.disabled = true;
 	testNotificationButton.disabled = true;
+	showInstallOverlay();
 }
 
-async function installApp() {
-	if (installPrompt) {
-		await installPrompt.prompt();
-		await installPrompt.userChoice;
-		installPrompt = null;
-		installAppButton.hidden = true;
+function showInstallOverlay() {
+	if (isStandaloneDisplay() || installOverlayDismissed()) {
 		return;
 	}
-	installHelpDialog.showModal();
+	installOverlay.hidden = false;
+	document.body.classList.add("overlay-open");
+	installOverlayClose.focus();
+}
+
+function hideInstallOverlay(dismiss = false) {
+	installOverlay.hidden = true;
+	document.body.classList.remove("overlay-open");
+	if (dismiss) {
+		try {
+			sessionStorage.setItem("bwf-install-overlay-dismissed", "1");
+		} catch {
+			// Storage may be unavailable in private browsing contexts.
+		}
+	}
+}
+
+function showPermissionOverlay() {
+	permissionOverlay.hidden = false;
+	document.body.classList.add("overlay-open");
+	permissionConfirm.focus();
+}
+
+function hidePermissionOverlay() {
+	permissionOverlay.hidden = true;
+	document.body.classList.remove("overlay-open");
+}
+
+function trapOverlayFocus(event, controls, close) {
+	if (event.key === "Escape") {
+		event.preventDefault();
+		close();
+		return;
+	}
+	if (event.key !== "Tab") {
+		return;
+	}
+	event.preventDefault();
+	const currentIndex = controls.indexOf(document.activeElement);
+	const direction = event.shiftKey ? -1 : 1;
+	const nextIndex =
+		(currentIndex + direction + controls.length) % controls.length;
+	controls[nextIndex].focus();
+}
+
+function installOverlayDismissed() {
+	try {
+		return sessionStorage.getItem("bwf-install-overlay-dismissed") === "1";
+	} catch {
+		return false;
+	}
+}
+
+function isStandaloneDisplay() {
+	return (
+		window.matchMedia("(display-mode: standalone)").matches ||
+		window.navigator.standalone === true
+	);
+}
+
+function isIosDevice() {
+	return (
+		/iPad|iPhone|iPod/.test(navigator.userAgent) ||
+		(navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1)
+	);
+}
+
+function isMobileBrowserDisplay() {
+	return (
+		!isStandaloneDisplay() && window.matchMedia("(pointer: coarse)").matches
+	);
 }
 
 async function updateNotificationSubscription(enabled) {
@@ -140,13 +325,12 @@ async function updateNotificationSubscription(enabled) {
 			throw new Error("通知設定を読み込めませんでした");
 		}
 
-		const current = await registration.pushManager.getSubscription();
 		if (enabled) {
 			const permission = await Notification.requestPermission();
 			if (permission !== "granted") {
 				throw new Error("通知が許可されていません");
 			}
-
+			const current = await registration.pushManager.getSubscription();
 			const subscription =
 				current ||
 				(await registration.pushManager.subscribe({
@@ -157,6 +341,7 @@ async function updateNotificationSubscription(enabled) {
 			testNotificationButton.disabled = false;
 			setNotificationStatus("有効");
 		} else {
+			const current = await registration.pushManager.getSubscription();
 			if (current) {
 				await api("/api/subscriptions", {
 					method: "DELETE",
@@ -168,7 +353,7 @@ async function updateNotificationSubscription(enabled) {
 			excludedMatchIds = new Set();
 			renderCurrentMatches();
 			testNotificationButton.disabled = true;
-			setNotificationStatus("無効");
+			setNotificationStatus("オフ");
 		}
 	} catch (error) {
 		toggle.checked = !enabled;
@@ -185,12 +370,18 @@ async function sendTestNotification() {
 		if (!registration || Notification.permission !== "granted") {
 			throw new Error("先に通知を有効にしてください");
 		}
-
+		const match = currentMatches.find((item) => item.eventType === "live");
+		const imageUrl = match
+			? match.teams
+					.find((team) => team.players.some((player) => player.isJapanese))
+					?.players.find((player) => player.isJapanese)?.photoUrl
+			: undefined;
 		const options = {
 			body: "通知は正常に表示できます",
 			icon: "/pwa/icons/icon-192.png",
+			...(imageUrl ? { image: imageUrl } : {}),
 			tag: `bwf-test-${Date.now()}`,
-			data: { url: "/" },
+			data: { url: match?.youtubeUrl || "/" },
 		};
 
 		try {
@@ -226,6 +417,12 @@ async function loadStatus() {
 	try {
 		const state = await api("/api/status");
 		currentMatches = Array.isArray(state.matches) ? state.matches : [];
+		const hasLiveMatches = currentMatches.some(
+			(match) => match.eventType === "live",
+		);
+		if (!viewSelectedByUser && !hasLiveMatches) {
+			currentMatchView = "scheduled";
+		}
 		renderCurrentMatches();
 		lastUpdated.textContent = state.checkedAt
 			? `${formatDate(state.checkedAt)} 更新`
@@ -240,31 +437,45 @@ async function loadStatus() {
 }
 
 function renderCurrentMatches() {
-	renderMatches(
-		liveMatchList,
-		currentMatches.filter((match) => match.eventType === "live"),
-		"現在、ライブ中の試合はありません",
+	const liveMatches = currentMatches.filter(
+		(match) => match.eventType === "live",
 	);
+	const scheduledMatches = currentMatches.filter(
+		(match) => match.eventType === "scheduled",
+	);
+	liveCount.textContent = String(liveMatches.length);
+	scheduledCount.textContent = String(scheduledMatches.length);
+
+	for (const tab of matchTabs) {
+		const selected = tab.dataset.matchView === currentMatchView;
+		tab.setAttribute("aria-selected", String(selected));
+		tab.tabIndex = selected ? 0 : -1;
+	}
+	const selectedTab = matchTabs.find(
+		(tab) => tab.dataset.matchView === currentMatchView,
+	);
+	matchList.setAttribute("aria-labelledby", selectedTab?.id || "live-tab");
 	renderMatches(
-		scheduledMatchList,
-		currentMatches.filter((match) => match.eventType === "scheduled"),
-		"現在、ライブ予定の試合はありません",
+		currentMatchView === "live" ? liveMatches : scheduledMatches,
+		currentMatchView === "live"
+			? "現在、ライブ中の日本人選手の試合はありません"
+			: "現在、表示できる試合予定はありません",
 	);
 }
 
-function renderMatches(container, matches, emptyMessage) {
-	container.replaceChildren();
+function renderMatches(matches, emptyMessage) {
+	matchList.replaceChildren();
 	if (!Array.isArray(matches) || matches.length === 0) {
 		const empty = document.createElement("p");
 		empty.className = "empty-state";
 		empty.textContent = emptyMessage;
-		container.append(empty);
+		matchList.append(empty);
 		return;
 	}
 
 	if (sortOrderSelect.value !== "tournament") {
 		for (const match of sortedMatches(matches, sortOrderSelect.value)) {
-			container.append(matchElement(match, true));
+			matchList.append(matchElement(match, true));
 		}
 		return;
 	}
@@ -272,42 +483,72 @@ function renderMatches(container, matches, emptyMessage) {
 	for (const group of tournamentGroups(matches)) {
 		const section = document.createElement("section");
 		section.className = "tournament-group";
-		const heading = document.createElement("div");
-		heading.className = "tournament-heading";
-		const logo = image(group.logoUrl, "", "tournament-logo");
-		if (logo) {
-			heading.append(logo);
-		}
-		const name = document.createElement("h4");
-		name.textContent = group.name;
-		heading.append(name);
-		section.append(heading);
-
+		section.append(tournamentHeroElement(group.matches[0], group.name));
 		const groupMatches = document.createElement("div");
 		groupMatches.className = "tournament-matches";
 		for (const match of group.matches) {
 			groupMatches.append(matchElement(match));
 		}
 		section.append(groupMatches);
-		container.append(section);
+		matchList.append(section);
 	}
+}
+
+function tournamentHeroElement(match, name) {
+	const header = document.createElement("header");
+	header.className = "tournament-hero";
+	const picture = responsiveImage(
+		match?.tournamentHeaderImageUrl,
+		match?.tournamentHeaderImageMobileUrl,
+		"",
+		"tournament-hero-image",
+	);
+	if (picture) {
+		header.append(picture);
+	}
+	const info = document.createElement("div");
+	info.className = "tournament-hero-info";
+	const logo = image(match?.tournamentLogoUrl, "", "tournament-logo");
+	if (logo) {
+		info.append(logo);
+	}
+	const text = document.createElement("div");
+	const title = document.createElement("h3");
+	title.textContent = name;
+	text.append(title);
+	if (match?.tournamentCategory) {
+		const category = document.createElement("p");
+		category.textContent = match.tournamentCategory;
+		text.append(category);
+	}
+	info.append(text);
+	header.append(info);
+	return header;
 }
 
 function matchElement(match, showTournament = false) {
 	const item = document.createElement("article");
-	item.className = "match";
+	item.className = `match ${match.eventType === "live" ? "live-match" : "scheduled-match"}`;
 	if (showTournament) {
 		item.append(matchTournamentElement(match));
 	}
-	const header = document.createElement("div");
+
+	const header = document.createElement("header");
 	header.className = "match-header";
-	const meta = document.createElement("p");
+	const meta = document.createElement("div");
 	meta.className = "match-meta";
-	for (const value of [
-		formatMatchTime(match.startTime),
-		match.round,
-		match.court,
-	]) {
+	if (match.eventType === "live") {
+		const live = document.createElement("strong");
+		live.className = "live-label";
+		live.textContent = "LIVE";
+		meta.append(live);
+	} else {
+		const time = document.createElement("strong");
+		time.className = "match-time";
+		time.textContent = formatMatchTime(match.startTime);
+		meta.append(time);
+	}
+	for (const value of [match.round, match.court]) {
 		if (value) {
 			const span = document.createElement("span");
 			span.textContent = String(value);
@@ -315,24 +556,27 @@ function matchElement(match, showTournament = false) {
 		}
 	}
 	header.append(meta);
+
 	const actions = document.createElement("div");
 	actions.className = "match-actions";
 	actions.append(matchNotificationToggle(match));
-	const matchLink = externalLink(match.matchUrl);
-	if (matchLink) {
-		actions.append(matchLink);
+	const youtube = youtubeLink(match.youtubeUrl);
+	if (youtube) {
+		actions.append(youtube);
 	}
 	header.append(actions);
 
 	const teams = matchTeams(match);
+	const scores = Array.isArray(match.scores) ? match.scores : [];
+	const currentScore = scores.at(-1);
 	const matchup = document.createElement("div");
 	matchup.className = "matchup";
 	if (teams.length >= 2) {
-		matchup.append(teamElement(teams[0]));
-		const versus = document.createElement("span");
-		versus.className = "versus";
-		versus.textContent = "VS";
-		matchup.append(versus, teamElement(teams[1]));
+		matchup.append(
+			teamElement(teams[0], "left", currentScore?.servingTeam === 1),
+			matchCentreElement(match, currentScore),
+			teamElement(teams[1], "right", currentScore?.servingTeam === 2),
+		);
 	} else {
 		const unavailable = document.createElement("p");
 		unavailable.className = "empty-matchup";
@@ -340,8 +584,48 @@ function matchElement(match, showTournament = false) {
 		matchup.append(unavailable);
 	}
 
-	item.append(header, matchup, headToHeadElement(match.h2h, teams));
+	item.append(header, matchup);
+	if (match.eventType === "live" && scores.length > 0) {
+		item.append(gameScoresElement(scores));
+	}
+	item.append(headToHeadElement(match.h2h, teams));
 	return item;
+}
+
+function matchCentreElement(match, currentScore) {
+	const centre = document.createElement("div");
+	centre.className = "match-centre";
+	if (match.eventType === "live" && currentScore) {
+		const game = document.createElement("span");
+		game.className = "current-game";
+		game.textContent = `GAME ${currentScore.game}`;
+		const score = document.createElement("div");
+		score.className = "current-score";
+		score.innerHTML = `<strong>${currentScore.team1}</strong><span>-</span><strong>${currentScore.team2}</strong>`;
+		centre.append(game, score);
+	} else {
+		const versus = document.createElement("strong");
+		versus.className = "versus";
+		versus.textContent = "VS";
+		centre.append(versus);
+	}
+	return centre;
+}
+
+function gameScoresElement(scores) {
+	const list = document.createElement("div");
+	list.className = "game-scores";
+	for (const score of scores) {
+		const game = document.createElement("div");
+		game.className = "game-score";
+		const label = document.createElement("span");
+		label.textContent = `G${score.game}`;
+		const value = document.createElement("strong");
+		value.textContent = `${score.team1} - ${score.team2}`;
+		game.append(label, value);
+		list.append(game);
+	}
+	return list;
 }
 
 function matchTournamentElement(match) {
@@ -351,9 +635,16 @@ function matchTournamentElement(match) {
 	if (logo) {
 		tournament.append(logo);
 	}
-	const name = document.createElement("h4");
+	const text = document.createElement("div");
+	const name = document.createElement("h3");
 	name.textContent = String(match.tournament || "BWF");
-	tournament.append(name);
+	text.append(name);
+	if (match.tournamentCategory) {
+		const category = document.createElement("p");
+		category.textContent = match.tournamentCategory;
+		text.append(category);
+	}
+	tournament.append(text);
 	return tournament;
 }
 
@@ -382,7 +673,6 @@ async function updateMatchNotification(matchId, enabled) {
 	if (!currentSubscription || savingMatchPreferences) {
 		return;
 	}
-
 	const previousExcludedMatchIds = new Set(excludedMatchIds);
 	if (enabled) {
 		excludedMatchIds.delete(matchId);
@@ -422,24 +712,18 @@ function matchTeams(match) {
 		: [];
 }
 
-function teamElement(team) {
+function teamElement(team, side, serving) {
 	const players = Array.isArray(team.players) ? team.players : [];
 	const isJapanese =
 		team.countryCode === "JPN" || players.some((player) => player.isJapanese);
 	const element = document.createElement("section");
-	element.className = isJapanese ? "team japanese-team" : "team foreign-team";
+	element.className = `team team-${side} ${isJapanese ? "japanese-team" : "foreign-team"}`;
 	const identity = document.createElement("div");
 	identity.className = "team-identity";
-	const country = document.createElement("div");
-	country.className = "team-country";
 	const flag = image(team.flagUrl, "", "country-flag");
 	if (flag) {
-		country.append(flag);
+		identity.append(flag);
 	}
-	if (country.childElementCount > 0) {
-		identity.append(country);
-	}
-
 	const photos = document.createElement("div");
 	photos.className = "player-photos";
 	for (const player of players) {
@@ -467,6 +751,12 @@ function teamElement(team) {
 		names.append(name);
 	});
 	element.append(names);
+	if (serving) {
+		const serve = document.createElement("span");
+		serve.className = "serve-label";
+		serve.textContent = "SERVE";
+		element.append(serve);
+	}
 	return element;
 }
 
@@ -478,16 +768,12 @@ function headToHeadElement(h2h, teams) {
 		!Number.isFinite(h2h.team1Wins) ||
 		!Number.isFinite(h2h.team2Wins)
 	) {
-		const unavailable = document.createElement("p");
-		unavailable.className = "h2h-unavailable";
-		unavailable.textContent = "H2H データなし";
-		section.append(unavailable);
 		return section;
 	}
 	const summary = document.createElement("div");
 	summary.className = "h2h-scoreline";
 	const label = document.createElement("span");
-	label.textContent = "H2H";
+	label.textContent = "HEAD TO HEAD";
 	const score = document.createElement("strong");
 	score.textContent = `${h2h.team1Wins} - ${h2h.team2Wins}`;
 	summary.append(label, score);
@@ -496,19 +782,17 @@ function headToHeadElement(h2h, teams) {
 	if (h2h.previous) {
 		const previous = document.createElement("div");
 		previous.className = "previous-meeting";
-		const heading = document.createElement("p");
-		heading.className = "previous-heading";
-		heading.textContent = "前回対戦";
 		const detail = document.createElement("p");
 		detail.className = "previous-detail";
 		detail.textContent = [
+			"前回対戦",
 			formatPreviousDate(h2h.previous.date),
 			h2h.previous.tournament,
 			h2h.previous.round,
 		]
 			.filter(Boolean)
 			.join(" · ");
-		previous.append(heading, detail);
+		previous.append(detail);
 		if (h2h.previous.winner === 1 || h2h.previous.winner === 2) {
 			const winningTeam = teams[h2h.previous.winner - 1];
 			if (winningTeam) {
@@ -533,42 +817,75 @@ function teamLabel(team) {
 	return names.length > 0 ? names.join(" / ") : String(team.countryCode || "");
 }
 
-function externalLink(value) {
+function youtubeLink(value) {
 	const url = safeHttpsUrl(value);
-	if (!url) {
+	if (
+		!url ||
+		!["www.youtube.com", "youtube.com", "youtu.be"].includes(url.hostname)
+	) {
 		return null;
 	}
 	const link = document.createElement("a");
-	link.className = "external-link";
-	link.href = url;
+	link.className = "youtube-link";
+	link.href = url.toString();
 	link.target = "_blank";
 	link.rel = "noopener noreferrer";
-	link.title = "BWFの試合掲載ページを開く";
-	link.setAttribute("aria-label", "BWFの試合掲載ページを新しいタブで開く");
-	link.textContent = "↗";
+	link.textContent = "YouTube";
+	link.setAttribute("aria-label", "YouTubeで試合映像を探す");
 	return link;
 }
 
+function responsiveImage(desktop, mobile, alt, className) {
+	const desktopUrl = proxiedImageUrl(desktop);
+	const mobileUrl = proxiedImageUrl(mobile);
+	if (!desktopUrl && !mobileUrl) {
+		return null;
+	}
+	const picture = document.createElement("picture");
+	if (mobileUrl) {
+		const source = document.createElement("source");
+		source.media = "(max-width: 600px)";
+		source.srcset = mobileUrl;
+		picture.append(source);
+	}
+	const element = document.createElement("img");
+	element.className = className;
+	element.src = desktopUrl || mobileUrl;
+	element.alt = alt;
+	element.loading = "lazy";
+	element.addEventListener("error", () => picture.remove(), { once: true });
+	picture.append(element);
+	return picture;
+}
+
 function image(value, alt, className) {
-	const url = safeHttpsUrl(value);
-	if (!url) {
+	const source = proxiedImageUrl(value);
+	if (!source) {
 		return null;
 	}
 	const element = document.createElement("img");
 	element.className = className;
-	const source = new URL("/api/media", window.location.origin);
-	source.searchParams.set("url", url);
-	element.src = source.toString();
+	element.src = source;
 	element.alt = alt;
 	element.loading = "lazy";
 	element.addEventListener("error", () => element.remove(), { once: true });
 	return element;
 }
 
+function proxiedImageUrl(value) {
+	const url = safeHttpsUrl(value);
+	if (!url) {
+		return null;
+	}
+	const source = new URL("/api/media", window.location.origin);
+	source.searchParams.set("url", url.toString());
+	return source.toString();
+}
+
 function safeHttpsUrl(value) {
 	try {
 		const url = new URL(String(value));
-		return url.protocol === "https:" ? url.toString() : null;
+		return url.protocol === "https:" ? url : null;
 	} catch {
 		return null;
 	}
@@ -581,14 +898,12 @@ function formatPreviousDate(value) {
 	const date = new Date(`${value}T00:00:00`);
 	return Number.isNaN(date.getTime())
 		? String(value)
-		: new Intl.DateTimeFormat("ja-JP", {
-				dateStyle: "medium",
-			}).format(date);
+		: new Intl.DateTimeFormat("ja-JP", { dateStyle: "medium" }).format(date);
 }
 
 function formatMatchTime(value) {
 	if (!value) {
-		return "";
+		return "時刻未定";
 	}
 	const normalized = /^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/.test(value)
 		? `${value.replace(" ", "T")}Z`

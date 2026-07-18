@@ -7,16 +7,50 @@
 		<meta name="apple-mobile-web-app-capable" content="yes" />
 		<meta name="apple-mobile-web-app-status-bar-style" content="default" />
 		<meta name="description" content="日本人選手が出場するBWFライブ試合と試合予定の通知" />
+		<link rel="canonical" href="https://bwfnotify-pwa.amtt.workers.dev/" />
+		<meta property="og:type" content="website" />
+		<meta property="og:locale" content="ja_JP" />
+		<meta property="og:site_name" content="BWF 日本人選手通知" />
+		<meta property="og:title" content="BWF 日本人選手通知" />
+		<meta
+			property="og:description"
+			content="日本人選手のライブスコア、試合予定、試合開始通知をまとめて確認"
+		/>
+		<meta property="og:url" content="https://bwfnotify-pwa.amtt.workers.dev/" />
+		<meta
+			property="og:image"
+			content="https://bwfnotify-pwa.amtt.workers.dev/pwa/icons/icon-512.png"
+		/>
+		<meta property="og:image:width" content="512" />
+		<meta property="og:image:height" content="512" />
+		<meta property="og:image:alt" content="BWF 日本人選手通知" />
+		<meta name="twitter:card" content="summary" />
+		<meta name="twitter:title" content="BWF 日本人選手通知" />
+		<meta
+			name="twitter:description"
+			content="日本人選手のライブスコア、試合予定、試合開始通知をまとめて確認"
+		/>
+		<meta
+			name="twitter:image"
+			content="https://bwfnotify-pwa.amtt.workers.dev/pwa/icons/icon-512.png"
+		/>
 		<link rel="manifest" href="/pwa/manifest.webmanifest" />
 		<link rel="icon" href="/pwa/icons/icon.svg" type="image/svg+xml" />
 		<link rel="apple-touch-icon" href="/pwa/icons/icon-192.png" />
-		<link rel="stylesheet" href="/view/app.css?v=19" />
+		<link rel="stylesheet" href="/view/app.css?v=22" />
 		<title>BWF 日本人選手通知</title>
 	</head>
 	<body>
 		<main>
 			<header class="app-header">
-				<h1>BWF 日本人選手通知</h1>
+				<div class="brand-lockup">
+					<span class="brand-name">BWF</span>
+					<div>
+						<h1>LIVE SCORE</h1>
+						<p>JAPAN MATCH CENTRE</p>
+					</div>
+				</div>
+				<p id="last-updated">未取得</p>
 			</header>
 
 			<section class="notification-settings" aria-labelledby="notification-heading">
@@ -25,9 +59,6 @@
 					<p id="notification-status" role="status">確認中</p>
 				</div>
 				<div class="notification-controls">
-					<button id="install-app-button" type="button" hidden>
-						ホーム画面に追加
-					</button>
 					<button id="test-notification-button" type="button" disabled>
 						テスト通知
 					</button>
@@ -38,19 +69,32 @@
 					</label>
 				</div>
 			</section>
-			<dialog id="install-help-dialog">
-				<h2>ホーム画面に追加</h2>
-				<p>
-					ブラウザの共有またはメニューから「ホーム画面に追加」を選び、追加したBWF通知を開いてください。
-				</p>
-				<form method="dialog">
-					<button type="submit">閉じる</button>
-				</form>
-			</dialog>
 
 			<section class="matches" aria-labelledby="matches-heading">
-				<div class="section-heading">
-					<h2 id="matches-heading">試合</h2>
+				<h2 id="matches-heading" class="visually-hidden">試合</h2>
+				<div class="match-toolbar">
+					<div class="match-tabs" role="tablist" aria-label="試合状態">
+						<button
+							id="live-tab"
+							class="match-tab"
+							type="button"
+							role="tab"
+							aria-selected="true"
+							data-match-view="live"
+						>
+							ライブ <span id="live-count">0</span>
+						</button>
+						<button
+							id="scheduled-tab"
+							class="match-tab"
+							type="button"
+							role="tab"
+							aria-selected="false"
+							data-match-view="scheduled"
+						>
+							このあと <span id="scheduled-count">0</span>
+						</button>
+					</div>
 					<div class="match-controls">
 						<label class="visually-hidden" for="sort-order">ソート順</label>
 						<select id="sort-order" aria-label="ソート順">
@@ -61,23 +105,87 @@
 						<button id="refresh-button" type="button">再読み込み</button>
 					</div>
 				</div>
-				<p id="last-updated">未取得</p>
-				<div class="match-columns">
-					<div class="match-group">
-						<h3>ライブ中</h3>
-						<div id="live-match-list" class="match-list" aria-live="polite">
-							<p class="empty-state">読み込み中</p>
-						</div>
-					</div>
-					<div class="match-group">
-						<h3>ライブ予定</h3>
-						<div id="scheduled-match-list" class="match-list" aria-live="polite">
-							<p class="empty-state">読み込み中</p>
-						</div>
-					</div>
+				<div
+					id="match-list"
+					class="match-list"
+					role="tabpanel"
+					aria-labelledby="live-tab"
+					aria-live="polite"
+				>
+					<p class="empty-state">読み込み中</p>
 				</div>
 			</section>
 		</main>
-		<script type="module" src="/view/app.js?v=19"></script>
+		<div id="install-overlay" class="install-overlay" hidden>
+			<section
+				class="install-sheet"
+				role="dialog"
+				aria-modal="true"
+				aria-labelledby="install-overlay-heading"
+			>
+				<button
+					id="install-overlay-close"
+					class="install-overlay-close"
+					type="button"
+					aria-label="案内を閉じる"
+				>
+					×
+				</button>
+				<p class="overlay-step-count">通知を使うまで 3ステップ</p>
+				<h2 id="install-overlay-heading">ホーム画面から開いてください</h2>
+				<ol class="install-steps">
+					<li>
+						<strong id="install-step-title">ホーム画面に追加</strong>
+						<span id="install-step-description"
+							>共有またはブラウザのメニューから追加します。</span
+						>
+					</li>
+					<li>
+						<strong>追加したアイコンから起動</strong>
+						<span>ブラウザを閉じても試合情報を確認できます。</span>
+					</li>
+					<li>
+						<strong>通知をオン</strong>
+						<span>許可画面は、内容を説明したあとに一度だけ表示します。</span>
+					</li>
+				</ol>
+				<p class="install-assurance">
+					通知対象は日本人選手の試合開始です。試合ごとに後から解除できます。
+				</p>
+				<div class="install-actions">
+					<button id="install-action" class="primary-action" type="button" hidden>
+						ホーム画面に追加
+					</button>
+					<button id="install-overlay-dismiss" type="button">
+						今はブラウザで見る
+					</button>
+				</div>
+			</section>
+		</div>
+		<div id="permission-overlay" class="install-overlay" hidden>
+			<section
+				class="install-sheet permission-sheet"
+				role="dialog"
+				aria-modal="true"
+				aria-labelledby="permission-heading"
+			>
+				<p class="overlay-step-count">通知許可の前に</p>
+				<h2 id="permission-heading">試合開始を通知します</h2>
+				<div class="permission-summary">
+					<p><strong>通知する</strong> 日本人選手の対象試合が始まったとき</p>
+					<p><strong>通知しない</strong> 得点更新、広告、ニュース</p>
+				</div>
+				<p class="permission-note">
+					次にブラウザの許可画面が表示されます。拒否しても試合情報はそのまま利用できます。
+				</p>
+				<div class="permission-actions">
+					<button id="permission-cancel" type="button">キャンセル</button>
+					<button id="permission-confirm" class="primary-action" type="button">
+						通知を許可する
+					</button>
+				</div>
+			</section>
+		</div>
+		<script type="module" src="/view/app.js?v=22"></script>
 	</body>
 </html>

@@ -63,3 +63,52 @@ describe("match sorting", () => {
 		]);
 	});
 });
+
+describe("page structure", () => {
+	test("includes complete OGP metadata", async () => {
+		const html = await Bun.file("public/index.html").text();
+		for (const property of [
+			'property="og:title"',
+			'property="og:description"',
+			'property="og:url"',
+			'property="og:image"',
+			'name="twitter:card"',
+		]) {
+			expect(html).toContain(property);
+		}
+	});
+
+	test("separates live and scheduled matches in one tab panel", async () => {
+		const html = await Bun.file("public/index.html").text();
+		expect(html).toContain('data-match-view="live"');
+		expect(html).toContain('data-match-view="scheduled"');
+		expect(html).toContain('id="match-list"');
+		expect(html).not.toContain('id="live-match-list"');
+		expect(html).not.toContain('id="scheduled-match-list"');
+	});
+
+	test("explains installation and notification permission before prompting", async () => {
+		const html = await Bun.file("public/index.html").text();
+		expect(html).toContain("通知を使うまで 3ステップ");
+		expect(html).toContain('id="install-action"');
+		expect(html).toContain('id="permission-overlay"');
+		expect(html).toContain("通知する");
+		expect(html).toContain("通知しない");
+		const script = await Bun.file("public/view/app.js").text();
+		expect(script).toContain('window.addEventListener("beforeinstallprompt"');
+		expect(script).toContain("SafariまたはChromeで開く");
+		expect(script.indexOf("Notification.requestPermission()")).toBeLessThan(
+			script.indexOf(
+				"registration.pushManager.getSubscription()",
+				script.indexOf("async function updateNotificationSubscription"),
+			),
+		);
+	});
+
+	test("uses YouTube links and removes the previous BWF match link", async () => {
+		const script = await Bun.file("public/view/app.js").text();
+		expect(script).toContain("youtubeLink(match.youtubeUrl)");
+		expect(script).not.toContain("match.matchUrl");
+		expect(script).not.toContain("BWFの試合掲載ページ");
+	});
+});

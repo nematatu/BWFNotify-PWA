@@ -38,21 +38,69 @@ describe("parsePushSubscription", () => {
 });
 
 describe("notificationPayload", () => {
-	test("builds a compact aggregate notification", () => {
-		const payload = notificationPayload([
-			{
-				id: "1",
-				tournament: "Japan Open",
-				players: ["Player A", "Player B"],
-				teams: [],
-				eventType: "live",
-				status: "Live",
-			},
-		]);
+	test("builds a match-specific notification", () => {
+		const payload = notificationPayload({
+			id: "1",
+			tournament: "Japan Open",
+			players: ["Player A", "Player B"],
+			teams: [],
+			scores: [],
+			youtubeUrl:
+				"https://www.youtube.com/results?search_query=Japan+Open+BWF+TV",
+			eventType: "live",
+			status: "Live",
+		});
 
-		expect(payload.title).toBe("日本人選手の試合が始まりました");
-		expect(payload.body).toBe("Japan Open: Player A vs Player B");
-		expect(payload.url).toBe("/");
+		expect(payload.title).toBe("Player A vs Player B が始まりました");
+		expect(payload.body).toBe("Japan Open");
+		expect(payload.url).toContain("youtube.com/results");
+		expect(payload.tag).toBe("bwf-live:1");
+	});
+
+	test("uses the Japanese player photo as the notification image", () => {
+		const payload = notificationPayload({
+			id: "photo",
+			tournament: "Japan Open",
+			players: ["山口茜", "Player B"],
+			teams: [
+				{
+					players: [
+						{
+							name: "山口茜",
+							isJapanese: true,
+							photoUrl: "https://img.bwfbadminton.com/image/upload/player.jpg",
+						},
+					],
+				},
+			],
+			scores: [],
+			youtubeUrl: "https://www.youtube.com/results?search_query=photo",
+			eventType: "live",
+			status: "Live",
+		});
+		expect(payload.image).toContain("img.bwfbadminton.com");
+	});
+
+	test("keeps each match YouTube destination independent", () => {
+		const base: MatchSummary = {
+			id: "one",
+			tournament: "Japan Open",
+			players: ["Player A", "Player B"],
+			teams: [],
+			scores: [],
+			youtubeUrl: "https://www.youtube.com/results?search_query=match+one",
+			eventType: "live",
+			status: "Live",
+		};
+		const first = notificationPayload(base);
+		const second = notificationPayload({
+			...base,
+			id: "two",
+			youtubeUrl: "https://www.youtube.com/results?search_query=match+two",
+		});
+
+		expect(first.url).not.toBe(second.url);
+		expect(first.tag).not.toBe(second.tag);
 	});
 });
 
@@ -63,6 +111,8 @@ describe("notification exclusions", () => {
 			tournament: "Japan Open",
 			players: ["Player A", "Player B"],
 			teams: [],
+			scores: [],
+			youtubeUrl: "https://www.youtube.com/results?search_query=included",
 			eventType: "live",
 			status: "Live",
 		},
@@ -71,6 +121,8 @@ describe("notification exclusions", () => {
 			tournament: "Japan Open",
 			players: ["Player C", "Player D"],
 			teams: [],
+			scores: [],
+			youtubeUrl: "https://www.youtube.com/results?search_query=excluded",
 			eventType: "live",
 			status: "Live",
 		},

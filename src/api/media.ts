@@ -1,5 +1,7 @@
-const BWF_IMAGE_HOST = "img.bwfbadminton.com";
-const BWF_IMAGE_PATH_PREFIX = "/image/upload/";
+const BWF_IMAGE_SOURCES = new Map([
+	["img.bwfbadminton.com", ["/image/upload/"]],
+	["extranet.bwfbadminton.com", ["/images/"]],
+]);
 const MAX_IMAGE_URL_LENGTH = 2048;
 
 export function allowedBwfImageUrl(value: string | undefined): URL | null {
@@ -9,10 +11,10 @@ export function allowedBwfImageUrl(value: string | undefined): URL | null {
 
 	try {
 		const url = new URL(value);
+		const prefixes = BWF_IMAGE_SOURCES.get(url.hostname);
 		return url.protocol === "https:" &&
-			url.hostname === BWF_IMAGE_HOST &&
 			url.port === "" &&
-			url.pathname.startsWith(BWF_IMAGE_PATH_PREFIX)
+			prefixes?.some((prefix) => url.pathname.startsWith(prefix))
 			? url
 			: null;
 	} catch {

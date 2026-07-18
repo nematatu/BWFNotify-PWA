@@ -1,9 +1,9 @@
-const CACHE_NAME = "bwfnotify-shell-v19";
+const CACHE_NAME = "bwfnotify-shell-v22";
 const APP_SHELL = [
 	"/",
-	"/view/app.css?v=19",
-	"/view/app.js?v=19",
-	"/view/match-groups.js?v=19",
+	"/view/app.css?v=22",
+	"/view/app.js?v=22",
+	"/view/match-groups.js?v=22",
 	"/pwa/manifest.webmanifest",
 	"/pwa/icons/icon.svg",
 	"/pwa/icons/icon-192.png",
@@ -66,6 +66,7 @@ self.addEventListener("push", (event) => {
 		body: "日本人選手の試合が始まりました",
 		url: "/",
 		tag: "bwf-live",
+		image: undefined,
 	};
 
 	if (event.data) {
@@ -81,6 +82,7 @@ self.addEventListener("push", (event) => {
 			body: payload.body,
 			icon: "/pwa/icons/icon-192.png",
 			badge: "/pwa/icons/icon-192.png",
+			...(safeImageUrl(payload.image) ? { image: payload.image } : {}),
 			tag: payload.tag,
 			data: { url: payload.url || "/" },
 		}),
@@ -109,4 +111,12 @@ function requiredResponse(response) {
 		throw new Error("Cached app shell is unavailable");
 	}
 	return response;
+}
+
+function safeImageUrl(value) {
+	try {
+		return new URL(String(value)).protocol === "https:";
+	} catch {
+		return false;
+	}
 }
