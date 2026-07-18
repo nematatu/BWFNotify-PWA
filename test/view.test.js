@@ -181,6 +181,18 @@ describe("page structure", () => {
 		}
 	});
 
+	test("uses LINE Seed JP from the official Google Fonts distribution", async () => {
+		const html = await Bun.file("public/index.html").text();
+		const css = await Bun.file("public/view/app.css").text();
+		const headers = await Bun.file("public/_headers").text();
+		expect(html).toContain(
+			"https://fonts.googleapis.com/css2?family=LINE+Seed+JP:wght@400;700;800&display=swap",
+		);
+		expect(css).toContain('"LINE Seed JP", -apple-system');
+		expect(headers).toContain("font-src https://fonts.gstatic.com");
+		expect(headers).toContain("style-src 'self' https://fonts.googleapis.com");
+	});
+
 	test("includes complete OGP metadata", async () => {
 		const html = await Bun.file("public/index.html").text();
 		for (const property of [

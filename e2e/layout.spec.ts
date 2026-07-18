@@ -222,6 +222,7 @@ for (const viewport of [
 	}) => {
 		await page.setViewportSize(viewport);
 		await preparePage(page);
+		await expect(page.locator("body")).toHaveCSS("font-family", /LINE Seed JP/);
 		await expect(page.locator("main")).toHaveCSS(
 			"background-color",
 			"rgb(255, 255, 255)",
