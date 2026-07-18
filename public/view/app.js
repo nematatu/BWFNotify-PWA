@@ -3,7 +3,7 @@ import {
 	mergeLiveMatches,
 	sortedMatches,
 	tournamentGroups,
-} from "./match-groups.js?v=30";
+} from "./match-groups.js?v=31";
 
 const LIVE_REFRESH_INTERVAL_MS = 15_000;
 const FULL_REFRESH_INTERVAL_MS = 2 * 60_000;
@@ -554,6 +554,8 @@ function renderCurrentMatches() {
 
 function renderMatches(matches, emptyMessage) {
 	matchList.replaceChildren();
+	const groupByTournament = sortOrderSelect.value === "tournament";
+	matchList.classList.toggle("time-grid", !groupByTournament);
 	if (!Array.isArray(matches) || matches.length === 0) {
 		const empty = document.createElement("p");
 		empty.className = "empty-state";
@@ -562,7 +564,7 @@ function renderMatches(matches, emptyMessage) {
 		return;
 	}
 
-	if (sortOrderSelect.value !== "tournament") {
+	if (!groupByTournament) {
 		for (const match of sortedMatches(matches, sortOrderSelect.value)) {
 			matchList.append(matchElement(match, true));
 		}

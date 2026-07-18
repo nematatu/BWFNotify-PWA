@@ -63,7 +63,7 @@ p {
 }
 
 main {
-	width: min(100%, 1280px);
+	width: min(100%, 1600px);
 	min-height: 100vh;
 	margin: 0 auto;
 	padding: 0 20px 56px;
@@ -284,6 +284,10 @@ main {
 	color: #151515;
 	background: #ffffff;
 	overflow: hidden;
+}
+
+.tournament-matches {
+	min-width: 0;
 }
 
 .live-match {
@@ -1193,5 +1197,52 @@ main {
 
 	.current-score strong {
 		font-size: 20px;
+	}
+}
+
+@media (min-width: 900px) {
+	.match-list.time-grid,
+	.tournament-matches {
+		display: grid;
+		grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+		gap: 18px;
+	}
+
+	.match-list.time-grid > .match,
+	.tournament-matches > .match {
+		min-width: 0;
+		margin-bottom: 0;
+	}
+
+	.match-list.time-grid .match-tournament {
+		min-height: 150px;
+		gap: 14px;
+		padding: 16px 20px;
+	}
+
+	.match-list.time-grid .match-tournament-logo {
+		width: 82px;
+		height: 82px;
+		flex-basis: 82px;
+	}
+
+	.match-list.time-grid .match-tournament h3 {
+		font-size: 18px;
+	}
+
+	.tournament-matches > .match:only-child {
+		width: min(100%, 780px);
+		grid-column: 1 / -1;
+		justify-self: center;
+	}
+
+	.match-list.time-grid > .match:only-child {
+		width: min(100%, 780px);
+		grid-column: 1 / -1;
+		justify-self: center;
+	}
+
+	.tournament-hero {
+		min-height: 220px;
 	}
 }

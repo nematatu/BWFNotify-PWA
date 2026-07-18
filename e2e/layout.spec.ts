@@ -95,6 +95,44 @@ const singlesMatch = {
 	h2h: undefined,
 };
 
+const secondSinglesMatch = {
+	...singlesMatch,
+	id: "layout-singles-2",
+	startTime: "2026-07-18T11:00:00.000Z",
+	players: ["奈良岡功大", "Christo POPOV"],
+	teams: [
+		{
+			countryCode: "JPN",
+			flagUrl: "https://img.bwfbadminton.com/image/upload/JPN.png",
+			players: [{ name: "奈良岡功大", isJapanese: true }],
+		},
+		{
+			countryCode: "FRA",
+			flagUrl: "https://img.bwfbadminton.com/image/upload/FRA.png",
+			players: [{ name: "Christo POPOV", isJapanese: false }],
+		},
+	],
+};
+
+const thirdSinglesMatch = {
+	...singlesMatch,
+	id: "layout-singles-3",
+	startTime: "2026-07-18T12:00:00.000Z",
+	players: ["大堀彩", "PUSARLA V. Sindhu"],
+	teams: [
+		{
+			countryCode: "JPN",
+			flagUrl: "https://img.bwfbadminton.com/image/upload/JPN.png",
+			players: [{ name: "大堀彩", isJapanese: true }],
+		},
+		{
+			countryCode: "IND",
+			flagUrl: "https://img.bwfbadminton.com/image/upload/IND.png",
+			players: [{ name: "PUSARLA V. Sindhu", isJapanese: false }],
+		},
+	],
+};
+
 async function preparePage(page: Page) {
 	await page.addInitScript(() => {
 		sessionStorage.setItem("bwf-install-overlay-dismissed", "1");
@@ -104,7 +142,7 @@ async function preparePage(page: Page) {
 		const code = route
 			.request()
 			.url()
-			.match(/\/(JPN|CHN|KOR)\.png$/)?.[1];
+			.match(/\/(JPN|CHN|KOR|FRA|IND)\.png$/)?.[1];
 		return code
 			? route.fulfill({ body: flagSvg(code), contentType: "image/svg+xml" })
 			: route.fulfill({
@@ -114,7 +152,7 @@ async function preparePage(page: Page) {
 	});
 	await page.route("**/api/media?**", (route) => {
 		const source = new URL(route.request().url()).searchParams.get("url") || "";
-		const code = source.match(/\/(JPN|CHN|KOR)\.png$/)?.[1];
+		const code = source.match(/\/(JPN|CHN|KOR|FRA|IND)\.png$/)?.[1];
 		return code
 			? route.fulfill({ body: flagSvg(code), contentType: "image/svg+xml" })
 			: route.fulfill({
@@ -129,7 +167,12 @@ async function preparePage(page: Page) {
 		route.fulfill({
 			json: {
 				checkedAt: "2026-07-18T09:00:00.000Z",
-				matches: [doublesMatch, singlesMatch],
+				matches: [
+					doublesMatch,
+					singlesMatch,
+					secondSinglesMatch,
+					thirdSinglesMatch,
+				],
 			},
 		}),
 	);
@@ -236,7 +279,7 @@ for (const viewport of [
 		}
 
 		await page.getByRole("tab", { name: /このあと/ }).click();
-		await expect(page.locator(".player-photo-placeholder")).toHaveCount(2);
+		await expect(page.locator(".player-photo-placeholder")).toHaveCount(6);
 		expect(
 			await page.evaluate(
 				() => document.documentElement.scrollWidth <= window.innerWidth,
@@ -244,3 +287,57 @@ for (const viewport of [
 		).toBe(true);
 	});
 }
+
+test("wide: match cards use multiple columns in both sort modes", async ({
+	page,
+}) => {
+	await page.setViewportSize({ width: 1440, height: 900 });
+	await preparePage(page);
+	await page.getByRole("tab", { name: /このあと/ }).click();
+
+	const timeCards = page.locator(".match-list.time-grid > .match");
+	await expect(timeCards).toHaveCount(3);
+	const timePositions = await timeCards.evaluateAll((cards) =>
+		cards.map((card) => {
+			const rect = card.getBoundingClientRect();
+			return { left: rect.left, top: rect.top };
+		}),
+	);
+	expect(new Set(timePositions.map((position) => position.top)).size).toBe(1);
+	expect(
+		Math.abs(timePositions[0].left - timePositions[1].left),
+	).toBeGreaterThan(400);
+	if (process.env.CAPTURE_LAYOUT === "1") {
+		await page.screenshot({
+			path: "/tmp/bwfnotify-layout-wide-time.png",
+			fullPage: true,
+		});
+	}
+
+	await page.locator("#sort-order").selectOption("tournament");
+	const groupedCards = page.locator(".tournament-matches > .match");
+	await expect(groupedCards).toHaveCount(3);
+	const groupedPositions = await groupedCards.evaluateAll((cards) =>
+		cards.map((card) => {
+			const rect = card.getBoundingClientRect();
+			return { left: rect.left, top: rect.top };
+		}),
+	);
+	expect(new Set(groupedPositions.map((position) => position.top)).size).toBe(
+		1,
+	);
+	expect(
+		Math.abs(groupedPositions[0].left - groupedPositions[1].left),
+	).toBeGreaterThan(400);
+	expect(
+		await page.evaluate(
+			() => document.documentElement.scrollWidth <= window.innerWidth,
+		),
+	).toBe(true);
+	if (process.env.CAPTURE_LAYOUT === "1") {
+		await page.screenshot({
+			path: "/tmp/bwfnotify-layout-wide-tournament.png",
+			fullPage: true,
+		});
+	}
+});
