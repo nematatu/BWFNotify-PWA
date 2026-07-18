@@ -1,5 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import {
+	mergeLiveMatches,
 	sortedMatches,
 	tournamentGroups,
 } from "../public/view/match-groups.js";
@@ -61,6 +62,47 @@ describe("match sorting", () => {
 			"a-early",
 			"a-late",
 		]);
+	});
+});
+
+describe("live score updates", () => {
+	test("merges fresh scores while preserving H2H and scheduled matches", () => {
+		const current = [
+			{
+				id: "live",
+				eventType: "live",
+				scores: [{ game: 1, team1: 10, team2: 8 }],
+				h2h: { team1Wins: 2, team2Wins: 1 },
+			},
+			{ id: "scheduled", eventType: "scheduled", scores: [] },
+		];
+		const merged = mergeLiveMatches(current, [
+			{
+				id: "live",
+				eventType: "live",
+				scores: [{ game: 1, team1: 11, team2: 8 }],
+			},
+		]);
+
+		expect(merged.map((match) => match.id)).toEqual(["live", "scheduled"]);
+		expect(merged[0].scores[0].team1).toBe(11);
+		expect(merged[0].h2h).toEqual({ team1Wins: 2, team2Wins: 1 });
+	});
+
+	test("removes a live match when it is no longer returned", () => {
+		expect(mergeLiveMatches([{ id: "live", eventType: "live" }], [])).toEqual(
+			[],
+		);
+	});
+
+	test("polls live scores only while the page is active", async () => {
+		const script = await Bun.file("public/view/app.js").text();
+		expect(script).toContain('api("/api/live", { cache: "no-store" })');
+		expect(script).toContain("LIVE_REFRESH_INTERVAL_MS = 15_000");
+		expect(script).toContain('document.visibilityState !== "visible"');
+		expect(script).toContain("stopAutomaticUpdates()");
+		expect(script).toContain('currentMatchView = "live"');
+		expect(script).toContain("lastUpdated.dataset.checkedAt");
 	});
 });
 

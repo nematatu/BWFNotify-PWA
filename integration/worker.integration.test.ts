@@ -56,6 +56,34 @@ describe("Worker integration", () => {
 		expect(second.headers.get("X-BWF-Cache")).toBe("HIT");
 	});
 
+	test("serves the live endpoint from a canonical short-lived edge cache", async () => {
+		const cacheKey = new Request("https://example.com/api/live");
+		const body = {
+			checkedAt: "2026-07-18T00:00:10.000Z",
+			matches: [liveMatch],
+		};
+		await caches.default.put(
+			cacheKey,
+			new Response(JSON.stringify(body), {
+				headers: {
+					"Cache-Control": "public, max-age=10",
+					"Content-Type": "application/json",
+				},
+			}),
+		);
+		const context = createExecutionContext();
+		const response = await worker.fetch(
+			new Request("https://example.com/api/live?cache-bypass-attempt=1"),
+			env,
+			context,
+		);
+		await waitOnExecutionContext(context);
+
+		expect(response.headers.get("X-BWF-Cache")).toBe("HIT");
+		expect(response.headers.get("Cache-Control")).toBe("public, max-age=10");
+		expect(await response.json()).toEqual(body);
+	});
+
 	test("skips unchanged per-minute writes and keeps a bounded retry count", async () => {
 		let now = new Date("2026-07-18T00:00:00.000Z");
 		let notificationCalls = 0;

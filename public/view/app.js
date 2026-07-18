@@ -1,8 +1,12 @@
 import {
 	DEFAULT_SORT_ORDER,
+	mergeLiveMatches,
 	sortedMatches,
 	tournamentGroups,
-} from "./match-groups.js?v=23";
+} from "./match-groups.js?v=27";
+
+const LIVE_REFRESH_INTERVAL_MS = 15_000;
+const FULL_REFRESH_INTERVAL_MS = 2 * 60_000;
 
 const toggle = document.querySelector("#notification-toggle");
 const notificationStatus = document.querySelector("#notification-status");
@@ -39,6 +43,10 @@ let savingMatchPreferences = false;
 let currentMatchView = "live";
 let viewSelectedByUser = false;
 let deferredInstallPrompt = null;
+let liveCheckedAt = null;
+let liveRefreshPromise = null;
+let liveRefreshTimer = null;
+let fullRefreshTimer = null;
 
 window.addEventListener("beforeinstallprompt", (event) => {
 	event.preventDefault();
@@ -68,7 +76,7 @@ toggle.addEventListener("change", () => {
 });
 
 refreshButton.addEventListener("click", () => {
-	void loadStatus();
+	void refreshAll();
 });
 
 sortOrderSelect.addEventListener("change", () => {
@@ -147,7 +155,10 @@ permissionOverlay.addEventListener("keydown", (event) => {
 
 document.addEventListener("visibilitychange", () => {
 	if (document.visibilityState === "visible") {
-		void loadStatus();
+		void refreshAll();
+		startAutomaticUpdates();
+	} else {
+		stopAutomaticUpdates();
 	}
 });
 
@@ -165,6 +176,8 @@ async function initialize() {
 		showInstallOverlay();
 	}
 	await Promise.all([initializeNotifications(), loadStatus()]);
+	await loadLiveStatus();
+	startAutomaticUpdates();
 }
 
 function configureInstallGuidance() {
@@ -416,7 +429,13 @@ async function loadStatus() {
 	refreshButton.disabled = true;
 	try {
 		const state = await api("/api/status");
-		currentMatches = Array.isArray(state.matches) ? state.matches : [];
+		const storedMatches = Array.isArray(state.matches) ? state.matches : [];
+		currentMatches = isNewerTimestamp(liveCheckedAt, state.checkedAt)
+			? mergeLiveMatches(
+					storedMatches,
+					currentMatches.filter((match) => match.eventType === "live"),
+				)
+			: storedMatches;
 		const hasLiveMatches = currentMatches.some(
 			(match) => match.eventType === "live",
 		);
@@ -427,6 +446,7 @@ async function loadStatus() {
 		lastUpdated.textContent = state.checkedAt
 			? `${formatDate(state.checkedAt)} 更新`
 			: "次回チェック待ち";
+		lastUpdated.dataset.checkedAt = state.checkedAt || "";
 		lastUpdated.classList.remove("error");
 	} catch (error) {
 		lastUpdated.textContent = message(error);
@@ -434,6 +454,75 @@ async function loadStatus() {
 	} finally {
 		refreshButton.disabled = false;
 	}
+}
+
+async function loadLiveStatus() {
+	if (document.visibilityState !== "visible") {
+		return;
+	}
+	if (liveRefreshPromise) {
+		return liveRefreshPromise;
+	}
+	liveRefreshPromise = (async () => {
+		try {
+			const state = await api("/api/live", { cache: "no-store" });
+			const matches = Array.isArray(state.matches) ? state.matches : [];
+			currentMatches = mergeLiveMatches(currentMatches, matches);
+			liveCheckedAt = state.checkedAt || new Date().toISOString();
+			if (!viewSelectedByUser && matches.length > 0) {
+				currentMatchView = "live";
+			}
+			renderCurrentMatches();
+			lastUpdated.textContent = `${formatDate(liveCheckedAt)} 更新`;
+			lastUpdated.dataset.checkedAt = liveCheckedAt;
+			lastUpdated.classList.remove("error");
+		} catch (error) {
+			console.error("Live score refresh failed", error);
+		}
+	})().finally(() => {
+		liveRefreshPromise = null;
+	});
+	return liveRefreshPromise;
+}
+
+async function refreshAll() {
+	await loadStatus();
+	await loadLiveStatus();
+}
+
+function startAutomaticUpdates() {
+	stopAutomaticUpdates();
+	if (document.visibilityState !== "visible") {
+		return;
+	}
+	liveRefreshTimer = window.setInterval(
+		() => void loadLiveStatus(),
+		LIVE_REFRESH_INTERVAL_MS,
+	);
+	fullRefreshTimer = window.setInterval(
+		() => void refreshAll(),
+		FULL_REFRESH_INTERVAL_MS,
+	);
+}
+
+function stopAutomaticUpdates() {
+	if (liveRefreshTimer != null) {
+		window.clearInterval(liveRefreshTimer);
+		liveRefreshTimer = null;
+	}
+	if (fullRefreshTimer != null) {
+		window.clearInterval(fullRefreshTimer);
+		fullRefreshTimer = null;
+	}
+}
+
+function isNewerTimestamp(left, right) {
+	const leftTime = Date.parse(left || "");
+	const rightTime = Date.parse(right || "");
+	return (
+		Number.isFinite(leftTime) &&
+		(!Number.isFinite(rightTime) || leftTime > rightTime)
+	);
 }
 
 function renderCurrentMatches() {

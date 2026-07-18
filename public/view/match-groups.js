@@ -28,6 +28,24 @@ export function tournamentGroups(matches) {
 	);
 }
 
+export function mergeLiveMatches(currentMatches, freshMatches) {
+	const currentById = new Map(currentMatches.map((match) => [match.id, match]));
+	const freshLive = freshMatches.filter((match) => match.eventType === "live");
+	const freshLiveIds = new Set(freshLive.map((match) => match.id));
+	const mergedLive = freshLive.map((fresh) => {
+		const current = currentById.get(fresh.id);
+		const merged = { ...current, ...fresh };
+		if (current?.h2h && !fresh.h2h) {
+			merged.h2h = current.h2h;
+		}
+		return merged;
+	});
+	const scheduled = currentMatches.filter(
+		(match) => match.eventType === "scheduled" && !freshLiveIds.has(match.id),
+	);
+	return [...mergedLive, ...scheduled];
+}
+
 function compareStartTime(left, right) {
 	return String(left.startTime || "\uffff").localeCompare(
 		String(right.startTime || "\uffff"),

@@ -38,11 +38,18 @@ type Tournament = {
 	link?: string;
 };
 
+type FetchJapaneseMatchesOptions = {
+	upstreamCacheTtlSeconds?: number;
+};
+
 export async function fetchJapaneseMatches(
 	cache?: KVNamespace,
 	knownMatches: MatchSummary[] = [],
+	options: FetchJapaneseMatchesOptions = {},
 ): Promise<MatchSummary[]> {
-	const tournaments = tournamentsFrom(await fetchBwfJson(BWF_LIVE_URL));
+	const tournaments = tournamentsFrom(
+		await fetchBwfJson(BWF_LIVE_URL, options.upstreamCacheTtlSeconds),
+	);
 	const dates = adjacentDates(todayJst());
 	const matches: BwfMatch[] = [];
 	let successfulDayRequests = 0;
@@ -52,6 +59,7 @@ export async function fetchJapaneseMatches(
 			try {
 				const payload = await fetchBwfJson(
 					dayMatchesUrl(tournament.code, date),
+					options.upstreamCacheTtlSeconds,
 				);
 				successfulDayRequests += 1;
 				matches.push(
@@ -555,7 +563,10 @@ function statusCandidates(match: BwfMatch): string[] {
 		.filter((status): status is string => Boolean(status));
 }
 
-async function fetchBwfJson(url: string): Promise<unknown> {
+async function fetchBwfJson(
+	url: string,
+	cacheTtlSeconds?: number,
+): Promise<unknown> {
 	const headerOptions: HeadersInit[] = [
 		{
 			accept: "application/json,text/plain,*/*",
@@ -568,7 +579,17 @@ async function fetchBwfJson(url: string): Promise<unknown> {
 	];
 	let lastStatus = 0;
 	for (const headers of headerOptions) {
-		const response = await fetch(url, { headers });
+		const response = await fetch(url, {
+			headers,
+			...(cacheTtlSeconds
+				? {
+						cf: {
+							cacheEverything: true,
+							cacheTtl: cacheTtlSeconds,
+						},
+					}
+				: {}),
+		});
 		if (response.ok) {
 			return response.json();
 		}

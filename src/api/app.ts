@@ -1,4 +1,4 @@
-import { Hono } from "hono";
+import { type Context, Hono } from "hono";
 import type { DeliveryResult, MatchSummary, PublicState } from "../type";
 import { errorMessage, object, optionalString } from "../utils";
 import { fetchJapaneseMatches } from "./bwf";
@@ -16,6 +16,7 @@ import {
 const STATE_KEY = "push:state";
 const MAX_REQUEST_BYTES = 4096;
 const STATUS_CACHE_TTL_SECONDS = 30;
+const LIVE_CACHE_TTL_SECONDS = 10;
 const NOTIFICATION_DEDUP_AGE_MS = 30 * 24 * 60 * 60 * 1000;
 export const STATE_MAX_AGE_MS = 5 * 60 * 1000;
 export const MAX_NOTIFICATION_ATTEMPTS = 3;
@@ -44,11 +45,17 @@ export type NotificationCheckResult = DeliveryResult & {
 	stateWritten: boolean;
 };
 
-const app = new Hono<{ Bindings: Env }>();
+type AppBindings = { Bindings: Env };
+
+const app = new Hono<AppBindings>();
 
 app.use("/api/*", async (c, next) => {
 	await next();
-	if (c.req.path !== "/api/media" && c.req.path !== "/api/status") {
+	if (
+		c.req.path !== "/api/media" &&
+		c.req.path !== "/api/status" &&
+		c.req.path !== "/api/live"
+	) {
 		c.header("Cache-Control", "no-store");
 	}
 	c.header("X-Content-Type-Options", "nosniff");
@@ -63,30 +70,26 @@ app.get("/api/config", (c) =>
 	}),
 );
 
-app.get("/api/status", async (c) => {
-	const cacheUrl = new URL(c.req.url);
-	cacheUrl.search = "";
-	const cacheKey = new Request(cacheUrl.toString(), { method: "GET" });
-	const cached = await caches.default.match(cacheKey);
-	if (cached) {
-		const response = new Response(cached.body, cached);
-		response.headers.set("X-BWF-Cache", "HIT");
-		return response;
-	}
+app.get("/api/status", (c) =>
+	cachedJson(c, STATUS_CACHE_TTL_SECONDS, async () => {
+		const stored = await c.env.NOTIFIED_MATCHES.get<StoredState>(
+			STATE_KEY,
+			"json",
+		);
+		return publicState(stored);
+	}),
+);
 
-	const stored = await c.env.NOTIFIED_MATCHES.get<StoredState>(
-		STATE_KEY,
-		"json",
-	);
-	const response = c.json(publicState(stored));
-	response.headers.set(
-		"Cache-Control",
-		`public, max-age=${STATUS_CACHE_TTL_SECONDS}`,
-	);
-	response.headers.set("X-BWF-Cache", "MISS");
-	c.executionCtx.waitUntil(caches.default.put(cacheKey, response.clone()));
-	return response;
-});
+app.get("/api/live", (c) =>
+	cachedJson(c, LIVE_CACHE_TTL_SECONDS, async () => ({
+		checkedAt: new Date().toISOString(),
+		matches: (
+			await fetchJapaneseMatches(undefined, [], {
+				upstreamCacheTtlSeconds: LIVE_CACHE_TTL_SECONDS,
+			})
+		).filter((match) => match.eventType === "live"),
+	})),
+);
 
 app.post("/api/subscriptions", async (c) => {
 	if (requestTooLarge(c.req.header("content-length"))) {
@@ -346,6 +349,28 @@ function publicState(state: StoredState | null): PublicState {
 		checkedAt: state?.checkedAt || null,
 		matches: Array.isArray(state?.matches) ? state.matches : [],
 	};
+}
+
+async function cachedJson(
+	c: Context<AppBindings>,
+	ttlSeconds: number,
+	load: () => Promise<unknown>,
+): Promise<Response> {
+	const cacheUrl = new URL(c.req.url);
+	cacheUrl.search = "";
+	const cacheKey = new Request(cacheUrl.toString(), { method: "GET" });
+	const cached = await caches.default.match(cacheKey);
+	if (cached) {
+		const response = new Response(cached.body, cached);
+		response.headers.set("X-BWF-Cache", "HIT");
+		return response;
+	}
+
+	const response = c.json(await load());
+	response.headers.set("Cache-Control", `public, max-age=${ttlSeconds}`);
+	response.headers.set("X-BWF-Cache", "MISS");
+	c.executionCtx.waitUntil(caches.default.put(cacheKey, response.clone()));
+	return response;
 }
 
 async function readJson(request: Request): Promise<unknown> {
