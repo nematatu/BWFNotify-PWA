@@ -33,7 +33,7 @@ button {
 	min-height: 38px;
 	padding: 0 12px;
 	border: 1px solid #b5b5b5;
-	border-radius: 3px;
+	border-radius: 0;
 	color: #151515;
 	background: #ffffff;
 	cursor: pointer;
@@ -268,7 +268,7 @@ main {
 	max-width: 170px;
 	padding: 0 30px 0 10px;
 	border: 1px solid #555555;
-	border-radius: 3px;
+	border-radius: 0;
 	color: #ffffff;
 	background: #1b1b1b;
 }
@@ -280,7 +280,7 @@ main {
 .match {
 	margin-bottom: 18px;
 	border: 1px solid #444444;
-	border-radius: 4px;
+	border-radius: 0;
 	color: #151515;
 	background: #ffffff;
 	overflow: hidden;
@@ -288,10 +288,6 @@ main {
 
 .tournament-matches {
 	min-width: 0;
-}
-
-.live-match {
-	border-top: 4px solid #d71920;
 }
 
 .tournament-group + .tournament-group {
@@ -304,7 +300,7 @@ main {
 	min-height: 280px;
 	align-items: flex-end;
 	margin-bottom: 14px;
-	border-bottom: 3px solid #d71920;
+	border-bottom: 1px solid #444444;
 	background: #151515;
 	overflow: hidden;
 }
@@ -369,7 +365,7 @@ main {
 	gap: 18px;
 	min-height: 190px;
 	padding: 22px 26px;
-	border-bottom: 3px solid #d71920;
+	border-bottom: 1px solid #dedede;
 	color: #ffffff;
 	background: #151515;
 	overflow: hidden;
@@ -494,7 +490,7 @@ main {
 	align-items: center;
 	padding: 0 10px;
 	border: 1px solid #d71920;
-	border-radius: 3px;
+	border-radius: 0;
 	color: #b51218;
 	font-size: 11px;
 	font-weight: 800;
@@ -553,7 +549,7 @@ main {
 	height: 30px;
 	flex: 0 0 30px;
 	border: 1px solid #d0d0d0;
-	border-radius: 2px;
+	border-radius: 0;
 	background: #ffffff;
 	object-fit: contain;
 }

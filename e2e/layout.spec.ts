@@ -222,6 +222,10 @@ for (const viewport of [
 	}) => {
 		await page.setViewportSize(viewport);
 		await preparePage(page);
+		const card = page.locator(".match:has(.matchup)").first();
+		await expect(card).toHaveCSS("border-radius", "0px");
+		await expect(card).toHaveCSS("border-top-width", "1px");
+		await expect(card).toHaveCSS("border-top-color", "rgb(68, 68, 68)");
 
 		const layout = await page
 			.locator(".matchup")

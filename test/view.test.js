@@ -156,6 +156,16 @@ describe("live score updates", () => {
 });
 
 describe("page structure", () => {
+	test("uses square cards without decorative partial color borders", async () => {
+		const css = await Bun.file("public/view/app.css").text();
+		expect(css).toContain(
+			".match {\n\tmargin-bottom: 18px;\n\tborder: 1px solid #444444;\n\tborder-radius: 0;",
+		);
+		expect(css).not.toContain(".live-match {");
+		expect(css).not.toContain("border-top: 4px solid #d71920");
+		expect(css).not.toContain("border-bottom: 3px solid #d71920");
+	});
+
 	test("includes complete OGP metadata", async () => {
 		const html = await Bun.file("public/index.html").text();
 		for (const property of [
