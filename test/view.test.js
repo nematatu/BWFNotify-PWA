@@ -111,4 +111,13 @@ describe("page structure", () => {
 		expect(script).not.toContain("match.matchUrl");
 		expect(script).not.toContain("BWFの試合掲載ページ");
 	});
+
+	test("uses BWF tournament media in each time-sorted match", async () => {
+		const script = await Bun.file("public/view/app.js").text();
+		expect(script).toContain("match.tournamentHeaderImageUrl");
+		expect(script).toContain('"match-tournament-image"');
+		const css = await Bun.file("public/view/app.css").text();
+		expect(css).toContain(".match-tournament-image");
+		expect(css).not.toContain("linear-gradient");
+	});
 });

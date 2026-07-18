@@ -2,7 +2,7 @@ import {
 	DEFAULT_SORT_ORDER,
 	sortedMatches,
 	tournamentGroups,
-} from "./match-groups.js?v=22";
+} from "./match-groups.js?v=23";
 
 const toggle = document.querySelector("#notification-toggle");
 const notificationStatus = document.querySelector("#notification-status");
@@ -601,7 +601,13 @@ function matchCentreElement(match, currentScore) {
 		game.textContent = `GAME ${currentScore.game}`;
 		const score = document.createElement("div");
 		score.className = "current-score";
-		score.innerHTML = `<strong>${currentScore.team1}</strong><span>-</span><strong>${currentScore.team2}</strong>`;
+		const team1Score = document.createElement("strong");
+		team1Score.textContent = String(currentScore.team1);
+		const separator = document.createElement("span");
+		separator.textContent = "-";
+		const team2Score = document.createElement("strong");
+		team2Score.textContent = String(currentScore.team2);
+		score.append(team1Score, separator, team2Score);
 		centre.append(game, score);
 	} else {
 		const versus = document.createElement("strong");
@@ -631,6 +637,15 @@ function gameScoresElement(scores) {
 function matchTournamentElement(match) {
 	const tournament = document.createElement("div");
 	tournament.className = "match-tournament";
+	const picture = responsiveImage(
+		match.tournamentHeaderImageUrl,
+		match.tournamentHeaderImageMobileUrl,
+		"",
+		"match-tournament-image",
+	);
+	if (picture) {
+		tournament.append(picture);
+	}
 	const logo = image(match.tournamentLogoUrl, "", "match-tournament-logo");
 	if (logo) {
 		tournament.append(logo);
@@ -830,7 +845,12 @@ function youtubeLink(value) {
 	link.href = url.toString();
 	link.target = "_blank";
 	link.rel = "noopener noreferrer";
-	link.textContent = "YouTube";
+	link.append("YouTube");
+	const external = document.createElement("span");
+	external.className = "external-mark";
+	external.textContent = "↗";
+	external.setAttribute("aria-hidden", "true");
+	link.append(external);
 	link.setAttribute("aria-label", "YouTubeで試合映像を探す");
 	return link;
 }

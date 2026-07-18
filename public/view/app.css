@@ -4,7 +4,7 @@
 		-apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans JP", sans-serif;
 	font-synthesis: none;
 	color: #151515;
-	background: #ededed;
+	background: #080808;
 }
 
 * {
@@ -14,7 +14,7 @@
 body {
 	min-width: 320px;
 	margin: 0;
-	background: #ededed;
+	background: #080808;
 }
 
 button,
@@ -63,11 +63,11 @@ p {
 }
 
 main {
-	width: min(100%, 1180px);
+	width: min(100%, 1280px);
 	min-height: 100vh;
 	margin: 0 auto;
 	padding: 0 20px 56px;
-	background: #f8f8f8;
+	background: #0b0b0b;
 }
 
 .app-header {
@@ -78,7 +78,7 @@ main {
 	gap: 24px;
 	padding: 18px 22px;
 	color: #ffffff;
-	background: #151515;
+	background: #d71920;
 }
 
 .brand-lockup {
@@ -93,7 +93,7 @@ main {
 	height: 46px;
 	place-items: center;
 	color: #ffffff;
-	background: #d71920;
+	background: #b51218;
 	font-size: 22px;
 	font-weight: 850;
 	line-height: 1;
@@ -107,13 +107,13 @@ main {
 
 .brand-lockup p {
 	margin-top: 4px;
-	color: #c7c7c7;
+	color: #ffffff;
 	font-size: 10px;
 	font-weight: 700;
 }
 
 #last-updated {
-	color: #c7c7c7;
+	color: #ffffff;
 	font-size: 12px;
 	white-space: nowrap;
 }
@@ -124,8 +124,9 @@ main {
 	justify-content: space-between;
 	gap: 20px;
 	padding: 18px 22px;
-	border-bottom: 1px solid #cfcfcf;
-	background: #ffffff;
+	border-bottom: 1px solid #343434;
+	color: #ffffff;
+	background: #171717;
 }
 
 .notification-settings h2 {
@@ -135,7 +136,7 @@ main {
 
 .notification-settings p {
 	margin-top: 3px;
-	color: #626262;
+	color: #bdbdbd;
 	font-size: 12px;
 }
 
@@ -201,6 +202,7 @@ main {
 
 .matches {
 	padding: 30px 22px 0;
+	color: #ffffff;
 }
 
 .match-toolbar {
@@ -208,7 +210,7 @@ main {
 	align-items: flex-end;
 	justify-content: space-between;
 	gap: 20px;
-	border-bottom: 2px solid #151515;
+	border-bottom: 1px solid #555555;
 }
 
 .match-tabs {
@@ -222,19 +224,19 @@ main {
 	border: 0;
 	border-bottom: 4px solid transparent;
 	border-radius: 0;
-	color: #5f5f5f;
+	color: #a6a6a6;
 	background: transparent;
 	font-size: 14px;
 	font-weight: 750;
 }
 
 .match-tab:hover {
-	background: #eeeeee;
+	background: #222222;
 }
 
 .match-tab[aria-selected="true"] {
 	border-bottom-color: #d71920;
-	color: #151515;
+	color: #ffffff;
 }
 
 .match-tab span {
@@ -265,10 +267,10 @@ main {
 	min-height: 38px;
 	max-width: 170px;
 	padding: 0 30px 0 10px;
-	border: 1px solid #aaaaaa;
+	border: 1px solid #555555;
 	border-radius: 3px;
-	color: #151515;
-	background: #ffffff;
+	color: #ffffff;
+	background: #1b1b1b;
 }
 
 .match-list {
@@ -277,8 +279,9 @@ main {
 
 .match {
 	margin-bottom: 18px;
-	border: 1px solid #c9c9c9;
+	border: 1px solid #444444;
 	border-radius: 4px;
+	color: #151515;
 	background: #ffffff;
 	overflow: hidden;
 }
@@ -292,69 +295,113 @@ main {
 }
 
 .tournament-hero {
+	position: relative;
+	display: flex;
+	min-height: 280px;
+	align-items: flex-end;
 	margin-bottom: 14px;
-	border-bottom: 2px solid #151515;
-	background: #ffffff;
+	border-bottom: 3px solid #d71920;
+	background: #151515;
+	overflow: hidden;
 }
 
 .tournament-hero picture {
-	display: block;
+	position: absolute;
+	inset: 0;
 }
 
 .tournament-hero-image {
 	display: block;
 	width: 100%;
-	height: 210px;
+	height: 100%;
 	object-fit: cover;
 	object-position: center;
 }
 
+.tournament-hero::after,
+.match-tournament::after {
+	position: absolute;
+	inset: 0;
+	background: rgb(0 0 0 / 62%);
+	content: "";
+}
+
 .tournament-hero-info {
+	position: relative;
+	z-index: 1;
 	display: flex;
-	min-height: 84px;
+	min-height: 116px;
 	align-items: center;
 	gap: 16px;
-	padding: 10px 14px;
+	padding: 18px 22px;
+	color: #ffffff;
 }
 
 .tournament-hero-info h3 {
-	font-size: 17px;
+	font-size: 22px;
 	line-height: 1.4;
 }
 
 .tournament-hero-info p {
 	margin-top: 3px;
-	color: #656565;
+	color: #d5d5d5;
 	font-size: 11px;
 }
 
 .tournament-logo {
-	width: 68px;
-	height: 68px;
-	flex: 0 0 68px;
+	width: 98px;
+	height: 98px;
+	flex: 0 0 98px;
+	padding: 5px;
+	background: #ffffff;
 	object-fit: contain;
 }
 
 .match-tournament {
+	position: relative;
 	display: flex;
 	min-width: 0;
 	align-items: center;
-	gap: 12px;
-	min-height: 66px;
-	padding: 9px 14px;
-	border-bottom: 1px solid #dedede;
-	background: #f1f1f1;
+	gap: 18px;
+	min-height: 190px;
+	padding: 22px 26px;
+	border-bottom: 3px solid #d71920;
+	color: #ffffff;
+	background: #151515;
+	overflow: hidden;
+}
+
+.match-tournament picture {
+	position: absolute;
+	inset: 0;
+}
+
+.match-tournament-image {
+	display: block;
+	width: 100%;
+	height: 100%;
+	object-fit: cover;
+	object-position: center;
 }
 
 .match-tournament-logo {
-	width: 48px;
-	height: 48px;
-	flex: 0 0 48px;
+	position: relative;
+	z-index: 1;
+	width: 106px;
+	height: 106px;
+	flex: 0 0 106px;
+	padding: 6px;
+	background: #ffffff;
 	object-fit: contain;
 }
 
+.match-tournament > div {
+	position: relative;
+	z-index: 1;
+}
+
 .match-tournament h3 {
-	font-size: 14px;
+	font-size: 22px;
 	font-weight: 800;
 	line-height: 1.35;
 	overflow-wrap: anywhere;
@@ -362,8 +409,8 @@ main {
 
 .match-tournament p {
 	margin-top: 2px;
-	color: #606060;
-	font-size: 10px;
+	color: #d1d1d1;
+	font-size: 11px;
 }
 
 .match-header {
@@ -448,6 +495,12 @@ main {
 	font-size: 11px;
 	font-weight: 800;
 	text-decoration: none;
+}
+
+.external-mark {
+	margin-left: 5px;
+	font-size: 14px;
+	line-height: 1;
 }
 
 .youtube-link:hover {
@@ -677,16 +730,16 @@ main {
 
 .empty-state {
 	padding: 52px 20px;
-	border-top: 1px solid #d2d2d2;
-	border-bottom: 1px solid #d2d2d2;
-	color: #666666;
+	border-top: 1px solid #444444;
+	border-bottom: 1px solid #444444;
+	color: #bdbdbd;
 	font-size: 14px;
 	text-align: center;
 }
 
 #last-updated.error,
 #notification-status.error {
-	color: #b00020;
+	color: #ff9b9b;
 }
 
 .overlay-open {
@@ -942,7 +995,26 @@ main {
 	}
 
 	.tournament-hero-image {
-		height: 150px;
+		height: 100%;
+	}
+
+	.tournament-hero {
+		min-height: 220px;
+	}
+
+	.match-tournament {
+		min-height: 160px;
+		padding: 16px;
+	}
+
+	.match-tournament-logo {
+		width: 82px;
+		height: 82px;
+		flex-basis: 82px;
+	}
+
+	.match-tournament h3 {
+		font-size: 18px;
 	}
 
 	.install-overlay {
@@ -971,6 +1043,22 @@ main {
 	.match-header {
 		align-items: flex-start;
 		padding: 8px 10px;
+	}
+
+	.match-tournament {
+		min-height: 146px;
+		gap: 12px;
+		padding: 14px;
+	}
+
+	.match-tournament-logo {
+		width: 70px;
+		height: 70px;
+		flex-basis: 70px;
+	}
+
+	.match-tournament h3 {
+		font-size: 16px;
 	}
 
 	.match-actions {
