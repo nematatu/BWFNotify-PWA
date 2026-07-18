@@ -102,7 +102,7 @@ export type MatchSummary = {
 };
 
 export type PublicState = {
-	checkedAt: string;
+	checkedAt: string | null;
 	matches: MatchSummary[];
 };
 

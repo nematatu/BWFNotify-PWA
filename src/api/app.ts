@@ -1,5 +1,5 @@
 import { Hono } from "hono";
-import type { MatchSummary, PublicState } from "../type";
+import type { DeliveryResult, MatchSummary, PublicState } from "../type";
 import { errorMessage, object, optionalString } from "../utils";
 import { fetchJapaneseMatches } from "./bwf";
 import { fetchBwfImage } from "./media";
@@ -14,15 +14,41 @@ import {
 } from "./push";
 
 const STATE_KEY = "push:state";
-const NOTIFIED_PREFIX = "push:notified:";
-const NOTIFIED_TTL_SECONDS = 30 * 24 * 60 * 60;
 const MAX_REQUEST_BYTES = 4096;
+const STATUS_CACHE_TTL_SECONDS = 30;
+const NOTIFICATION_DEDUP_AGE_MS = 30 * 24 * 60 * 60 * 1000;
+export const STATE_MAX_AGE_MS = 5 * 60 * 1000;
+export const MAX_NOTIFICATION_ATTEMPTS = 3;
+
+type StoredState = PublicState & {
+	notificationAttempts?: Record<string, number>;
+	notifiedLiveMatches?: Record<string, string>;
+};
+
+type NotificationCheckDependencies = {
+	fetchMatches: (
+		cache: KVNamespace,
+		knownMatches: MatchSummary[],
+	) => Promise<MatchSummary[]>;
+	sendNotifications: (
+		env: Env,
+		matches: MatchSummary[],
+	) => Promise<DeliveryResult>;
+	now: () => Date;
+};
+
+export type NotificationCheckResult = DeliveryResult & {
+	liveMatches: number;
+	scheduledMatches: number;
+	newMatches: number;
+	stateWritten: boolean;
+};
 
 const app = new Hono<{ Bindings: Env }>();
 
 app.use("/api/*", async (c, next) => {
 	await next();
-	if (c.req.path !== "/api/media") {
+	if (c.req.path !== "/api/media" && c.req.path !== "/api/status") {
 		c.header("Cache-Control", "no-store");
 	}
 	c.header("X-Content-Type-Options", "nosniff");
@@ -38,11 +64,28 @@ app.get("/api/config", (c) =>
 );
 
 app.get("/api/status", async (c) => {
-	const state = await c.env.NOTIFIED_MATCHES.get<PublicState>(
+	const cacheUrl = new URL(c.req.url);
+	cacheUrl.search = "";
+	const cacheKey = new Request(cacheUrl.toString(), { method: "GET" });
+	const cached = await caches.default.match(cacheKey);
+	if (cached) {
+		const response = new Response(cached.body, cached);
+		response.headers.set("X-BWF-Cache", "HIT");
+		return response;
+	}
+
+	const stored = await c.env.NOTIFIED_MATCHES.get<StoredState>(
 		STATE_KEY,
 		"json",
 	);
-	return c.json(state || { checkedAt: null, matches: [] });
+	const response = c.json(publicState(stored));
+	response.headers.set(
+		"Cache-Control",
+		`public, max-age=${STATUS_CACHE_TTL_SECONDS}`,
+	);
+	response.headers.set("X-BWF-Cache", "MISS");
+	c.executionCtx.waitUntil(caches.default.put(cacheKey, response.clone()));
+	return response;
 });
 
 app.post("/api/subscriptions", async (c) => {
@@ -132,57 +175,177 @@ export default {
 	},
 } satisfies ExportedHandler<Env>;
 
-export async function runNotificationCheck(env: Env): Promise<void> {
-	const matches = await fetchJapaneseMatches(env.NOTIFIED_MATCHES);
-	const liveMatches = matches.filter((match) => match.eventType === "live");
-	const checkedAt = new Date().toISOString();
-	await env.NOTIFIED_MATCHES.put(
+export async function runNotificationCheck(
+	env: Env,
+	overrides: Partial<NotificationCheckDependencies> = {},
+): Promise<NotificationCheckResult> {
+	const dependencies: NotificationCheckDependencies = {
+		fetchMatches: fetchJapaneseMatches,
+		sendNotifications: sendPushNotifications,
+		now: () => new Date(),
+		...overrides,
+	};
+	const previous = await env.NOTIFIED_MATCHES.get<StoredState>(
 		STATE_KEY,
-		JSON.stringify({ checkedAt, matches } satisfies PublicState),
+		"json",
 	);
-
-	const newMatches = await withoutNotifiedMatches(
+	const matches = await dependencies.fetchMatches(
 		env.NOTIFIED_MATCHES,
-		liveMatches,
+		previous?.matches || [],
 	);
+	const liveMatches = matches.filter((match) => match.eventType === "live");
+	const newMatches = notificationCandidates(previous, liveMatches);
 	const delivery =
 		newMatches.length > 0
-			? await sendPushNotifications(env, newMatches)
+			? await dependencies.sendNotifications(env, newMatches)
 			: { sent: 0, failed: 0, removed: 0 };
-
-	if (delivery.sent > 0) {
-		await Promise.all(
-			newMatches.map((match) =>
-				env.NOTIFIED_MATCHES.put(notifiedKey(match), checkedAt, {
-					expirationTtl: NOTIFIED_TTL_SECONDS,
-				}),
-			),
-		);
+	const now = dependencies.now();
+	const next: StoredState = {
+		checkedAt: now.toISOString(),
+		matches,
+	};
+	const notificationAttempts = nextNotificationAttempts(
+		previous,
+		liveMatches,
+		newMatches,
+		delivery,
+	);
+	next.notificationAttempts = notificationAttempts;
+	next.notifiedLiveMatches = nextNotifiedLiveMatches(
+		previous,
+		newMatches,
+		notificationAttempts,
+		now,
+	);
+	const stateWritten = shouldPersistState(previous, next, now);
+	if (stateWritten) {
+		await env.NOTIFIED_MATCHES.put(STATE_KEY, JSON.stringify(next));
 	}
 
-	console.log(
-		JSON.stringify({
-			event: "notification-check",
-			liveMatches: liveMatches.length,
-			scheduledMatches: matches.length - liveMatches.length,
-			newMatches: newMatches.length,
-			...delivery,
+	const result: NotificationCheckResult = {
+		liveMatches: liveMatches.length,
+		scheduledMatches: matches.length - liveMatches.length,
+		newMatches: newMatches.length,
+		stateWritten,
+		...delivery,
+	};
+	console.log(JSON.stringify({ event: "notification-check", ...result }));
+	return result;
+}
+
+export function shouldPersistState(
+	previous: StoredState | null,
+	next: StoredState,
+	now: Date,
+): boolean {
+	if (!previous) {
+		return true;
+	}
+	if (
+		matchStateSignature(previous.matches) !==
+			matchStateSignature(next.matches) ||
+		JSON.stringify(previous.notificationAttempts || {}) !==
+			JSON.stringify(next.notificationAttempts || {}) ||
+		JSON.stringify(previous.notifiedLiveMatches || {}) !==
+			JSON.stringify(next.notifiedLiveMatches || {})
+	) {
+		return true;
+	}
+	const previousCheck = previous.checkedAt
+		? Date.parse(previous.checkedAt)
+		: Number.NaN;
+	return (
+		!Number.isFinite(previousCheck) ||
+		now.getTime() - previousCheck >= STATE_MAX_AGE_MS
+	);
+}
+
+function matchStateSignature(matches: MatchSummary[]): string {
+	return JSON.stringify(
+		[...matches].sort((left, right) => left.id.localeCompare(right.id)),
+	);
+}
+
+function notificationCandidates(
+	previous: StoredState | null,
+	liveMatches: MatchSummary[],
+): MatchSummary[] {
+	const previousLiveIds = new Set(
+		(previous?.matches || [])
+			.filter((match) => match.eventType === "live")
+			.map((match) => match.id),
+	);
+	return liveMatches.filter((match) => {
+		const attempts = previous?.notificationAttempts?.[match.id] || 0;
+		return (
+			(attempts > 0 && attempts < MAX_NOTIFICATION_ATTEMPTS) ||
+			(!previousLiveIds.has(match.id) &&
+				!previous?.notifiedLiveMatches?.[match.id])
+		);
+	});
+}
+
+function nextNotificationAttempts(
+	previous: StoredState | null,
+	liveMatches: MatchSummary[],
+	candidates: MatchSummary[],
+	delivery: DeliveryResult,
+): Record<string, number> {
+	const liveIds = new Set(liveMatches.map((match) => match.id));
+	const next = Object.fromEntries(
+		Object.entries(previous?.notificationAttempts || {}).filter(
+			([id, attempts]) =>
+				liveIds.has(id) && attempts > 0 && attempts < MAX_NOTIFICATION_ATTEMPTS,
+		),
+	);
+	for (const match of candidates) {
+		delete next[match.id];
+		if (delivery.sent === 0 && delivery.failed > 0) {
+			const attempts = (previous?.notificationAttempts?.[match.id] || 0) + 1;
+			if (attempts < MAX_NOTIFICATION_ATTEMPTS) {
+				next[match.id] = attempts;
+			}
+		}
+	}
+	return next;
+}
+
+function nextNotifiedLiveMatches(
+	previous: StoredState | null,
+	candidates: MatchSummary[],
+	notificationAttempts: Record<string, number>,
+	now: Date,
+): Record<string, string> {
+	const cutoff = now.getTime() - NOTIFICATION_DEDUP_AGE_MS;
+	const next = Object.fromEntries(
+		Object.entries(previous?.notifiedLiveMatches || {}).filter(([, value]) => {
+			const timestamp = Date.parse(value);
+			return Number.isFinite(timestamp) && timestamp >= cutoff;
 		}),
 	);
+
+	// Existing live matches predate this compact ledger and must not be resent.
+	for (const match of previous?.matches || []) {
+		if (
+			match.eventType === "live" &&
+			!previous?.notificationAttempts?.[match.id]
+		) {
+			next[match.id] = previous?.checkedAt || now.toISOString();
+		}
+	}
+	for (const match of candidates) {
+		if (!notificationAttempts[match.id]) {
+			next[match.id] = now.toISOString();
+		}
+	}
+	return next;
 }
 
-async function withoutNotifiedMatches(
-	kv: KVNamespace,
-	matches: MatchSummary[],
-): Promise<MatchSummary[]> {
-	const records = await Promise.all(
-		matches.map((match) => kv.get(notifiedKey(match))),
-	);
-	return matches.filter((_, index) => records[index] == null);
-}
-
-function notifiedKey(match: MatchSummary): string {
-	return `${NOTIFIED_PREFIX}${match.id}:live`;
+function publicState(state: StoredState | null): PublicState {
+	return {
+		checkedAt: state?.checkedAt || null,
+		matches: Array.isArray(state?.matches) ? state.matches : [],
+	};
 }
 
 async function readJson(request: Request): Promise<unknown> {

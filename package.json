@@ -11,9 +11,12 @@
 		"dry-run": "WRANGLER_LOG_PATH=.wrangler/logs wrangler deploy --dry-run",
 		"types": "wrangler types",
 		"typecheck": "tsc --noEmit",
-		"test": "bun test",
+		"test": "bun run test:unit && bun run test:integration",
+		"test:unit": "bun test ./test/",
+		"test:integration": "WRANGLER_LOG_PATH=.wrangler/logs vitest run --config vitest.config.ts",
 		"lint": "biome check .",
-		"check": "bun run typecheck && bun run lint && bun test",
+		"check": "bun run typecheck && bun run lint && bun run test",
+		"precommit": "bun run check && bun run dry-run",
 		"format": "biome check --write .",
 		"generate:vapid": "web-push generate-vapid-keys --json"
 	},
@@ -23,9 +26,11 @@
 	},
 	"devDependencies": {
 		"@biomejs/biome": "2.5.4",
+		"@cloudflare/vitest-pool-workers": "^0.18.6",
 		"@types/node": "^26.1.1",
 		"@types/web-push": "^3.6.4",
 		"typescript": "^5.9.3",
+		"vitest": "^4.1.0",
 		"wrangler": "^4.112.0"
 	}
 }

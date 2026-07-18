@@ -19,7 +19,7 @@
 		}
 	},
 	"triggers": {
-		"crons": ["*/1 * * * *"]
+		"crons": ["*/2 * * * *"]
 	},
 	"secrets": {
 		"required": ["VAPID_PUBLIC_KEY", "VAPID_PRIVATE_KEY", "VAPID_SUBJECT"]

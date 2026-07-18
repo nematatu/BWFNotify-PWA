@@ -26,8 +26,7 @@ const BWF_DAY_MATCHES_URL =
 const BWF_H2H_URL = "https://extranet-lv.bwfbadminton.com/api/h2h/statistics";
 const TARGET_COUNTRY = "JPN";
 const H2H_CACHE_PREFIX = "bwf:h2h:v3:";
-const SCHEDULED_H2H_TTL_SECONDS = 6 * 60 * 60;
-const LIVE_H2H_TTL_SECONDS = 5 * 60;
+const H2H_CACHE_TTL_SECONDS = 30 * 24 * 60 * 60;
 
 type Tournament = {
 	code: string;
@@ -41,6 +40,7 @@ type Tournament = {
 
 export async function fetchJapaneseMatches(
 	cache?: KVNamespace,
+	knownMatches: MatchSummary[] = [],
 ): Promise<MatchSummary[]> {
 	const tournaments = tournamentsFrom(await fetchBwfJson(BWF_LIVE_URL));
 	const dates = adjacentDates(todayJst());
@@ -76,7 +76,9 @@ export async function fetchJapaneseMatches(
 	}
 
 	const summaries = extractJapaneseMatches(matches);
-	return cache ? enrichWithHeadToHead(summaries, cache) : summaries;
+	return cache
+		? enrichWithHeadToHead(summaries, cache, knownMatches)
+		: summaries;
 }
 
 export function extractJapaneseMatches(matches: BwfMatch[]): MatchSummary[] {
@@ -339,11 +341,21 @@ function swapTeamNumber(
 async function enrichWithHeadToHead(
 	matches: MatchSummary[],
 	cache: KVNamespace,
+	knownMatches: MatchSummary[],
 ): Promise<MatchSummary[]> {
+	const knownHeadToHead = new Map(
+		knownMatches
+			.filter((match) => match.h2h)
+			.map((match) => [match.id, match.h2h] as const),
+	);
 	return Promise.all(
 		matches.map(async (match) => {
 			if (!hasHeadToHeadPlayers(match)) {
 				return match;
+			}
+			const known = knownHeadToHead.get(match.id);
+			if (known) {
+				return { ...match, h2h: known };
 			}
 
 			const key = `${H2H_CACHE_PREFIX}${match.id}`;
@@ -363,10 +375,7 @@ async function enrichWithHeadToHead(
 					return match;
 				}
 				await cache.put(key, JSON.stringify(h2h), {
-					expirationTtl:
-						match.eventType === "live"
-							? LIVE_H2H_TTL_SECONDS
-							: SCHEDULED_H2H_TTL_SECONDS,
+					expirationTtl: H2H_CACHE_TTL_SECONDS,
 				});
 				return { ...match, h2h };
 			} catch (error) {
