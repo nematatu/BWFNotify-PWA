@@ -303,6 +303,9 @@ for (const viewport of [
 		);
 		await expect(page.locator(".score-updated")).toHaveCount(1);
 		await expect(page.locator(".score-updated strong")).toHaveText("12");
+		await expect(
+			page.locator(".live-match .match-notification-control"),
+		).toHaveCount(0);
 		if (process.env.CAPTURE_LAYOUT === "1") {
 			await page.screenshot({
 				path: `/tmp/bwfnotify-layout-${viewport.name}.png`,
@@ -312,6 +315,9 @@ for (const viewport of [
 
 		await page.getByRole("tab", { name: /このあと/ }).click();
 		await expect(page.locator(".player-photo-placeholder")).toHaveCount(6);
+		await expect(
+			page.locator(".scheduled-match .match-notification-control"),
+		).toHaveCount(3);
 		expect(
 			await page.evaluate(
 				() => document.documentElement.scrollWidth <= window.innerWidth,

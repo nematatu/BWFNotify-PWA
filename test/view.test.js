@@ -244,6 +244,13 @@ describe("page structure", () => {
 		expect(html).not.toContain('id="scheduled-match-list"');
 	});
 
+	test("shows match notification controls only before a match starts", async () => {
+		const script = await Bun.file("public/view/app.js").text();
+		expect(script).toContain('if (match.eventType === "scheduled") {');
+		expect(script).toContain("actions.append(matchNotificationToggle(match))");
+		expect(script).toContain("if (actions.childElementCount > 0)");
+	});
+
 	test("explains installation and notification permission before prompting", async () => {
 		const html = await Bun.file("public/index.html").text();
 		expect(html).toContain("通知を使うまで 3ステップ");

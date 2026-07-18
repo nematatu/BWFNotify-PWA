@@ -3,7 +3,7 @@ import {
 	mergeLiveMatches,
 	sortedMatches,
 	tournamentGroups,
-} from "./match-groups.js?v=37";
+} from "./match-groups.js?v=38";
 
 const LIVE_REFRESH_INTERVAL_MS = 15_000;
 const FULL_REFRESH_INTERVAL_MS = 2 * 60_000;
@@ -651,12 +651,16 @@ function matchElement(match, showTournament = false) {
 
 	const actions = document.createElement("div");
 	actions.className = "match-actions";
-	actions.append(matchNotificationToggle(match));
+	if (match.eventType === "scheduled") {
+		actions.append(matchNotificationToggle(match));
+	}
 	const youtube = youtubeLink(match.youtubeUrl);
 	if (youtube) {
 		actions.append(youtube);
 	}
-	header.append(actions);
+	if (actions.childElementCount > 0) {
+		header.append(actions);
+	}
 
 	const teams = matchTeams(match);
 	const scores = Array.isArray(match.scores) ? match.scores : [];
