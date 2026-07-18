@@ -166,6 +166,12 @@ describe("page structure", () => {
 		expect(css).not.toContain("border-bottom: 3px solid #d71920");
 	});
 
+	test("does not draw a rectangular border around country flags", async () => {
+		const css = await Bun.file("public/view/app.css").text();
+		const flagRule = css.match(/\.country-flag \{([^}]+)\}/)?.[1] || "";
+		expect(flagRule).not.toContain("border:");
+	});
+
 	test("uses a light interface without permanent dark surfaces", async () => {
 		const css = await Bun.file("public/view/app.css").text();
 		expect(css).toContain("color-scheme: light");

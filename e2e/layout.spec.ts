@@ -235,6 +235,9 @@ for (const viewport of [
 		await expect(card).toHaveCSS("border-radius", "0px");
 		await expect(card).toHaveCSS("border-top-width", "1px");
 		await expect(card).toHaveCSS("border-top-color", "rgb(188, 188, 188)");
+		for (const flag of await page.locator(".country-flag").all()) {
+			await expect(flag).toHaveCSS("border-width", "0px");
+		}
 
 		const layout = await page
 			.locator(".matchup")
