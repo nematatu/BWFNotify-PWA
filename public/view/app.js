@@ -3,7 +3,7 @@ import {
 	mergeLiveMatches,
 	sortedMatches,
 	tournamentGroups,
-} from "./match-groups.js?v=27";
+} from "./match-groups.js?v=28";
 
 const LIVE_REFRESH_INTERVAL_MS = 15_000;
 const FULL_REFRESH_INTERVAL_MS = 2 * 60_000;
@@ -834,9 +834,16 @@ function teamElement(team, side, serving) {
 		const photo = image(player.photoUrl, "", "player-photo");
 		if (photo) {
 			photos.append(photo);
+		} else {
+			const placeholder = document.createElement("span");
+			placeholder.className = "player-photo player-photo-placeholder";
+			placeholder.setAttribute("aria-hidden", "true");
+			placeholder.textContent = playerInitial(player.name);
+			photos.append(placeholder);
 		}
 	}
 	if (photos.childElementCount > 0) {
+		photos.classList.add(`player-count-${photos.childElementCount}`);
 		identity.append(photos);
 	}
 	element.append(identity);
@@ -845,7 +852,10 @@ function teamElement(team, side, serving) {
 	names.className = "player-names";
 	players.forEach((player, index) => {
 		if (index > 0) {
-			names.append(" / ");
+			const separator = document.createElement("span");
+			separator.className = "player-separator";
+			separator.textContent = "/";
+			names.append(separator);
 		}
 		const name = document.createElement("span");
 		name.className = player.isJapanese
@@ -862,6 +872,11 @@ function teamElement(team, side, serving) {
 		element.append(serve);
 	}
 	return element;
+}
+
+function playerInitial(value) {
+	const name = String(value || "").trim();
+	return name ? Array.from(name)[0].toUpperCase() : "-";
 }
 
 function headToHeadElement(h2h, teams) {
