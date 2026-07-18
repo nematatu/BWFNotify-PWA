@@ -1,9 +1,10 @@
 import {
 	DEFAULT_SORT_ORDER,
 	mergeLiveMatches,
+	previousGameScoreline,
 	sortedMatches,
 	tournamentGroups,
-} from "./match-groups.js?v=38";
+} from "./match-groups.js?v=39";
 
 const LIVE_REFRESH_INTERVAL_MS = 15_000;
 const FULL_REFRESH_INTERVAL_MS = 2 * 60_000;
@@ -921,7 +922,7 @@ function headToHeadElement(h2h, teams) {
 	const label = document.createElement("span");
 	label.textContent = "対戦成績";
 	const score = document.createElement("strong");
-	score.textContent = `${h2h.team1Wins} - ${h2h.team2Wins}`;
+	score.textContent = `${h2h.team1Wins}勝 - ${h2h.team2Wins}勝`;
 	summary.append(label, score);
 	section.append(summary);
 
@@ -944,11 +945,15 @@ function headToHeadElement(h2h, teams) {
 			if (winningTeam) {
 				const winner = document.createElement("p");
 				winner.className = "previous-winner";
-				const winningScores = h2h.previous.games
-					.map((game) => (h2h.previous.winner === 1 ? game.team1 : game.team2))
-					.join(" · ");
-				winner.textContent = `${teamLabel(winningTeam)} 勝利${winningScores ? ` · ${winningScores}` : ""}`;
+				winner.textContent = `${teamLabel(winningTeam)} 勝利`;
 				previous.append(winner);
+				const scoreline = previousGameScoreline(h2h.previous.games);
+				if (scoreline) {
+					const scores = document.createElement("p");
+					scores.className = "previous-scoreline";
+					scores.textContent = scoreline;
+					previous.append(scores);
+				}
 			}
 		}
 		section.append(previous);

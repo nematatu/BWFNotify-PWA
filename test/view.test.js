@@ -1,6 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import {
 	mergeLiveMatches,
+	previousGameScoreline,
 	sortedMatches,
 	tournamentGroups,
 } from "../public/view/match-groups.js";
@@ -62,6 +63,24 @@ describe("match sorting", () => {
 			"a-early",
 			"a-late",
 		]);
+	});
+});
+
+describe("previous match scores", () => {
+	test("formats both teams' scores for every valid game", () => {
+		expect(
+			previousGameScoreline([
+				{ team1: 21, team2: 18 },
+				{ team1: 15, team2: 21 },
+				{ team1: 21, team2: 19 },
+			]),
+		).toBe("21-18 / 15-21 / 21-19");
+	});
+
+	test("ignores incomplete game scores", () => {
+		expect(
+			previousGameScoreline([{ team1: 21, team2: 18 }, { team1: 15 }]),
+		).toBe("21-18");
 	});
 });
 

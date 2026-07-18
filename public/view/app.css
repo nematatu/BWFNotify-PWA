@@ -803,6 +803,14 @@ main {
 	font-weight: 800;
 }
 
+.previous-scoreline {
+	margin-top: 2px;
+	color: #151515;
+	font-size: 11px;
+	font-weight: 700;
+	font-variant-numeric: tabular-nums;
+}
+
 .empty-state {
 	padding: 52px 20px;
 	border-top: 1px solid #c7c7c7;

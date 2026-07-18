@@ -303,6 +303,13 @@ for (const viewport of [
 		);
 		await expect(page.locator(".score-updated")).toHaveCount(1);
 		await expect(page.locator(".score-updated strong")).toHaveText("12");
+		await expect(page.locator(".h2h-scoreline strong")).toHaveText("3勝 - 1勝");
+		await expect(page.locator(".previous-winner")).toHaveText(
+			"JIA Yi Fan / ZHANG Shu Xian 勝利",
+		);
+		await expect(page.locator(".previous-scoreline")).toHaveText(
+			"18-21 / 16-21",
+		);
 		await expect(
 			page.locator(".live-match .match-notification-control"),
 		).toHaveCount(0);

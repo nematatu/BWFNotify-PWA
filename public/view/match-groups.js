@@ -28,6 +28,18 @@ export function tournamentGroups(matches) {
 	);
 }
 
+export function previousGameScoreline(games) {
+	if (!Array.isArray(games)) {
+		return "";
+	}
+	return games
+		.filter(
+			(game) => Number.isFinite(game?.team1) && Number.isFinite(game?.team2),
+		)
+		.map((game) => `${game.team1}-${game.team2}`)
+		.join(" / ");
+}
+
 export function mergeLiveMatches(currentMatches, freshMatches) {
 	const currentById = new Map(currentMatches.map((match) => [match.id, match]));
 	const freshLive = freshMatches.filter((match) => match.eventType === "live");
