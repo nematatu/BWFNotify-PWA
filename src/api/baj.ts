@@ -35,7 +35,9 @@ export async function fetchUpcomingTournaments(
 		),
 	);
 	if (pages.every((response) => !response.ok)) {
-		throw new Error("BAJ tournament pages are unavailable");
+		throw new Error(
+			`BAJ tournament pages are unavailable (${pages.map((page) => page.status).join(",")})`,
+		);
 	}
 
 	const drafts = selectTournaments(

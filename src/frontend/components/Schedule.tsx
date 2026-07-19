@@ -2,7 +2,9 @@ import { ExternalLink } from "lucide-solid";
 import { For, Show } from "solid-js";
 import type { MatchSummary, UpcomingTournament } from "../../type";
 import {
+	calendarAttemptedAt,
 	calendarCheckedAt,
+	calendarError,
 	recentResults,
 	upcomingTournaments,
 } from "../lib/matchesState";
@@ -78,10 +80,23 @@ export function UpcomingSchedule() {
 						{formatDate(calendarCheckedAt() || "")}
 					</time>
 				</Show>
-				<Show when={!calendarCheckedAt()}>
+				<Show when={!calendarCheckedAt() && !calendarError()}>
 					<span>公式情報の確認待ち</span>
 				</Show>
+				<Show when={calendarError()}>
+					<span>
+						更新失敗 / 最終試行 {formatDate(calendarAttemptedAt() || "")}
+					</span>
+				</Show>
 			</div>
+			<Show when={calendarError()}>
+				<p class="data-notice">
+					公式情報を更新できませんでした。
+					{upcomingTournaments().length > 0
+						? "前回取得した情報を表示しています。"
+						: "次回の自動更新をお待ちください。"}
+				</p>
+			</Show>
 			<Show
 				when={upcomingTournaments().length > 0}
 				fallback={

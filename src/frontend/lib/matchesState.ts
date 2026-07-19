@@ -27,6 +27,12 @@ export const [recentResults, setRecentResults] = createSignal<MatchSummary[]>(
 export const [calendarCheckedAt, setCalendarCheckedAt] = createSignal<
 	string | null
 >(null);
+export const [calendarAttemptedAt, setCalendarAttemptedAt] = createSignal<
+	string | null
+>(null);
+export const [calendarError, setCalendarError] = createSignal<string | null>(
+	null,
+);
 export const [upcomingTournaments, setUpcomingTournaments] = createSignal<
 	UpcomingTournament[]
 >([]);
@@ -52,6 +58,8 @@ export const loadStatus = async () => {
 		setMatches(state.matches || []);
 		setRecentResults(state.recentResults || []);
 		setCalendarCheckedAt(state.calendarCheckedAt || null);
+		setCalendarAttemptedAt(state.calendarAttemptedAt || null);
+		setCalendarError(state.calendarError || null);
 		setUpcomingTournaments(state.upcomingTournaments || []);
 		syncPollingMode();
 	} catch (e) {

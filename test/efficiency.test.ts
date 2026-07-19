@@ -19,6 +19,8 @@ describe("KV state persistence", () => {
 		matches: [match()],
 		recentResults: [],
 		calendarCheckedAt: null,
+		calendarAttemptedAt: null,
+		calendarError: null,
 		upcomingTournaments: [],
 	};
 

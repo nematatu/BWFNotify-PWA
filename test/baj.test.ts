@@ -60,6 +60,12 @@ describe("BAJ refresh policy", () => {
 			calendarRefreshDue(checkedAt, new Date("2026-07-20T12:00:00Z")),
 		).toBe(true);
 	});
+
+	test("backs off for 12 hours after a failed attempt", () => {
+		expect(
+			calendarRefreshDue(checkedAt, new Date("2026-07-20T02:00:00Z")),
+		).toBe(false);
+	});
 });
 
 describe("upcoming tournament status", () => {

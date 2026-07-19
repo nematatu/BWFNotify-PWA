@@ -267,7 +267,10 @@ export async function runNotificationCheck(
 	);
 	let upcomingTournaments = previous?.upcomingTournaments || [];
 	let calendarCheckedAt = previous?.calendarCheckedAt || null;
-	if (calendarRefreshDue(calendarCheckedAt, now)) {
+	let calendarAttemptedAt = previous?.calendarAttemptedAt || calendarCheckedAt;
+	let calendarError = previous?.calendarError || null;
+	if (calendarRefreshDue(calendarAttemptedAt, now)) {
+		calendarAttemptedAt = now.toISOString();
 		const knownMatches = [...matches, ...(previous?.recentResults || [])];
 		try {
 			const history = await dependencies.fetchHistory(
@@ -294,11 +297,13 @@ export async function runNotificationCheck(
 				matches,
 			);
 			calendarCheckedAt = now.toISOString();
+			calendarError = null;
 		} catch (error) {
+			calendarError = errorMessage(error);
 			console.error(
 				JSON.stringify({
 					event: "calendar-refresh-error",
-					error: errorMessage(error),
+					error: calendarError,
 				}),
 			);
 		}
@@ -323,6 +328,8 @@ export async function runNotificationCheck(
 		matches,
 		recentResults,
 		calendarCheckedAt,
+		calendarAttemptedAt,
+		calendarError,
 		upcomingTournaments,
 	};
 	const notificationAttempts = nextNotificationAttempts(
@@ -383,6 +390,9 @@ export function shouldPersistState(
 		JSON.stringify(previous.upcomingTournaments || []) !==
 			JSON.stringify(next.upcomingTournaments || []) ||
 		(previous.calendarCheckedAt || null) !== (next.calendarCheckedAt || null) ||
+		(previous.calendarAttemptedAt || null) !==
+			(next.calendarAttemptedAt || null) ||
+		(previous.calendarError || null) !== (next.calendarError || null) ||
 		JSON.stringify(previous.notificationAttempts || {}) !==
 			JSON.stringify(next.notificationAttempts || {}) ||
 		JSON.stringify(previous.notifiedLiveMatches || {}) !==
@@ -494,6 +504,8 @@ function publicState(state: StoredState | null): PublicState {
 			? state.recentResults
 			: [],
 		calendarCheckedAt: state?.calendarCheckedAt || null,
+		calendarAttemptedAt: state?.calendarAttemptedAt || null,
+		calendarError: state?.calendarError || null,
 		upcomingTournaments: Array.isArray(state?.upcomingTournaments)
 			? state.upcomingTournaments
 			: [],

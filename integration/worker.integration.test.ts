@@ -131,7 +131,7 @@ describe("Worker integration", () => {
 		});
 	});
 
-	test("serves status from edge cache without exposing internal retry state", async () => {
+	test("serves public status from edge cache without notification retry state", async () => {
 		await env.NOTIFIED_MATCHES.put(
 			"push:state",
 			JSON.stringify({
@@ -152,6 +152,8 @@ describe("Worker integration", () => {
 			matches: [liveMatch],
 			recentResults: [],
 			calendarCheckedAt: null,
+			calendarAttemptedAt: null,
+			calendarError: null,
 			upcomingTournaments: [],
 		});
 
@@ -283,6 +285,33 @@ describe("Worker integration", () => {
 		]);
 		expect(stored?.calendarCheckedAt).toBe("2026-07-20T00:00:00.000Z");
 		expect(stored?.upcomingTournaments).toHaveLength(1);
+	});
+
+	test("does not retry a failed calendar refresh on the next cron", async () => {
+		let now = new Date("2026-07-20T00:00:00.000Z");
+		let calendarCalls = 0;
+		const dependencies = {
+			...noCalendar,
+			fetchTournaments: async () => {
+				calendarCalls += 1;
+				throw new Error("BAJ unavailable");
+			},
+			now: () => now,
+		};
+
+		await runNotificationCheck(env, dependencies);
+		now = new Date("2026-07-20T00:02:00.000Z");
+		await runNotificationCheck(env, dependencies);
+
+		const stored = await env.NOTIFIED_MATCHES.get<{
+			calendarAttemptedAt: string;
+			calendarError: string;
+		}>("push:state", "json");
+		expect(calendarCalls).toBe(1);
+		expect(stored).toMatchObject({
+			calendarAttemptedAt: "2026-07-20T00:00:00.000Z",
+			calendarError: "BAJ unavailable",
+		});
 	});
 
 	test("retries only the match whose deliveries all failed", async () => {
