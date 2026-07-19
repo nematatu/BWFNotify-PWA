@@ -2,6 +2,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { defineConfig } from "vite";
 import solidPlugin from "vite-plugin-solid";
+import { PWA_CLEANUP_SERVICE_WORKER } from "./src/api/developmentPwa";
 
 function pwaPlugin() {
 	let isBuild = false;
@@ -12,90 +13,54 @@ function pwaPlugin() {
 		},
 		configureServer(server) {
 			server.middlewares.use((req, res, next) => {
-				if (req.url === "/pwa/sw.js") {
+				const pathname = req.url?.split("?", 1)[0];
+				if (pathname === "/pwa/sw.js") {
 					res.setHeader("Content-Type", "application/javascript");
-					res.end(`// Development Service Worker (No Caching, Push Support Only)
-self.addEventListener("install", (event) => {
-	event.waitUntil(self.skipWaiting());
-});
-
-self.addEventListener("activate", (event) => {
-	event.waitUntil(
-		caches.keys()
-			.then((names) => Promise.all(names.map((name) => caches.delete(name))))
-			.then(() => self.clients.claim())
-	);
-});
-
-// No fetch event listener, allowing all requests to bypass Service Worker cache.
-
-self.addEventListener("push", (event) => {
-	let payload = {
-		title: "BWF Notify",
-		body: "日本人選手の試合が始まりました",
-		url: "/",
-		tag: "bwf-live",
-		image: undefined,
-	};
-
-	if (event.data) {
-		try {
-			payload = { ...payload, ...event.data.json() };
-		} catch {
-			payload.body = event.data.text();
-		}
-	}
-
-	const mediaUrl = notificationMediaUrl(payload.image);
-	event.waitUntil(
-		self.registration.showNotification(payload.title, {
-			body: payload.body,
-			icon:
-				mediaUrl ||
-				notificationMediaUrl(payload.icon) ||
-				"/pwa/icons/icon-192.png",
-			badge: "/pwa/icons/icon-192.png",
-			...(mediaUrl ? { image: mediaUrl } : {}),
-			tag: payload.tag,
-			data: { url: payload.url || "/" },
-		}),
-	);
-});
-
-self.addEventListener("notificationclick", (event) => {
-	event.notification.close();
-	const targetUrl = new URL(
-		event.notification.data?.url || "/",
-		self.location.origin,
-	).href;
-
-	event.waitUntil(
-		self.clients
-			.matchAll({ type: "window", includeUncontrolled: true })
-			.then((clients) => {
-				const existing = clients.find((client) => client.url === targetUrl);
-				return existing ? existing.focus() : self.clients.openWindow(targetUrl);
-			}),
-	);
-});
-
-function notificationMediaUrl(value) {
-	try {
-		const image = new URL(String(value));
-		if (image.protocol !== "https:") {
-			return null;
-		}
-		const proxy = new URL("/api/media", self.location.origin);
-		proxy.searchParams.set("url", image.toString());
-		return proxy.toString();
-	} catch {
-		return null;
-	}
-}`);
+					res.setHeader("Cache-Control", "no-store");
+					res.setHeader("Service-Worker-Allowed", "/");
+					res.end(PWA_CLEANUP_SERVICE_WORKER);
+					return;
+				}
+				if (pathname === "/pwa/manifest.webmanifest") {
+					res.statusCode = 404;
+					res.setHeader("Cache-Control", "no-store");
+					res.setHeader("Content-Type", "text/plain; charset=utf-8");
+					res.end("PWA is disabled during development");
 					return;
 				}
 				next();
 			});
+		},
+		transformIndexHtml(html) {
+			if (!isBuild) return html;
+			return {
+				html,
+				tags: [
+					{
+						tag: "meta",
+						attrs: { name: "apple-mobile-web-app-capable", content: "yes" },
+						injectTo: "head",
+					},
+					{
+						tag: "meta",
+						attrs: {
+							name: "apple-mobile-web-app-status-bar-style",
+							content: "black-translucent",
+						},
+						injectTo: "head",
+					},
+					{
+						tag: "link",
+						attrs: { rel: "manifest", href: "/pwa/manifest.webmanifest" },
+						injectTo: "head",
+					},
+					{
+						tag: "link",
+						attrs: { rel: "apple-touch-icon", href: "/pwa/icons/icon-192.png" },
+						injectTo: "head",
+					},
+				],
+			};
 		},
 		closeBundle() {
 			if (!isBuild) return;

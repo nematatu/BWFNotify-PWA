@@ -1,12 +1,25 @@
-const workerUrl = "http://127.0.0.1:8787";
+const workerUrl = "http://localhost:8787";
+const skipInitialSync = process.argv.includes("--skip-initial-sync");
 
 const processes = [
-	Bun.spawn(["bunx", "wrangler", "dev", "--test-scheduled"], {
-		stdin: "inherit",
-		stdout: "inherit",
-		stderr: "inherit",
-		env: { ...process.env, WRANGLER_LOG_PATH: ".wrangler/logs" },
-	}),
+	Bun.spawn(
+		[
+			"bunx",
+			"wrangler",
+			"dev",
+			"--config",
+			"wrangler.dev.jsonc",
+			"--port",
+			"8787",
+			"--test-scheduled",
+		],
+		{
+			stdin: "inherit",
+			stdout: "inherit",
+			stderr: "inherit",
+			env: { ...process.env, WRANGLER_LOG_PATH: ".wrangler/logs" },
+		},
+	),
 	Bun.spawn(["bunx", "vite", "--strictPort"], {
 		stdin: "inherit",
 		stdout: "inherit",
@@ -50,7 +63,7 @@ async function initializeWorker() {
 
 process.once("SIGINT", () => void stopAll(130));
 process.once("SIGTERM", () => void stopAll(143));
-void initializeWorker();
+if (!skipInitialSync) void initializeWorker();
 
 const firstExitCode = await Promise.race(
 	processes.map((child) => child.exited),

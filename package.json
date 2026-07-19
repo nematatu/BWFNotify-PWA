@@ -36,9 +36,10 @@
 		"test:unit": "bun test ./test/",
 		"test:integration": "WRANGLER_LOG_PATH=.wrangler/logs vitest run --config vitest.config.ts",
 		"test:layout": "bun run build && playwright test",
+		"test:dev-pwa": "playwright test --config playwright.dev.config.ts",
 		"lint": "biome check .",
 		"check": "bun run types:check && bun run typecheck && bun run lint && bun run test",
-		"precommit": "bun run check && bun run test:layout && bun run dry-run",
+		"precommit": "bun run check && bun run test:layout && bun run test:dev-pwa && bun run dry-run",
 		"format": "biome check --write .",
 		"generate:vapid": "web-push generate-vapid-keys --json",
 		"prepare": "husky"

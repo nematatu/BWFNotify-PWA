@@ -42,10 +42,11 @@ src/config/       日本人選手名、公式配信元の設定
 src/frontend/     SolidJS画面、状態管理、Service Worker
 src/type/         共有TypeScript型
 src/utils/        共有ユーティリティ
-public/pwa/       Service Worker、Manifest、PWA画像
+public/pwa/       Manifest、PWA画像
 test/             単体テスト
 integration/      Workers結合テスト
 e2e/              Playwright表示テスト
+e2e-dev/          開発時のPWA解除テスト
 ```
 
 ## 必要環境
@@ -94,7 +95,9 @@ bunx wrangler secret put VAPID_SUBJECT
 bun run dev
 ```
 
-画面は `http://localhost:5173`、Worker APIは `http://127.0.0.1:8787` で起動します。どちらか一方が終了すると、もう一方も停止します。Workerの起動後、試合データを取得するscheduled処理を1回だけ自動実行します。
+画面は `http://localhost:5173`、Worker APIは `http://localhost:8787` で起動します。どちらか一方が終了すると、もう一方も停止します。Workerの起動後、試合データを取得するscheduled処理を1回だけ自動実行します。
+
+開発時はPWAを無効化します。5173ではManifestを出さず、既存のService WorkerとCache Storageを解除します。8787は`wrangler.dev.jsonc`を使うAPI専用Workerで、本番ビルドの画面やオフラインキャッシュを配信しません。過去に8787へ登録されたService Workerを消すため、8787の画面ルートと`/pwa/sw.js`は解除専用レスポンスを返します。
 
 追加でscheduled処理を確認する場合は、開発サーバーの起動中に次を実行します。
 
@@ -117,6 +120,7 @@ bun run lint
 bun run test:unit
 bun run test:integration
 bun run test:layout
+bun run test:dev-pwa
 bun run dry-run
 ```
 

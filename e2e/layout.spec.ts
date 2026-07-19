@@ -463,3 +463,23 @@ test("normal polling switches to live score polling after a match starts", async
 	await page.clock.fastForward(15_000);
 	await expect.poll(() => liveCalls).toBe(1);
 });
+
+test("production build keeps its manifest and service worker", async ({
+	page,
+}) => {
+	await preparePage(page);
+	await expect(page.locator('link[rel="manifest"]')).toHaveAttribute(
+		"href",
+		"/pwa/manifest.webmanifest",
+	);
+	await expect
+		.poll(() =>
+			page.evaluate(async () => {
+				const registrations = await navigator.serviceWorker.getRegistrations();
+				return registrations.some((registration) =>
+					registration.active?.scriptURL.endsWith("/pwa/sw.js"),
+				);
+			}),
+		)
+		.toBe(true);
+});

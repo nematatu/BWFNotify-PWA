@@ -9,6 +9,7 @@
 - 対象Workerは `bwfnotify-pwa`、公開先は `https://bwfnotify-pwa.amtt.workers.dev/` です。他のWorkerへ操作を行わないでください。
 - 利用者の既存変更や無関係な変更を取り消さないでください。作業前後に `git status --short` と差分を確認してください。
 - 長時間動作するローカルサーバーは、テストや目視確認に必要な場合だけ起動してください。作業後は必ず停止し、特にポート8787を残さないでください。
+- 開発時の8787はAPI専用とし、本番の静的画面、Manifest、Service Worker、オフラインキャッシュを配信しないでください。5173でもPWAを登録せず、既存の開発用Service WorkerとCache Storageを解除してください。
 
 ## 2. 事実確認と報告
 
@@ -107,11 +108,14 @@
 12. **公開確認**: GitHub CIとCloudflareの自動デプロイ完了後、公開HTML、CSS、Service Worker、対象APIを確認します。キャッシュ版も照合してください。
 13. **終了確認**: `git status --short` が意図した状態であること、テスト用サーバーが停止していること、チェックリストが全件完了していることを確認します。
 
+PWAまたは開発サーバーを変更した場合は、`bun run test:dev-pwa`で5173・8787のService Worker登録とCache Storageが0件になることを確認し、テスト終了後に両ポートが接続不能であることも確認してください。
+
 ## 11. テストとレビューの完了条件
 
 - `bun run test:unit`: ドメインロジック、辞書、並び順、通知、YouTube、KV効率を検証します。
 - `bun run test:integration`: WorkerのAPI、セキュリティヘッダー、Push購読などの結合を検証します。
 - `bun run test:layout`: モバイルとデスクトップのレイアウト、重なり、横スクロール、表示状態を検証します。
+- `bun run test:dev-pwa`: 開発時にManifest、Service Worker、オフラインキャッシュ、本番画面が残らないことを検証します。
 - `bun run precommit`: コミット前に必ず実行します。失敗を無視してコミットしないでください。
 - UI変更ではPlaywright画像の目視確認が必須です。テストが通っただけで見た目の完了としないでください。
 - レビューでは、機能の正しさだけでなく、UX、アクセシビリティ、モバイルWeb Push、KV消費、外部API負荷、キャッシュ更新、旧環境への誤操作を確認してください。
@@ -138,4 +142,3 @@
 
 - システムの全体像、設計意図、目指す方向、技術的課題、外部サービス連携を記述した [system_overview.md](file:///Users/nematatu/src/github.com/nematatu/BWFNotify-PWA/docs/system_overview.md) を常に最新に維持してください。
 - システムの設計やコードに変更があった際、またはAIとの会話セッションが終了する際、必ずこのファイルを更新し、次の開発者およびエージェントAIへ正確なシステム状況が伝わるようにしてください。
-
