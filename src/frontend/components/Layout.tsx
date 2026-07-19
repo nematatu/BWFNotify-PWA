@@ -1,13 +1,13 @@
 import { Show } from "solid-js";
-import { formatDate } from "../lib/utils";
+import { checkedAt } from "../lib/matchesState";
+import { notifError } from "../lib/pushNotificationState";
+import { bannerHidden, openInstall } from "../lib/pwaInstallState";
+import { formatDate, isInAppBrowser } from "../lib/utils";
 
 // ==========================================
 // AppHeader Component
 // ==========================================
-export function AppHeader(props: {
-	checkedAt: string | null;
-	hasError: boolean;
-}) {
+export function AppHeader() {
 	return (
 		<header class="app-header">
 			<div class="brand-lockup">
@@ -17,8 +17,8 @@ export function AppHeader(props: {
 					<p>日本人選手</p>
 				</div>
 			</div>
-			<p id="last-updated" class={props.hasError ? "error" : ""}>
-				{props.checkedAt ? `更新: ${formatDate(props.checkedAt)}` : "未取得"}
+			<p id="last-updated" class={notifError() ? "error" : ""}>
+				{checkedAt() ? `更新: ${formatDate(checkedAt()!)}` : "未取得"}
 			</p>
 		</header>
 	);
@@ -58,21 +58,19 @@ export function AppFooter() {
 // ==========================================
 // PwaBanner Component
 // ==========================================
-export function PwaBanner(props: {
-	hidden: boolean;
-	inApp: boolean;
-	onShowInstall: () => void;
-}) {
+export function PwaBanner() {
+	const inApp = isInAppBrowser();
+
 	return (
-		<Show when={!props.hidden}>
+		<Show when={!bannerHidden()}>
 			<div
 				id="pwa-guide-banner"
-				class={`pwa-guide-banner ${props.inApp ? "in-app" : ""}`}
+				class={`pwa-guide-banner ${inApp ? "in-app" : ""}`}
 			>
 				<div class="pwa-guide-content">
-					<span class="pwa-guide-icon">{props.inApp ? "⚠️" : "💡"}</span>
+					<span class="pwa-guide-icon">{inApp ? "⚠️" : "💡"}</span>
 					<p class="pwa-guide-text">
-						{props.inApp ? (
+						{inApp ? (
 							<>
 								現在、アプリ内ブラウザ（XやYouTube等）で開いています。
 								<strong>
@@ -88,12 +86,12 @@ export function PwaBanner(props: {
 						)}
 					</p>
 				</div>
-				<Show when={!props.inApp}>
+				<Show when={!inApp}>
 					<button
 						id="pwa-guide-button"
 						class="pwa-guide-button"
 						type="button"
-						onClick={props.onShowInstall}
+						onClick={openInstall}
 					>
 						追加方法を見る
 					</button>

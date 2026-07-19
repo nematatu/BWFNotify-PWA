@@ -1,5 +1,26 @@
 import { Show } from "solid-js";
-import { useApp } from "../lib/utils";
+import {
+	cancelPermission,
+	confirmPermission,
+	notifError,
+	notifText,
+	onToggleChange,
+	onToggleClick,
+	permissionOpen,
+	sendTest,
+	testDisabled,
+	toggleChecked,
+	toggleDisabled,
+} from "../lib/pushNotificationState";
+import {
+	closeInstall,
+	guidance,
+	handleInstall,
+	installOpen,
+	openInstall,
+	standalone,
+} from "../lib/pwaInstallState";
+import { isInAppBrowser } from "../lib/utils";
 
 // ==========================================
 // 1. InstallOverlay Component
@@ -11,19 +32,26 @@ export type InstallGuidance = {
 };
 
 export function InstallOverlay(props: {
-	guidance: InstallGuidance;
-	onClose: () => void;
-	onInstall: () => void;
 	dismissRef?: (el: HTMLButtonElement) => void;
 }) {
+	const handleClose = () => {
+		closeInstall(true);
+	};
+
+	let localDismissBtn: HTMLButtonElement | undefined;
+
+	const handleInstallPrompt = async () => {
+		await handleInstall(localDismissBtn);
+	};
+
 	return (
 		<div
 			id="install-overlay"
 			class="install-overlay"
-			onClick={props.onClose}
+			onClick={handleClose}
 			role="dialog"
 			tabIndex={-1}
-			onKeyDown={(e) => e.key === "Escape" && props.onClose()}
+			onKeyDown={(e) => e.key === "Escape" && handleClose()}
 		>
 			<section
 				class="install-sheet"
@@ -38,7 +66,7 @@ export function InstallOverlay(props: {
 					class="install-overlay-close"
 					type="button"
 					aria-label="案内を閉じる"
-					onClick={props.onClose}
+					onClick={handleClose}
 				>
 					×
 				</button>
@@ -46,10 +74,8 @@ export function InstallOverlay(props: {
 				<h2 id="install-overlay-heading">ホーム画面から開いてください</h2>
 				<ol class="install-steps">
 					<li>
-						<strong id="install-step-title">{props.guidance.title}</strong>
-						<span id="install-step-description">
-							{props.guidance.description}
-						</span>
+						<strong id="install-step-title">{guidance().title}</strong>
+						<span id="install-step-description">{guidance().description}</span>
 					</li>
 					<li>
 						<strong>追加したアイコンから起動</strong>
@@ -64,17 +90,24 @@ export function InstallOverlay(props: {
 					通知対象は日本人選手の試合開始です。試合ごとに後から解除できます。
 				</p>
 				<div class="install-actions">
-					<Show when={props.guidance.hasAction}>
+					<Show when={guidance().hasAction}>
 						<button
 							id="install-action"
 							class="primary-action"
 							type="button"
-							onClick={props.onInstall}
+							onClick={handleInstallPrompt}
 						>
 							ホーム画面に追加
 						</button>
 					</Show>
-					<button ref={props.dismissRef} type="button" onClick={props.onClose}>
+					<button
+						ref={(el) => {
+							localDismissBtn = el;
+							if (props.dismissRef) props.dismissRef(el);
+						}}
+						type="button"
+						onClick={handleClose}
+					>
 						今はブラウザで見る
 					</button>
 				</div>
@@ -86,18 +119,15 @@ export function InstallOverlay(props: {
 // ==========================================
 // 2. PermissionOverlay Component
 // ==========================================
-export function PermissionOverlay(props: {
-	onCancel: () => void;
-	onConfirm: () => void;
-}) {
+export function PermissionOverlay() {
 	return (
 		<div
 			id="permission-overlay"
 			class="install-overlay"
-			onClick={props.onCancel}
+			onClick={cancelPermission}
 			role="dialog"
 			tabIndex={-1}
-			onKeyDown={(e) => e.key === "Escape" && props.onCancel()}
+			onKeyDown={(e) => e.key === "Escape" && cancelPermission()}
 		>
 			<section
 				class="install-sheet permission-sheet"
@@ -121,14 +151,18 @@ export function PermissionOverlay(props: {
 					次にブラウザの許可画面が表示されます。拒否しても試合情報はそのまま利用できます。
 				</p>
 				<div class="permission-actions">
-					<button id="permission-cancel" type="button" onClick={props.onCancel}>
+					<button
+						id="permission-cancel"
+						type="button"
+						onClick={cancelPermission}
+					>
 						キャンセル
 					</button>
 					<button
 						id="permission-confirm"
 						class="primary-action"
 						type="button"
-						onClick={props.onConfirm}
+						onClick={confirmPermission}
 					>
 						通知を許可する
 					</button>
@@ -142,22 +176,10 @@ export function PermissionOverlay(props: {
 // 3. NotificationSettings Component
 // ==========================================
 export function NotificationSettings() {
-	const {
-		notifText,
-		notifError,
-		testDisabled,
-		toggleChecked,
-		toggleDisabled,
-		standalone,
-		inApp,
-		onTest,
-		onToggleClick,
-		onToggleChange,
-		onShowInstall,
-	} = useApp();
+	const inApp = isInAppBrowser();
 
 	const handleSectionClick = () => {
-		if (!standalone() && !inApp()) onShowInstall();
+		if (!standalone() && !inApp) openInstall();
 	};
 
 	return (
@@ -190,7 +212,7 @@ export function NotificationSettings() {
 					id="test-notification-button"
 					type="button"
 					disabled={testDisabled()}
-					onClick={onTest}
+					onClick={sendTest}
 				>
 					テスト通知
 				</button>

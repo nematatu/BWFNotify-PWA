@@ -5,6 +5,19 @@ import type {
 	MatchTeamSummary,
 } from "../../type";
 import {
+	currentView,
+	loadStatus,
+	matches,
+	setCurrentView,
+	setSortOrder,
+	sortOrder,
+} from "../lib/matchesState";
+import {
+	excludedIds,
+	notificationDisabled,
+	updateMatchNotif,
+} from "../lib/pushNotificationState";
+import {
 	displayCourt,
 	displayRound,
 	displayTournamentCategory,
@@ -17,7 +30,6 @@ import {
 	sortedMatches,
 	teamLabel,
 	tournamentGroups,
-	useApp,
 	youtubeLink,
 } from "../lib/utils";
 
@@ -89,14 +101,6 @@ export function TeamBlock(props: {
 // 2. MatchToolbar Component
 // ==========================================
 export function MatchToolbar() {
-	const {
-		currentView,
-		setCurrentView,
-		matches,
-		sortOrder,
-		setSortOrder,
-		loadStatus,
-	} = useApp();
 	const liveCount = () =>
 		matches().filter((m) => m.eventType === "live").length;
 	const scheduledCount = () =>
@@ -155,8 +159,6 @@ export function MatchCard(props: {
 	match: MatchSummary & { scoreChangedTeam?: 1 | 2 };
 	showTournament?: boolean;
 }) {
-	const { excludedMatchIds, notificationDisabled, onNotificationChange } =
-		useApp();
 	const scores = () => props.match.scores;
 	const lastScore = () => scores()?.at(-1);
 	const isLive = () => props.match.eventType === "live";
@@ -270,7 +272,7 @@ export function MatchCard(props: {
 				<div class="h2h">
 					<div class="h2h-scoreline">
 						<span>対戦成績</span>
-						<strong>
+						<strong style="white-space: nowrap;">
 							{props.match.h2h?.team1Wins ?? 0}勝 -{" "}
 							{props.match.h2h?.team2Wins ?? 0}勝
 						</strong>
@@ -317,10 +319,10 @@ export function MatchCard(props: {
 							<span class="visually-hidden">通知設定</span>
 							<input
 								type="checkbox"
-								checked={!excludedMatchIds().has(props.match.id)}
+								checked={!excludedIds().has(props.match.id)}
 								disabled={notificationDisabled()}
 								onChange={(e) =>
-									onNotificationChange(props.match.id, e.target.checked)
+									updateMatchNotif(props.match.id, e.target.checked)
 								}
 							/>
 							<span class="switch-track" aria-hidden="true" />
@@ -336,7 +338,6 @@ export function MatchCard(props: {
 // 4. MatchList Component
 // ==========================================
 export function MatchList() {
-	const { matches, sortOrder, currentView } = useApp();
 	const filtered = createMemo(() =>
 		matches().filter((m) => m.eventType === currentView()),
 	);

@@ -1,8 +1,7 @@
-import { createContext, useContext } from "solid-js";
 import type { MatchSummary } from "../../type";
 
 // ==========================================
-// 1. App Context (Eliminates Prop Drilling)
+// 1. Sort Options
 // ==========================================
 export type SortOrder = "time-asc" | "time-desc" | "tournament";
 export const SORT_OPTIONS: SortOrder[] = [
@@ -11,35 +10,6 @@ export const SORT_OPTIONS: SortOrder[] = [
 	"tournament",
 ];
 export const DEFAULT_SORT_ORDER: SortOrder = "time-asc";
-
-export const AppContext = createContext<{
-	matches: () => MatchSummary[];
-	excludedMatchIds: () => Set<string>;
-	notificationDisabled: () => boolean;
-	onNotificationChange: (matchId: string, enabled: boolean) => void;
-	sortOrder: () => SortOrder;
-	setSortOrder: (order: SortOrder) => void;
-	currentView: () => "live" | "scheduled";
-	setCurrentView: (view: "live" | "scheduled") => void;
-	loadStatus: () => Promise<void>;
-	notifText: () => string;
-	notifError: () => boolean;
-	testDisabled: () => boolean;
-	toggleChecked: () => boolean;
-	toggleDisabled: () => boolean;
-	standalone: () => boolean;
-	inApp: () => boolean;
-	onTest: () => void;
-	onToggleClick: (e: Event) => void;
-	onToggleChange: (e: Event) => void;
-	onShowInstall: () => void;
-}>();
-
-export const useApp = () => {
-	const ctx = useContext(AppContext);
-	if (!ctx) throw new Error("useApp must be used within AppProvider");
-	return ctx;
-};
 
 // ==========================================
 // 2. API Helper
