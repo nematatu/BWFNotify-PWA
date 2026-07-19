@@ -10,6 +10,15 @@ import { object, optionalString } from "../utils";
 const SUBSCRIPTION_PREFIX = "push:subscription:";
 const MAX_USER_AGENT_LENGTH = 240;
 const MAX_EXCLUDED_MATCH_IDS = 50;
+const MAX_KV_METADATA_BYTES = 1024;
+
+type SubscriptionMetadata = {
+	v: 2;
+	e: string;
+	p: string;
+	a: string;
+	x?: string[];
+};
 
 export function parsePushSubscription(value: unknown): PushSubscription | null {
 	const item = object(value);
@@ -46,7 +55,7 @@ export async function saveSubscription(
 		return record;
 	}
 
-	await kv.put(key, recordJson, { metadata: metadataRecord(record) });
+	await putSubscriptionRecord(kv, key, recordJson, record);
 	return record;
 }
 
@@ -82,15 +91,34 @@ export async function updateSubscriptionExclusions(
 
 	const updated = { ...existing, excludedMatchIds };
 	const recordJson = JSON.stringify(updated);
-	await kv.put(key, recordJson, { metadata: metadataRecord(updated) });
+	await putSubscriptionRecord(kv, key, recordJson, updated);
 	return updated;
 }
 
-function metadataRecord(
+export function subscriptionMetadata(
 	record: StoredSubscription,
-): Omit<StoredSubscription, "userAgent"> {
-	const { userAgent, ...metadata } = record;
-	return metadata;
+): SubscriptionMetadata | null {
+	const metadata: SubscriptionMetadata = {
+		v: 2,
+		e: record.endpoint,
+		p: record.keys.p256dh,
+		a: record.keys.auth,
+		...(record.excludedMatchIds?.length ? { x: record.excludedMatchIds } : {}),
+	};
+	return new TextEncoder().encode(JSON.stringify(metadata)).byteLength <=
+		MAX_KV_METADATA_BYTES
+		? metadata
+		: null;
+}
+
+async function putSubscriptionRecord(
+	kv: KVNamespace,
+	key: string,
+	value: string,
+	record: StoredSubscription,
+): Promise<void> {
+	const metadata = subscriptionMetadata(record);
+	await kv.put(key, value, metadata ? { metadata } : undefined);
 }
 
 export async function deleteSubscription(
@@ -269,16 +297,16 @@ async function listSubscriptions(
 	let cursor: string | undefined;
 
 	do {
-		const page = await kv.list<Omit<StoredSubscription, "userAgent">>({
+		const page = await kv.list<
+			SubscriptionMetadata | Omit<StoredSubscription, "userAgent">
+		>({
 			prefix: SUBSCRIPTION_PREFIX,
 			cursor,
 		});
 		for (const key of page.keys) {
-			if (key.metadata) {
-				subscriptions.push({
-					userAgent: undefined,
-					...key.metadata,
-				} as StoredSubscription);
+			const fromMetadata = subscriptionFromMetadata(key.metadata);
+			if (fromMetadata) {
+				subscriptions.push(fromMetadata);
 			} else {
 				const value = await kv.get<StoredSubscription>(key.name, "json");
 				if (value) {
@@ -290,6 +318,28 @@ async function listSubscriptions(
 	} while (cursor);
 
 	return subscriptions;
+}
+
+function subscriptionFromMetadata(
+	metadata:
+		| SubscriptionMetadata
+		| Omit<StoredSubscription, "userAgent">
+		| undefined,
+): StoredSubscription | null {
+	if (!metadata) return null;
+	if ("v" in metadata && metadata.v === 2) {
+		return {
+			endpoint: metadata.e,
+			keys: { p256dh: metadata.p, auth: metadata.a },
+			createdAt: "",
+			excludedMatchIds: validStoredExcludedMatchIds(metadata.x),
+		};
+	}
+	const legacy = metadata as Omit<StoredSubscription, "userAgent">;
+	return {
+		...legacy,
+		userAgent: undefined,
+	};
 }
 
 async function subscriptionKey(endpoint: string): Promise<string> {

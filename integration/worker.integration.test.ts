@@ -47,6 +47,14 @@ describe("Worker integration", () => {
 			ok: true,
 			excludedMatchIds: [],
 		});
+		const subscriptionKeys = await env.NOTIFIED_MATCHES.list({
+			prefix: "push:subscription:",
+		});
+		const metadata = subscriptionKeys.keys[0]?.metadata;
+		expect(metadata).toMatchObject({ v: 2, e: endpoint });
+		expect(
+			new TextEncoder().encode(JSON.stringify(metadata)).byteLength,
+		).toBeLessThanOrEqual(1024);
 
 		const updateContext = createExecutionContext();
 		const updated = await worker.fetch(

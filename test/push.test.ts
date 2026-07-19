@@ -6,6 +6,7 @@ import {
 	notificationPayload,
 	parseExcludedMatchIds,
 	parsePushSubscription,
+	subscriptionMetadata,
 } from "../src/api/push";
 import type { MatchSummary, StoredSubscription } from "../src/type";
 
@@ -159,6 +160,26 @@ describe("notification exclusions", () => {
 		expect(saved.excludedMatchIds).toEqual(["excluded"]);
 		expect(saved.createdAt).toBe(subscription.createdAt);
 		expect(saved.userAgent).toBe("test browser");
+	});
+
+	test("keeps normal subscription metadata within the KV byte limit", () => {
+		const metadata = subscriptionMetadata(subscription);
+		expect(metadata).not.toBeNull();
+		expect(
+			new TextEncoder().encode(JSON.stringify(metadata)).byteLength,
+		).toBeLessThanOrEqual(1024);
+	});
+
+	test("falls back to the KV value when compact metadata exceeds the limit", () => {
+		expect(
+			subscriptionMetadata({
+				...subscription,
+				excludedMatchIds: Array.from(
+					{ length: 50 },
+					(_, index) => `${index}-${"x".repeat(120)}`,
+				),
+			}),
+		).toBeNull();
 	});
 });
 
