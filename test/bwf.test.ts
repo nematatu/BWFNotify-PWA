@@ -28,6 +28,27 @@ describe("eventType", () => {
 		[{ id: "1", matchStatusValue: "On court" }, "live"],
 		[{ id: "1", matchStatus: "F" }, "completed"],
 		[{ id: "1", matchStatusValue: "Scheduled" }, "scheduled"],
+		// スコア上で既に決着がついている（2ゲーム先取）場合は、ステータスが進行中でも完了（completed）とみなす
+		[
+			{
+				id: "1",
+				matchStatus: "P",
+				score: [
+					{ set: 1, home: 21, away: 19 },
+					{ set: 2, home: 21, away: 15 },
+				],
+			},
+			"completed",
+		],
+		// スコア上で決着がついていない（1ゲーム先取したのみ）場合は、進行中ステータス通りにliveと判定する
+		[
+			{
+				id: "1",
+				matchStatus: "P",
+				score: [{ set: 1, home: 21, away: 19 }],
+			},
+			"live",
+		],
 	] as const)("classifies %o as %s", (match, expected) => {
 		expect(eventType(match)).toBe(expected);
 	});

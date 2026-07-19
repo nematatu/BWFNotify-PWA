@@ -1,5 +1,6 @@
 import { japanesePlayerName } from "../config/japanese-player-names";
 import type {
+	BwfGameScore,
 	BwfMatch,
 	BwfPlayer,
 	BwfTeam,
@@ -173,6 +174,10 @@ export function extractJapaneseMatches(matches: BwfMatch[]): MatchSummary[] {
 }
 
 export function eventType(match: BwfMatch): EventType {
+	if (isMatchCompleted(match.score)) {
+		return "completed";
+	}
+
 	const statuses = statusCandidates(match).map((status) =>
 		status.toLowerCase(),
 	);
@@ -198,6 +203,26 @@ export function eventType(match: BwfMatch): EventType {
 	}
 
 	return "unknown";
+}
+
+function isGameWon(home: number, away: number): "home" | "away" | null {
+	if (home >= 21 && home - away >= 2) return "home";
+	if (away >= 21 && away - home >= 2) return "away";
+	if (home === 30) return "home";
+	if (away === 30) return "away";
+	return null;
+}
+
+function isMatchCompleted(scores?: BwfGameScore[]): boolean {
+	if (!scores || scores.length === 0) return false;
+	let homeWins = 0;
+	let awayWins = 0;
+	for (const score of scores) {
+		const winner = isGameWon(score.home, score.away);
+		if (winner === "home") homeWins++;
+		if (winner === "away") awayWins++;
+	}
+	return homeWins >= 2 || awayWins >= 2;
 }
 
 function tournamentsFrom(payload: unknown): Tournament[] {
