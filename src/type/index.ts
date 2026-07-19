@@ -116,10 +116,14 @@ export type StoredSubscription = {
 	excludedMatchIds?: string[];
 };
 
-export type DeliveryResult = {
+export type DeliveryCounts = {
 	sent: number;
 	failed: number;
 	removed: number;
+};
+
+export type DeliveryResult = DeliveryCounts & {
+	byMatch: Record<string, DeliveryCounts>;
 };
 
 export type PushSubscriptionInput = {

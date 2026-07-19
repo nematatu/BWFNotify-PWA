@@ -159,7 +159,12 @@ describe("Worker integration", () => {
 			},
 			sendNotifications: async () => {
 				notificationCalls += 1;
-				return { sent: 0, failed: 1, removed: 0 };
+				return {
+					sent: 0,
+					failed: 1,
+					removed: 0,
+					byMatch: { [liveMatch.id]: { sent: 0, failed: 1, removed: 0 } },
+				};
 			},
 			now: () => now,
 		};
@@ -183,6 +188,46 @@ describe("Worker integration", () => {
 		expect(notificationCalls).toBe(3);
 	});
 
+	test("retries only the match whose deliveries all failed", async () => {
+		const failedMatch = { ...liveMatch, id: "live-failed" };
+		const sentMatch = { ...liveMatch, id: "live-sent" };
+		const deliveries: string[][] = [];
+		const dependencies = {
+			fetchMatches: async () => [failedMatch, sentMatch],
+			sendNotifications: async (_env: Env, matches: MatchSummary[]) => {
+				deliveries.push(matches.map((match) => match.id));
+				if (deliveries.length === 1) {
+					return {
+						sent: 1,
+						failed: 1,
+						removed: 0,
+						byMatch: {
+							[failedMatch.id]: { sent: 0, failed: 1, removed: 0 },
+							[sentMatch.id]: { sent: 1, failed: 0, removed: 0 },
+						},
+					};
+				}
+				return {
+					sent: 1,
+					failed: 0,
+					removed: 0,
+					byMatch: {
+						[failedMatch.id]: { sent: 1, failed: 0, removed: 0 },
+					},
+				};
+			},
+			now: () => new Date("2026-07-18T00:00:00.000Z"),
+		};
+
+		await runNotificationCheck(env, dependencies);
+		await runNotificationCheck(env, dependencies);
+
+		expect(deliveries).toEqual([
+			[failedMatch.id, sentMatch.id],
+			[failedMatch.id],
+		]);
+	});
+
 	test("does not resend a live match after a transient upstream omission", async () => {
 		let now = new Date("2026-07-18T00:00:00.000Z");
 		let matches = [liveMatch];
@@ -191,7 +236,12 @@ describe("Worker integration", () => {
 			fetchMatches: async () => matches,
 			sendNotifications: async () => {
 				notificationCalls += 1;
-				return { sent: 1, failed: 0, removed: 0 };
+				return {
+					sent: 1,
+					failed: 0,
+					removed: 0,
+					byMatch: { [liveMatch.id]: { sent: 1, failed: 0, removed: 0 } },
+				};
 			},
 			now: () => now,
 		};
@@ -215,7 +265,12 @@ describe("Worker integration", () => {
 			fetchMatches: async () => [liveMatch],
 			sendNotifications: async () => {
 				notificationCalls += 1;
-				return { sent: 1, failed: 0, removed: 0 };
+				return {
+					sent: 1,
+					failed: 0,
+					removed: 0,
+					byMatch: { [liveMatch.id]: { sent: 1, failed: 0, removed: 0 } },
+				};
 			},
 			now: () => new Date("2026-07-18T00:00:00.000Z"),
 		};

@@ -250,7 +250,7 @@ export async function runNotificationCheck(
 	const delivery =
 		newMatches.length > 0
 			? await dependencies.sendNotifications(env, newMatches)
-			: { sent: 0, failed: 0, removed: 0 };
+			: { sent: 0, failed: 0, removed: 0, byMatch: {} };
 	const now = dependencies.now();
 	const next: StoredState = {
 		checkedAt: now.toISOString(),
@@ -364,7 +364,8 @@ function nextNotificationAttempts(
 	);
 	for (const match of candidates) {
 		delete next[match.id];
-		if (delivery.sent === 0 && delivery.failed > 0) {
+		const matchDelivery = delivery.byMatch[match.id];
+		if (matchDelivery && matchDelivery.sent === 0 && matchDelivery.failed > 0) {
 			const attempts = (previous?.notificationAttempts?.[match.id] || 0) + 1;
 			if (attempts < MAX_NOTIFICATION_ATTEMPTS) {
 				next[match.id] = attempts;

@@ -1,5 +1,10 @@
 import webpush, { type PushSubscription } from "web-push";
-import type { DeliveryResult, MatchSummary, StoredSubscription } from "../type";
+import type {
+	DeliveryCounts,
+	DeliveryResult,
+	MatchSummary,
+	StoredSubscription,
+} from "../type";
 import { object, optionalString } from "../utils";
 
 const SUBSCRIPTION_PREFIX = "push:subscription:";
@@ -134,12 +139,20 @@ export async function sendPushNotifications(
 	matches: MatchSummary[],
 ): Promise<DeliveryResult> {
 	const subscriptions = await listSubscriptions(env.NOTIFIED_MATCHES);
-	const result: DeliveryResult = { sent: 0, failed: 0, removed: 0 };
+	const result: DeliveryResult = {
+		sent: 0,
+		failed: 0,
+		removed: 0,
+		byMatch: Object.fromEntries(
+			matches.map((match) => [match.id, emptyDeliveryCounts()]),
+		),
+	};
 	const options = pushOptions(env, "bwf-live");
 
 	for (const subscription of subscriptions) {
 		const eligibleMatches = matchesForSubscription(subscription, matches);
 		for (const match of eligibleMatches) {
+			const matchResult = result.byMatch[match.id];
 			try {
 				await webpush.sendNotification(
 					subscription,
@@ -147,16 +160,19 @@ export async function sendPushNotifications(
 					{ ...options, topic: notificationTopic(match) },
 				);
 				result.sent += 1;
+				matchResult.sent += 1;
 			} catch (error) {
 				const status =
 					error instanceof webpush.WebPushError ? error.statusCode : undefined;
 				if (status === 404 || status === 410) {
 					await deleteSubscription(env.NOTIFIED_MATCHES, subscription.endpoint);
 					result.removed += 1;
+					matchResult.removed += 1;
 					break;
 				}
 
 				result.failed += 1;
+				matchResult.failed += 1;
 				console.error(
 					JSON.stringify({
 						event: "push-delivery-error",
@@ -170,6 +186,10 @@ export async function sendPushNotifications(
 	}
 
 	return result;
+}
+
+function emptyDeliveryCounts(): DeliveryCounts {
+	return { sent: 0, failed: 0, removed: 0 };
 }
 
 function pushOptions(env: Env, topic: string) {
