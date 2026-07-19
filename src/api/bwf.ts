@@ -42,6 +42,8 @@ type Tournament = {
 type FetchJapaneseMatchesOptions = {
 	upstreamCacheTtlSeconds?: number;
 	resolveYoutubeStreams?: boolean;
+	enrichHeadToHead?: boolean;
+	dates?: string[];
 };
 
 export async function fetchJapaneseMatches(
@@ -52,7 +54,7 @@ export async function fetchJapaneseMatches(
 	const tournaments = tournamentsFrom(
 		await fetchBwfJson(BWF_LIVE_URL, options.upstreamCacheTtlSeconds),
 	);
-	const dates = adjacentDates(todayJst());
+	const dates = options.dates || adjacentDates(todayJst());
 	const matches: BwfMatch[] = [];
 	let successfulDayRequests = 0;
 
@@ -91,13 +93,19 @@ export async function fetchJapaneseMatches(
 		youtubeUrl:
 			resolveYoutubeMatchUrl(match, knownById.get(match.id)?.youtubeUrl) || "",
 	}));
+	const completed = extracted.filter(
+		(match) => match.eventType === "completed",
+	);
+	const current = extracted.filter((match) => match.eventType !== "completed");
 	const summaries =
 		options.resolveYoutubeStreams === false
-			? extracted
-			: await resolveYoutubeStreamUrls(extracted);
-	return cache
-		? enrichWithHeadToHead(summaries, cache, knownMatches, fetchBwfJson)
-		: summaries;
+			? current
+			: await resolveYoutubeStreamUrls(current);
+	const enriched =
+		cache && options.enrichHeadToHead !== false
+			? await enrichWithHeadToHead(summaries, cache, knownMatches, fetchBwfJson)
+			: summaries;
+	return [...enriched, ...completed];
 }
 
 function tournamentsFrom(payload: unknown): Tournament[] {

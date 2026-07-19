@@ -7,6 +7,7 @@ import { env } from "cloudflare:workers";
 import { afterEach, describe, expect, test } from "vitest";
 import worker from "../src";
 import { runNotificationCheck } from "../src/api/app";
+import { parseTournamentPage } from "../src/api/baj";
 import { resolveYoutubeStreamUrls } from "../src/api/youtube";
 import type { MatchSummary } from "../src/type";
 
@@ -20,11 +21,47 @@ const liveMatch: MatchSummary = {
 	eventType: "live",
 };
 
+const noCalendar = {
+	fetchHistory: async () => [],
+	fetchTournaments: async () => [],
+};
+
 afterEach(async () => {
 	await reset();
 });
 
 describe("Worker integration", () => {
+	test("parses a BAJ tournament card with official participant sources", async () => {
+		const tournaments = await parseTournamentPage(
+			new Response(`
+				<ul><li class="v-tournament__item">
+					<div class="v-tournament__date">2026.7.21 - 2026.7.26</div>
+					<span class="c-tag">HSBC BWF World Tour Super 1000</span>
+					<h3 class="v-tournament__ttl">中国オープン2026</h3>
+					<p class="v-tournament__place">中国 常州市</p>
+					<a class="v-tournament__links-link" href="https://bwfbadminton.com/tournament/1">大会サイト</a>
+					<a class="v-tournament__links-link" href="/storage/send_out.pdf">派遣</a>
+					<a class="v-tournament__links-link" href="/storage/contestant.pdf">参加者</a>
+				</li></ul>
+			`),
+		);
+
+		expect(tournaments).toEqual([
+			{
+				name: "中国オープン2026",
+				category: "HSBC BWF World Tour Super 1000",
+				startDate: "2026-07-21",
+				endDate: "2026-07-26",
+				place: "中国 常州市",
+				officialUrl: "https://bwfbadminton.com/tournament/1",
+				participantSourceUrls: [
+					"https://www.badminton.or.jp/storage/contestant.pdf",
+					"https://www.badminton.or.jp/storage/send_out.pdf",
+				],
+			},
+		]);
+	});
+
 	test("uses one notification preference contract from registration through update", async () => {
 		const endpoint = "https://fcm.googleapis.com/fcm/send/integration";
 		const subscription = {
@@ -113,6 +150,9 @@ describe("Worker integration", () => {
 		expect(await first.json()).toEqual({
 			checkedAt: "2026-07-18T00:00:00.000Z",
 			matches: [liveMatch],
+			recentResults: [],
+			calendarCheckedAt: null,
+			upcomingTournaments: [],
 		});
 
 		const secondContext = createExecutionContext();
@@ -158,6 +198,7 @@ describe("Worker integration", () => {
 		let notificationCalls = 0;
 		let knownMatchCount = 0;
 		const dependencies = {
+			...noCalendar,
 			fetchMatches: async (
 				_cache: KVNamespace,
 				knownMatches: MatchSummary[],
@@ -196,11 +237,60 @@ describe("Worker integration", () => {
 		expect(notificationCalls).toBe(3);
 	});
 
+	test("keeps completed matches for seven days and stores calendar data together", async () => {
+		const completed: MatchSummary = {
+			...liveMatch,
+			id: "completed-recent",
+			eventType: "completed",
+			tournamentDate: "2026-07-19",
+		};
+		const expired: MatchSummary = {
+			...completed,
+			id: "completed-expired",
+			tournamentDate: "2026-07-10",
+		};
+		await runNotificationCheck(env, {
+			fetchMatches: async () => [completed],
+			fetchHistory: async () => [completed, expired],
+			fetchTournaments: async () => [
+				{
+					id: "2026-07-21:中国オープン2026",
+					name: "中国オープン2026",
+					startDate: "2026-07-21",
+					endDate: "2026-07-26",
+					participantSourceUrls: ["https://www.badminton.or.jp/players.pdf"],
+					japanesePlayers: ["山口茜"],
+					matchDataAvailable: false,
+					timetableAvailable: false,
+				},
+			],
+			sendNotifications: async () => ({
+				sent: 0,
+				failed: 0,
+				removed: 0,
+				byMatch: {},
+			}),
+			now: () => new Date("2026-07-20T00:00:00.000Z"),
+		});
+
+		const stored = await env.NOTIFIED_MATCHES.get<{
+			recentResults: MatchSummary[];
+			calendarCheckedAt: string;
+			upcomingTournaments: unknown[];
+		}>("push:state", "json");
+		expect(stored?.recentResults.map((match) => match.id)).toEqual([
+			"completed-recent",
+		]);
+		expect(stored?.calendarCheckedAt).toBe("2026-07-20T00:00:00.000Z");
+		expect(stored?.upcomingTournaments).toHaveLength(1);
+	});
+
 	test("retries only the match whose deliveries all failed", async () => {
 		const failedMatch = { ...liveMatch, id: "live-failed" };
 		const sentMatch = { ...liveMatch, id: "live-sent" };
 		const deliveries: string[][] = [];
 		const dependencies = {
+			...noCalendar,
 			fetchMatches: async () => [failedMatch, sentMatch],
 			sendNotifications: async (_env: Env, matches: MatchSummary[]) => {
 				deliveries.push(matches.map((match) => match.id));
@@ -241,6 +331,7 @@ describe("Worker integration", () => {
 		let matches = [liveMatch];
 		let notificationCalls = 0;
 		const dependencies = {
+			...noCalendar,
 			fetchMatches: async () => matches,
 			sendNotifications: async () => {
 				notificationCalls += 1;
@@ -270,6 +361,7 @@ describe("Worker integration", () => {
 		const otherMatch = { ...liveMatch, id: "other-old-match" };
 		let notificationCalls = 0;
 		const dependencies = {
+			...noCalendar,
 			fetchMatches: async () => [liveMatch],
 			sendNotifications: async () => {
 				notificationCalls += 1;

@@ -17,6 +17,9 @@ describe("KV state persistence", () => {
 	const previous: PublicState = {
 		checkedAt: checkedAt.toISOString(),
 		matches: [match()],
+		recentResults: [],
+		calendarCheckedAt: null,
+		upcomingTournaments: [],
 	};
 
 	test("does not rewrite unchanged state every minute", () => {
@@ -70,6 +73,10 @@ describe("KV state persistence", () => {
 	test("runs cron at a resource-saving interval", async () => {
 		const config = await Bun.file("wrangler.jsonc").json();
 		expect(config.triggers.crons).toEqual(["*/2 * * * *"]);
+	});
+
+	test("limits unchanged KV heartbeat writes to 48 per day", () => {
+		expect((24 * 60 * 60 * 1000) / STATE_MAX_AGE_MS).toBe(48);
 	});
 });
 

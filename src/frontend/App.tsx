@@ -7,6 +7,7 @@ import {
 	NotificationSettings,
 	PermissionOverlay,
 } from "./components/Notifications";
+import { RecentResults, UpcomingSchedule } from "./components/Schedule";
 import { initMatchesState } from "./lib/matchesState";
 import {
 	initNotifications,
@@ -42,6 +43,8 @@ export default function App() {
 					<MatchToolbar />
 					<MatchList />
 				</section>
+				<RecentResults />
+				<UpcomingSchedule />
 				<AppFooter />
 			</main>
 

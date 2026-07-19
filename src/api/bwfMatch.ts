@@ -18,7 +18,7 @@ export function extractJapaneseMatches(matches: BwfMatch[]): MatchSummary[] {
 	for (const match of matches) {
 		const type = eventType(match);
 		if (
-			(type !== "live" && type !== "scheduled") ||
+			(type !== "live" && type !== "scheduled" && type !== "completed") ||
 			!includesCountry(match, TARGET_COUNTRY) ||
 			seen.has(match.id)
 		) {

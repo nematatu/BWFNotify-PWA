@@ -55,7 +55,7 @@ describe("eventType", () => {
 });
 
 describe("extractJapaneseMatches", () => {
-	test("keeps live and scheduled matches involving Japanese players", () => {
+	test("keeps live, scheduled, and completed matches involving Japanese players", () => {
 		const matches: BwfMatch[] = [
 			{
 				id: "japan-live",
@@ -115,6 +115,11 @@ describe("extractJapaneseMatches", () => {
 				id: "japan-scheduled",
 				players: ["Player C", "Player D"],
 				eventType: "scheduled",
+			},
+			{
+				id: "japan-finished",
+				players: [],
+				eventType: "completed",
 			},
 		]);
 		expect(result[0]?.teams[0]?.players[0]).toEqual({

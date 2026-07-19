@@ -92,17 +92,35 @@ export type MatchSummary = {
 	players: string[];
 	teams: MatchTeamSummary[];
 	scores: MatchGameScore[];
-	eventType: "live" | "scheduled";
+	eventType: "live" | "scheduled" | "completed";
 	round?: string;
 	court?: string;
 	startTime?: string;
 	tournamentDate?: string;
 	h2h?: HeadToHeadSummary;
+	completedAt?: string;
+};
+
+export type UpcomingTournament = {
+	id: string;
+	name: string;
+	category?: string;
+	startDate: string;
+	endDate: string;
+	place?: string;
+	officialUrl?: string;
+	participantSourceUrls: string[];
+	japanesePlayers: string[];
+	matchDataAvailable: boolean;
+	timetableAvailable: boolean;
 };
 
 export type PublicState = {
 	checkedAt: string | null;
 	matches: MatchSummary[];
+	recentResults: MatchSummary[];
+	calendarCheckedAt: string | null;
+	upcomingTournaments: UpcomingTournament[];
 };
 
 export type StoredSubscription = {

@@ -12,7 +12,7 @@ export default defineConfig({
 	webServer: {
 		command: "bun scripts/dev.mjs --skip-initial-sync",
 		url: "http://localhost:5173",
-		reuseExistingServer: false,
+		reuseExistingServer: true,
 		timeout: 30_000,
 	},
 });

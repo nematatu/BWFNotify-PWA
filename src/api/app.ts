@@ -5,9 +5,15 @@ import type {
 	PublicState,
 	SaveSubscriptionRequest,
 	TestNotificationRequest,
+	UpcomingTournament,
 	UpdateSubscriptionPreferencesRequest,
 } from "../type";
-import { errorMessage, object, optionalString } from "../utils";
+import { errorMessage, object, optionalString, todayJst } from "../utils";
+import {
+	calendarRefreshDue,
+	fetchUpcomingTournaments,
+	updateTournamentAvailability,
+} from "./baj";
 import { fetchJapaneseMatches } from "./bwf";
 import { fetchBwfImage } from "./media";
 import {
@@ -27,7 +33,7 @@ const MAX_REQUEST_BYTES = 4096;
 const STATUS_CACHE_TTL_SECONDS = 30;
 const LIVE_CACHE_TTL_SECONDS = 10;
 const NOTIFICATION_DEDUP_AGE_MS = 30 * 24 * 60 * 60 * 1000;
-export const STATE_MAX_AGE_MS = 5 * 60 * 1000;
+export const STATE_MAX_AGE_MS = 30 * 60 * 1000;
 export const MAX_NOTIFICATION_ATTEMPTS = 3;
 
 type StoredState = PublicState & {
@@ -40,6 +46,16 @@ type NotificationCheckDependencies = {
 		cache: KVNamespace,
 		knownMatches: MatchSummary[],
 	) => Promise<MatchSummary[]>;
+	fetchHistory: (
+		cache: KVNamespace,
+		knownMatches: MatchSummary[],
+		now: Date,
+	) => Promise<MatchSummary[]>;
+	fetchTournaments: (
+		now: Date,
+		previous: UpcomingTournament[],
+		matches: MatchSummary[],
+	) => Promise<UpcomingTournament[]>;
 	sendNotifications: (
 		env: Env,
 		matches: MatchSummary[],
@@ -222,6 +238,14 @@ export async function runNotificationCheck(
 ): Promise<NotificationCheckResult> {
 	const dependencies: NotificationCheckDependencies = {
 		fetchMatches: fetchJapaneseMatches,
+		fetchHistory: (cache, knownMatches, now) =>
+			fetchJapaneseMatches(cache, knownMatches, {
+				upstreamCacheTtlSeconds: 12 * 60 * 60,
+				resolveYoutubeStreams: false,
+				enrichHeadToHead: false,
+				dates: recentDates(todayJst(now)),
+			}),
+		fetchTournaments: fetchUpcomingTournaments,
 		sendNotifications: sendPushNotifications,
 		now: () => new Date(),
 		...overrides,
@@ -230,9 +254,63 @@ export async function runNotificationCheck(
 		STATE_KEY,
 		"json",
 	);
-	const matches = await dependencies.fetchMatches(
-		env.NOTIFIED_MATCHES,
-		previous?.matches || [],
+	const now = dependencies.now();
+	const fetchedMatches = await dependencies.fetchMatches(env.NOTIFIED_MATCHES, [
+		...(previous?.matches || []),
+		...(previous?.recentResults || []),
+	]);
+	const matches = fetchedMatches.filter(
+		(match) => match.eventType !== "completed",
+	);
+	let completed = fetchedMatches.filter(
+		(match) => match.eventType === "completed",
+	);
+	let upcomingTournaments = previous?.upcomingTournaments || [];
+	let calendarCheckedAt = previous?.calendarCheckedAt || null;
+	if (calendarRefreshDue(calendarCheckedAt, now)) {
+		const knownMatches = [...matches, ...(previous?.recentResults || [])];
+		try {
+			const history = await dependencies.fetchHistory(
+				env.NOTIFIED_MATCHES,
+				knownMatches,
+				now,
+			);
+			completed = [
+				...completed,
+				...history.filter((match) => match.eventType === "completed"),
+			];
+		} catch (error) {
+			console.error(
+				JSON.stringify({
+					event: "history-refresh-error",
+					error: errorMessage(error),
+				}),
+			);
+		}
+		try {
+			upcomingTournaments = await dependencies.fetchTournaments(
+				now,
+				upcomingTournaments,
+				matches,
+			);
+			calendarCheckedAt = now.toISOString();
+		} catch (error) {
+			console.error(
+				JSON.stringify({
+					event: "calendar-refresh-error",
+					error: errorMessage(error),
+				}),
+			);
+		}
+	}
+	upcomingTournaments = updateTournamentAvailability(
+		upcomingTournaments,
+		matches,
+	);
+	const recentResults = mergeRecentResults(
+		previous?.recentResults || [],
+		completed,
+		now,
 	);
 	const liveMatches = matches.filter((match) => match.eventType === "live");
 	const newMatches = notificationCandidates(previous, liveMatches);
@@ -240,10 +318,12 @@ export async function runNotificationCheck(
 		newMatches.length > 0
 			? await dependencies.sendNotifications(env, newMatches)
 			: { sent: 0, failed: 0, removed: 0, byMatch: {} };
-	const now = dependencies.now();
 	const next: StoredState = {
 		checkedAt: now.toISOString(),
 		matches,
+		recentResults,
+		calendarCheckedAt,
+		upcomingTournaments,
 	};
 	const notificationAttempts = nextNotificationAttempts(
 		previous,
@@ -265,7 +345,8 @@ export async function runNotificationCheck(
 
 	const result: NotificationCheckResult = {
 		liveMatches: liveMatches.length,
-		scheduledMatches: matches.length - liveMatches.length,
+		scheduledMatches: matches.filter((match) => match.eventType === "scheduled")
+			.length,
 		newMatches: newMatches.length,
 		stateWritten,
 		...delivery,
@@ -297,6 +378,11 @@ export function shouldPersistState(
 	if (
 		matchStateSignature(previous.matches) !==
 			matchStateSignature(next.matches) ||
+		matchStateSignature(previous.recentResults || []) !==
+			matchStateSignature(next.recentResults || []) ||
+		JSON.stringify(previous.upcomingTournaments || []) !==
+			JSON.stringify(next.upcomingTournaments || []) ||
+		(previous.calendarCheckedAt || null) !== (next.calendarCheckedAt || null) ||
 		JSON.stringify(previous.notificationAttempts || {}) !==
 			JSON.stringify(next.notificationAttempts || {}) ||
 		JSON.stringify(previous.notifiedLiveMatches || {}) !==
@@ -404,7 +490,57 @@ function publicState(state: StoredState | null): PublicState {
 	return {
 		checkedAt: state?.checkedAt || null,
 		matches: Array.isArray(state?.matches) ? state.matches : [],
+		recentResults: Array.isArray(state?.recentResults)
+			? state.recentResults
+			: [],
+		calendarCheckedAt: state?.calendarCheckedAt || null,
+		upcomingTournaments: Array.isArray(state?.upcomingTournaments)
+			? state.upcomingTournaments
+			: [],
 	};
+}
+
+export function mergeRecentResults(
+	previous: MatchSummary[],
+	fetched: MatchSummary[],
+	now: Date,
+): MatchSummary[] {
+	const cutoff = now.getTime() - 7 * 24 * 60 * 60 * 1000;
+	const byId = new Map(previous.map((match) => [match.id, match]));
+	for (const match of fetched) {
+		byId.set(match.id, {
+			...byId.get(match.id),
+			...match,
+			completedAt: byId.get(match.id)?.completedAt || now.toISOString(),
+		});
+	}
+	return [...byId.values()]
+		.filter((match) => resultTime(match) >= cutoff)
+		.sort((left, right) => resultTime(right) - resultTime(left));
+}
+
+function resultTime(match: MatchSummary): number {
+	for (const value of [
+		match.startTime,
+		match.tournamentDate,
+		match.completedAt,
+	]) {
+		if (!value) continue;
+		const timestamp = Date.parse(
+			/^\d{4}-\d{2}-\d{2}$/.test(value) ? `${value}T12:00:00+09:00` : value,
+		);
+		if (Number.isFinite(timestamp)) return timestamp;
+	}
+	return 0;
+}
+
+function recentDates(today: string): string[] {
+	const base = new Date(`${today}T12:00:00Z`);
+	return Array.from({ length: 7 }, (_, index) => {
+		const date = new Date(base);
+		date.setUTCDate(base.getUTCDate() - index);
+		return date.toISOString().slice(0, 10);
+	}).reverse();
 }
 
 async function cachedJson(

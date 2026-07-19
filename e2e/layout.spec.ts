@@ -134,6 +134,42 @@ const thirdSinglesMatch = {
 	],
 };
 
+const completedMatch = {
+	...singlesMatch,
+	id: "layout-completed",
+	eventType: "completed",
+	tournamentDate: "2026-07-17",
+	round: "QF",
+	scores: [
+		{ game: 1, team1: 21, team2: 18 },
+		{ game: 2, team1: 21, team2: 16 },
+	],
+};
+
+const upcomingTournament = {
+	id: "2026-07-21:中国オープン2026",
+	name: "中国オープン2026",
+	category: "HSBC BWF World Tour Super 1000",
+	startDate: "2026-07-21",
+	endDate: "2026-07-26",
+	place: "中国 常州市",
+	officialUrl: "https://bwfbadminton.com/tournament/5622",
+	participantSourceUrls: [
+		"https://www.badminton.or.jp/storage/dispatch.pdf",
+		"https://www.badminton.or.jp/storage/contestant.pdf",
+	],
+	japanesePlayers: [
+		"奈良岡功大",
+		"山口茜",
+		"宮崎友花",
+		"福島由紀",
+		"松本麻佑",
+		"奥原希望",
+	],
+	matchDataAvailable: true,
+	timetableAvailable: false,
+};
+
 async function preparePage(page: Page) {
 	await page.addInitScript(() => {
 		localStorage.setItem("bwf-sort-order", "time-asc");
@@ -173,6 +209,9 @@ async function preparePage(page: Page) {
 					secondSinglesMatch,
 					thirdSinglesMatch,
 				],
+				recentResults: [completedMatch],
+				calendarCheckedAt: "2026-07-18T08:00:00.000Z",
+				upcomingTournaments: [upcomingTournament],
 			},
 		}),
 	);
@@ -321,6 +360,16 @@ for (const viewport of [
 		);
 		await expect(page.locator(".score-updated")).toHaveCount(1);
 		await expect(page.locator(".score-updated strong")).toHaveText("12");
+		await expect(page.locator(".result-row")).toHaveCount(1);
+		await expect(page.locator(".result-winner")).toHaveText("山口茜");
+		await expect(page.locator(".upcoming-row")).toHaveCount(1);
+		await expect(page.locator(".availability-list")).toContainText(
+			"「このあと」に表示中",
+		);
+		await expect(page.locator(".participant-list summary")).toHaveText(
+			"出場日本選手 6名",
+		);
+		await expect(page.locator(".official-links a")).toHaveCount(3);
 		await expect(page.locator(".h2h-scoreline strong")).toHaveText("3勝 - 1勝");
 		await page.locator(".h2h-scoreline").click();
 		await expect(page.locator(".previous-winner")).toHaveText(

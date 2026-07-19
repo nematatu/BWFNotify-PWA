@@ -1,5 +1,5 @@
 import { createSignal } from "solid-js";
-import type { MatchSummary, PublicState } from "../../type";
+import type { MatchSummary, PublicState, UpcomingTournament } from "../../type";
 import { type PollingMode, pollingMode } from "./pollingPolicy";
 import {
 	api,
@@ -21,6 +21,15 @@ function readSavedSort(): SortOrder | null {
 // --- Domain States ---
 export const [matches, setMatches] = createSignal<MatchSummary[]>([]);
 export const [checkedAt, setCheckedAt] = createSignal<string | null>(null);
+export const [recentResults, setRecentResults] = createSignal<MatchSummary[]>(
+	[],
+);
+export const [calendarCheckedAt, setCalendarCheckedAt] = createSignal<
+	string | null
+>(null);
+export const [upcomingTournaments, setUpcomingTournaments] = createSignal<
+	UpcomingTournament[]
+>([]);
 export const [currentView, setCurrentView] = createSignal<"live" | "scheduled">(
 	"live",
 );
@@ -40,7 +49,10 @@ export const loadStatus = async () => {
 	try {
 		const state = await api<PublicState>("/api/status");
 		setCheckedAt(state.checkedAt);
-		setMatches(state.matches);
+		setMatches(state.matches || []);
+		setRecentResults(state.recentResults || []);
+		setCalendarCheckedAt(state.calendarCheckedAt || null);
+		setUpcomingTournaments(state.upcomingTournaments || []);
 		syncPollingMode();
 	} catch (e) {
 		console.error("Failed to load status:", e);

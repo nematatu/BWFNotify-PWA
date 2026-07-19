@@ -14,8 +14,10 @@ export function optionalString(value: unknown): string | undefined {
 	return typeof value === "string" && value.trim() ? value.trim() : undefined;
 }
 
-export function todayJst(): string {
-	return new Date(Date.now() + 9 * 60 * 60 * 1000).toISOString().slice(0, 10);
+export function todayJst(now: Date = new Date()): string {
+	return new Date(now.getTime() + 9 * 60 * 60 * 1000)
+		.toISOString()
+		.slice(0, 10);
 }
 
 export function adjacentDates(date: string): string[] {
