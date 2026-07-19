@@ -4,20 +4,16 @@ import {
 	displayRound,
 	displayTournamentCategory,
 	formatMatchTime,
+	mergeLiveMatches,
 	playerInitial,
-	teamLabel,
-} from "../src/frontend/lib/format.ts";
-import {
+	previousGameScoreline,
 	proxiedImageUrl,
 	safeHttpsUrl,
-	youtubeLink,
-} from "../src/frontend/lib/media.ts";
-import {
-	mergeLiveMatches,
-	previousGameScoreline,
 	sortedMatches,
+	teamLabel,
 	tournamentGroups,
-} from "../src/frontend/match-groups.ts";
+	youtubeLink,
+} from "../src/frontend/lib/utils.ts";
 
 // ---------------------------------------------------------------------------
 // match sorting

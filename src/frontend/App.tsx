@@ -1,31 +1,27 @@
 import { createMemo, createSignal, onCleanup, onMount, Show } from "solid-js";
 import type { MatchSummary, PublicState } from "../type";
-import { AppFooter } from "./components/AppFooter";
-import { AppHeader } from "./components/AppHeader";
+import { AppFooter, AppHeader, PwaBanner } from "./components/Layout";
+import { MatchList, MatchToolbar } from "./components/Matches";
 import {
 	type InstallGuidance,
 	InstallOverlay,
-} from "./components/InstallOverlay";
-import { MatchList } from "./components/MatchList";
-import { MatchToolbar } from "./components/MatchToolbar";
-import { NotificationSettings } from "./components/NotificationSettings";
-import { PermissionOverlay } from "./components/PermissionOverlay";
-import { PwaBanner } from "./components/PwaBanner";
-import { api, errorMessage } from "./lib/api";
+	NotificationSettings,
+	PermissionOverlay,
+} from "./components/Notifications";
 import {
+	api,
+	base64UrlToBytes,
+	DEFAULT_SORT_ORDER,
+	errorMessage,
 	isGoogleApp,
 	isInAppBrowser,
 	isIosDevice,
 	isMobileBrowser,
 	isStandaloneDisplay,
-} from "./lib/device";
-import { base64UrlToBytes } from "./lib/push";
-import {
-	DEFAULT_SORT_ORDER,
 	isValidSortOrder,
+	mergeLiveMatches,
 	type SortOrder,
-} from "./lib/sort";
-import { mergeLiveMatches } from "./match-groups";
+} from "./lib/utils";
 
 // --- Constants ---
 const LIVE_POLL_MS = 15_000;
