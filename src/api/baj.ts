@@ -3,6 +3,8 @@ import type { MatchSummary, UpcomingTournament } from "../type";
 
 const BAJ_TOURNAMENT_URL =
 	"https://www.badminton.or.jp/corporate/concerned/tournament";
+const BAJ_USER_AGENT =
+	"BWFNotify/1.0 (+https://github.com/nematatu/BWFNotify-PWA)";
 const PDF_MAX_BYTES = 2 * 1024 * 1024;
 const HORIZON_DAYS = 62;
 const MAX_UPCOMING_TOURNAMENTS = 6;
@@ -29,7 +31,13 @@ export async function fetchUpcomingTournaments(
 			[1, 2].map((page) =>
 				fetcher(
 					`${BAJ_TOURNAMENT_URL}?year=${year}&month=${month}&page=${page}`,
-					{ cf: { cacheEverything: true, cacheTtl: 12 * 60 * 60 } },
+					{
+						headers: {
+							Accept: "text/html,application/xhtml+xml",
+							"User-Agent": BAJ_USER_AGENT,
+						},
+						cf: { cacheEverything: true, cacheTtl: 12 * 60 * 60 },
+					},
 				).catch(() => new Response(null, { status: 502 })),
 			),
 		),
@@ -194,6 +202,10 @@ async function playersFromPdfs(
 	for (const url of urls) {
 		try {
 			const response = await fetcher(url, {
+				headers: {
+					Accept: "application/pdf",
+					"User-Agent": BAJ_USER_AGENT,
+				},
 				cf: { cacheEverything: true, cacheTtl: 12 * 60 * 60 },
 			});
 			const contentLength = Number(response.headers.get("content-length") || 0);
