@@ -344,7 +344,7 @@ function titleMatchesMatch(title: string, match: MatchSummary): boolean {
 	if (!tournamentMatches(normalizedTitle, match.tournament)) {
 		return false;
 	}
-	if (teamsMatch(normalizedTitle, match)) {
+	if (match.eventType === "live" && teamsMatch(normalizedTitle, match)) {
 		return true;
 	}
 	return (
