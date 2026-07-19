@@ -240,7 +240,7 @@ export function MatchCard(props: {
 							</time>
 						}
 					>
-						<span class="live-badge">ライブ中</span>
+						<span class="live-state">ライブ中</span>
 					</Show>
 				</div>
 				<div class="match-actions">

@@ -271,7 +271,11 @@ for (const viewport of [
 		);
 		await expect(page.locator(".sort-select")).toHaveCSS(
 			"border-radius",
-			"4px",
+			"0px",
+		);
+		await expect(page.locator(".match-tab span").first()).toHaveCSS(
+			"background-color",
+			"rgba(0, 0, 0, 0)",
 		);
 		await expect(page.locator("#sort-order")).toHaveCSS("appearance", "none");
 		await expect(

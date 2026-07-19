@@ -308,6 +308,14 @@ describe("page structure", () => {
 		expect(css).not.toContain("border-bottom: 3px solid #d71920");
 	});
 
+	test("avoids decorative shadows and badge styling", async () => {
+		const css = await Bun.file("src/frontend/app.css").text();
+		expect(css).not.toContain("box-shadow");
+		expect(css).not.toContain(".live-badge");
+		expect(css).not.toContain(".live-label");
+		expect(css).toContain(".live-state");
+	});
+
 	test("does not draw a rectangular border around country flags", async () => {
 		const css = await Bun.file("src/frontend/app.css").text();
 		const flagRule = css.match(/\.country-flag \{([^}]+)\}/)?.[1] || "";

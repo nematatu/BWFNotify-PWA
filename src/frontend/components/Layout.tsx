@@ -103,8 +103,8 @@ export function PwaBanner() {
 						) : (
 							<>
 								ホーム画面に追加すると、
-								<strong>日本人選手の試合開始をプッシュ通知で受信</strong>
-								できるようになります！
+								<strong>日本人選手の試合開始を通知</strong>
+								できます。
 							</>
 						)}
 					</p>
