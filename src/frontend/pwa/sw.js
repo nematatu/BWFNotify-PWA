@@ -1,22 +1,8 @@
 const CACHE_NAME = __CACHE_NAME__;
 const APP_SHELL = __APP_SHELL__;
 
-// Helper to determine if we are in local development
-const isLocalDev = () => {
-	return (
-		self.location.hostname === "localhost" ||
-		self.location.hostname === "127.0.0.1" ||
-		self.location.hostname.endsWith(".local")
-	);
-};
-
 // Production Service Worker
 self.addEventListener("install", (event) => {
-	if (isLocalDev()) {
-		event.waitUntil(self.skipWaiting());
-		return;
-	}
-
 	event.waitUntil(
 		caches
 			.open(CACHE_NAME)
@@ -26,16 +12,6 @@ self.addEventListener("install", (event) => {
 });
 
 self.addEventListener("activate", (event) => {
-	if (isLocalDev()) {
-		event.waitUntil(
-			caches
-				.keys()
-				.then((names) => Promise.all(names.map((name) => caches.delete(name))))
-				.then(() => self.clients.claim()),
-		);
-		return;
-	}
-
 	event.waitUntil(
 		caches
 			.keys()
@@ -51,10 +27,6 @@ self.addEventListener("activate", (event) => {
 });
 
 self.addEventListener("fetch", (event) => {
-	if (isLocalDev()) {
-		return;
-	}
-
 	const url = new URL(event.request.url);
 	if (
 		event.request.method !== "GET" ||
