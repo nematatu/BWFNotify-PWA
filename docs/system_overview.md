@@ -32,7 +32,7 @@ BWFNotify-PWA は、バドミントン世界連盟（BWF）の公式大会にお
 ### フロントエンド (SPA)
 - **構成**: SolidJS + TypeScript (Viteによる高速ビルドパイプラインを適用)。
 - **特徴**: ライトテーマ固定（ダークモードなし）、フォントは `LINE Seed JP`。SolidJSのリアクティブ設計（Signals, Memos）を活用し、状態同期やUI更新の負荷を最小化。
-- **モジュール分割**: アプリケーションは、独立したUIコンポーネント群（`Layout.tsx`、`Matches.tsx`、`Notifications.tsx`）と、非UIヘルパーやマージロジックを集約した共通ユーティリティ（`src/frontend/lib/utils.ts`）の計4ファイルにシンプルに集約されており、ファイル散乱を防ぎ、高い可読性と保守性を維持しています。
+- **モジュール分割**: アプリケーションはUI層（`Layout.tsx`、`Matches.tsx`、`Notifications.tsx`）と、ビジネスロジックをカプセル化したカスタムフック層（`useMatches.ts`、`usePushNotifications.ts`、`usePwaInstall.ts`）、インフラ層（`pwa.ts`）に綺麗に責任分離されています。
 - **PWA / Service Worker**: `src/frontend/pwa/sw.js` がテンプレートとなり、Viteビルドプラグインがハッシュ付きアセット（CSS/JS）のリストを動的に埋め込み、`dist/pwa/sw.js` へ出力します。オフライン対応、キャッシュ、および Web Push の受信と表示を担当。iOS Safari のホーム画面追加（PWA）におけるプッシュ受信に対応。
 
 ### バックエンド (Serverless)
@@ -55,11 +55,12 @@ BWFNotify-PWA は、バドミントン世界連盟（BWF）の公式大会にお
 
 ## 4. 解決済みの主要な課題 (Solved Challenges)
 
-### フロントエンドの近代化: SolidJS + TypeScript移行とモジュールの目的別集約
+### フロントエンドの近代化: 責任の完全な分離（Custom Hooks ＆ Context アーキテクチャ）
 - **課題**: 以前は1ファイルにすべてのロジック・HTML・CSS・ダミーテスト回避用コードが詰め込まれた巨大なVanilla JSモノリス（`app.js`）となっており、可読性が極めて低く、拡張が不可能な状態になっていました。
 - **解決策**:
-  - **コンポーネントとヘルパーの目的別集約**: 以前は細分化によって散乱していた10個以上のコンポーネントや小さなヘルパーファイルを機能の目的別に整理し、`Layout.tsx`、`Matches.tsx`、`Notifications.tsx`、および `utils.ts` の**計4ファイルにシンプルに集約**。ファイル数とインポートの依存関係を劇的に削減しました。
-  - **純粋関数ライブラリの抽出**: 状態マージやフォーマッタなどの非UIロジックを `utils.ts` にまとめ、UIライフサイクルから完全に分離して独立テストを容易にしました。
+  - **Custom Hooks による関心事の分離**: 状態管理と非同期ポーリング、Web Push、PWAインストール制御の各ドメインを、独立したカスタムフック（`useMatches`, `usePushNotifications`, `usePwaInstall`）へ分離。
+  - **インフラ層の隔離**: Service Worker の管理を `pwa.ts` に隠蔽。
+  - **Context による Prop Drilling の撤廃**: UIコンポーネント（`Matches.tsx`, `Notifications.tsx`）が context 経由でステートを直接取得することで、コンポーネントの props と依存関係を極小化。
   - **ステートのリアクティブ化**: アイドル状態やプッシュ購読状態を SolidJS Signals に置き換え、非同期通信とUI同期におけるバグや再描画の無駄を排除。
 
 ### 課金防止: KV読み取り回数の 99.9% 削減
