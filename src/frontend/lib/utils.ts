@@ -1,31 +1,60 @@
+import { createContext, useContext } from "solid-js";
 import type { MatchSummary } from "../../type";
 
 // ==========================================
-// 1. API Helper
+// 1. App Context (Eliminates Prop Drilling)
 // ==========================================
-const API_TIMEOUT_MS = 15_000;
+export type SortOrder = "time-asc" | "time-desc" | "tournament";
+export const SORT_OPTIONS: SortOrder[] = [
+	"time-asc",
+	"time-desc",
+	"tournament",
+];
+export const DEFAULT_SORT_ORDER: SortOrder = "time-asc";
 
-function extractError(payload: unknown): string | undefined {
-	if (payload && typeof payload === "object") {
-		const err = (payload as Record<string, unknown>).error;
-		return typeof err === "string" ? err : undefined;
-	}
-	return undefined;
-}
+export const AppContext = createContext<{
+	matches: () => MatchSummary[];
+	excludedMatchIds: () => Set<string>;
+	notificationDisabled: () => boolean;
+	onNotificationChange: (matchId: string, enabled: boolean) => void;
+	sortOrder: () => SortOrder;
+	setSortOrder: (order: SortOrder) => void;
+	currentView: () => "live" | "scheduled";
+	setCurrentView: (view: "live" | "scheduled") => void;
+	loadStatus: () => Promise<void>;
+	notifText: () => string;
+	notifError: () => boolean;
+	testDisabled: () => boolean;
+	toggleChecked: () => boolean;
+	toggleDisabled: () => boolean;
+	standalone: () => boolean;
+	inApp: () => boolean;
+	onTest: () => void;
+	onToggleClick: (e: Event) => void;
+	onToggleChange: (e: Event) => void;
+	onShowInstall: () => void;
+}>();
 
-export function errorMessage(error: unknown): string {
-	if (error instanceof Error) return error.message;
-	return "処理に失敗しました";
-}
+export const useApp = () => {
+	const ctx = useContext(AppContext);
+	if (!ctx) throw new Error("useApp must be used within AppProvider");
+	return ctx;
+};
+
+// ==========================================
+// 2. API Helper
+// ==========================================
+export const errorMessage = (e: unknown) =>
+	e instanceof Error ? e.message : "処理に失敗しました";
 
 export async function api<T>(
 	path: string,
 	options: RequestInit = {},
 ): Promise<T> {
 	const controller = new AbortController();
-	const timer = setTimeout(() => controller.abort(), API_TIMEOUT_MS);
+	const timer = setTimeout(() => controller.abort(), 15_000);
 	try {
-		const response = await fetch(path, {
+		const res = await fetch(path, {
 			...options,
 			headers: {
 				...(options.body ? { "content-type": "application/json" } : {}),
@@ -33,10 +62,15 @@ export async function api<T>(
 			},
 			signal: controller.signal,
 		});
-		const payload: unknown = await response.json();
-		if (!response.ok) {
-			const err = extractError(payload);
-			throw new Error(err || `Request failed (${response.status})`);
+		const payload = await res.json();
+		if (!res.ok) {
+			const err =
+				payload && typeof payload === "object"
+					? (payload as Record<string, unknown>).error
+					: undefined;
+			throw new Error(
+				typeof err === "string" ? err : `Request failed (${res.status})`,
+			);
 		}
 		return payload as T;
 	} finally {
@@ -45,7 +79,7 @@ export async function api<T>(
 }
 
 // ==========================================
-// 2. Format Utilities
+// 3. Format Utilities
 // ==========================================
 const FMT_DATE_MEDIUM = new Intl.DateTimeFormat("ja-JP", {
 	dateStyle: "medium",
@@ -57,41 +91,36 @@ const FMT_DATETIME = new Intl.DateTimeFormat("ja-JP", {
 	minute: "2-digit",
 });
 
-export function formatDate(value: string): string {
-	const date = new Date(value);
-	return Number.isNaN(date.getTime()) ? "時刻不明" : FMT_DATETIME.format(date);
-}
+export const formatDate = (v: string) => {
+	const d = new Date(v);
+	return Number.isNaN(d.getTime()) ? "時刻不明" : FMT_DATETIME.format(d);
+};
 
-export function formatMatchTime(value: string | undefined): string {
-	if (!value) return "時刻未定";
-	const normalized = /^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/.test(value)
-		? `${value.replace(" ", "T")}Z`
-		: value;
-	const date = new Date(normalized);
-	if (Number.isNaN(date.getTime())) return String(value);
-	return FMT_DATETIME.format(date);
-}
+export const formatMatchTime = (v: string | undefined) => {
+	if (!v) return "時刻未定";
+	const d = new Date(
+		/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/.test(v)
+			? `${v.replace(" ", "T")}Z`
+			: v,
+	);
+	return Number.isNaN(d.getTime()) ? v : FMT_DATETIME.format(d);
+};
 
-export function formatTournamentDate(value: string | undefined): string {
-	if (!value) return "";
-	const date = new Date(`${value}T00:00:00`);
-	return Number.isNaN(date.getTime())
-		? String(value)
-		: FMT_DATE_MEDIUM.format(date);
-}
+export const formatTournamentDate = (v: string | undefined) => {
+	if (!v) return "";
+	const d = new Date(`${v}T00:00:00`);
+	return Number.isNaN(d.getTime()) ? v : FMT_DATE_MEDIUM.format(d);
+};
 
-export function playerInitial(value: string): string {
-	const parts = value.trim().split(/\s+/);
-	return parts.length > 1
-		? parts.map((p) => p.at(0) || "").join("")
-		: value.substring(0, 2);
-}
+export const playerInitial = (v: string) => {
+	const pts = v.trim().split(/\s+/);
+	return pts.length > 1
+		? pts.map((p) => p.at(0) || "").join("")
+		: v.substring(0, 2);
+};
 
-export function teamLabel(
-	team: { players?: { name: string }[] } | undefined,
-): string {
-	return team?.players?.map((p) => p.name).join(" / ") || "選手不明";
-}
+export const teamLabel = (t: { players?: { name: string }[] } | undefined) =>
+	t?.players?.map((p) => p.name).join(" / ") || "選手不明";
 
 const ROUND_LABELS: Record<string, string> = {
 	F: "決勝",
@@ -101,111 +130,52 @@ const ROUND_LABELS: Record<string, string> = {
 	R32: "1回戦",
 	R64: "1回戦",
 };
-
-export function displayRound(value?: string): string {
-	if (!value) return "";
-	return ROUND_LABELS[value] || value;
-}
-
-export function displayCourt(value?: string): string {
-	if (!value) return "";
-	const m = value.match(/Court\s+(\d+)/i);
-	return m ? `第${m[1]}コート` : value;
-}
-
-export function displayTournamentCategory(value?: string): string {
-	if (!value) return "";
-	return value.replace("HSBC BWF World Tour ", "");
-}
+export const displayRound = (v?: string) => (v ? ROUND_LABELS[v] || v : "");
+export const displayCourt = (v?: string) =>
+	v ? v.replace(/Court\s+(\d+)/i, "第$1コート") : "";
+export const displayTournamentCategory = (v?: string) =>
+	v ? v.replace("HSBC BWF World Tour ", "") : "";
 
 // ==========================================
-// 3. Device Detection
+// 4. Device & Push Utilities
 // ==========================================
-export function isIosDevice(): boolean {
+export const isIosDevice = () => {
 	const ua = navigator.userAgent || "";
 	return (
 		/iPad|iPhone|iPod/.test(ua) ||
 		(/Macintosh/.test(ua) && navigator.maxTouchPoints > 1)
 	);
-}
-
-export function isMobileBrowser(): boolean {
-	const ua = navigator.userAgent || "";
-	return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
-		ua,
+};
+export const isMobileBrowser = () =>
+	/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
+		navigator.userAgent || "",
 	);
-}
-
-export function isInAppBrowser(): boolean {
-	const ua = navigator.userAgent || "";
-	return /\b(Twitter|FBAV|Instagram|Line|IAB|FB_IAB|FBAN)\b/i.test(ua);
-}
-
-export function isGoogleApp(): boolean {
-	const ua = navigator.userAgent || "";
-	return /\bGSA\//.test(ua);
-}
-
-export function isStandaloneDisplay(): boolean {
-	return (
-		window.matchMedia("(display-mode: standalone)").matches ||
-		(window.navigator as unknown as { standalone?: boolean }).standalone ===
-			true
+export const isInAppBrowser = () =>
+	/\b(Twitter|FBAV|Instagram|Line|IAB|FB_IAB|FBAN)\b/i.test(
+		navigator.userAgent || "",
 	);
-}
+export const isGoogleApp = () => /\bGSA\//.test(navigator.userAgent || "");
+export const isStandaloneDisplay = () =>
+	window.matchMedia("(display-mode: standalone)").matches ||
+	(window.navigator as unknown as { standalone?: boolean }).standalone === true;
+
+export const base64UrlToBytes = (v: string) => {
+	const pad = "=".repeat((4 - (v.length % 4)) % 4);
+	const dec = atob((v + pad).replace(/-/g, "+").replace(/_/g, "/"));
+	return Uint8Array.from(dec, (c) => c.charCodeAt(0));
+};
 
 // ==========================================
-// 4. Media Utilities
+// 5. Media & YouTube Utilities
 // ==========================================
-export function proxiedImageUrl(value: unknown): string {
-	if (!value) return "";
-	const url = safeHttpsUrl(value);
-	return `/api/media?url=${encodeURIComponent(url)}`;
-}
-
-export function safeHttpsUrl(value: unknown): string {
-	if (!value) return "";
-	const s = String(value);
-	return s.startsWith("http://") ? s.replace("http://", "https://") : s;
-}
-
-export function youtubeLink(value?: string | null): string {
-	if (!value) return "";
-	return value;
-}
+export const safeHttpsUrl = (v: unknown) =>
+	String(v || "").replace(/^http:\/\//, "https://");
+export const proxiedImageUrl = (v: unknown) =>
+	v ? `/api/media?url=${encodeURIComponent(safeHttpsUrl(v))}` : "";
+export const youtubeLink = (v?: string | null) => v || "";
 
 // ==========================================
-// 5. Sort Order
-// ==========================================
-export type SortOrder = "time-asc" | "time-desc" | "tournament";
-
-export const SORT_OPTIONS: SortOrder[] = [
-	"time-asc",
-	"time-desc",
-	"tournament",
-];
-
-export const DEFAULT_SORT_ORDER: SortOrder = "time-asc";
-
-export function isValidSortOrder(value: unknown): value is SortOrder {
-	return SORT_OPTIONS.includes(value as SortOrder);
-}
-
-// ==========================================
-// 6. Push Utilities
-// ==========================================
-export function base64UrlToBytes(value: string): Uint8Array<ArrayBuffer> {
-	const padding = "=".repeat((4 - (value.length % 4)) % 4);
-	const decoded = atob((value + padding).replace(/-/g, "+").replace(/_/g, "/"));
-	const bytes = new Uint8Array(decoded.length);
-	for (let i = 0; i < decoded.length; i++) {
-		bytes[i] = decoded.charCodeAt(i);
-	}
-	return bytes;
-}
-
-// ==========================================
-// 7. Match Grouping and Merging
+// 6. Match Grouping and Merging
 // ==========================================
 export interface TournamentGroup {
 	name: string;
@@ -213,132 +183,116 @@ export interface TournamentGroup {
 	matches: MatchSummary[];
 }
 
-export function sortedMatches(
+export const isValidSortOrder = (v: unknown): v is SortOrder =>
+	SORT_OPTIONS.includes(v as SortOrder);
+
+export const sortedMatches = (
 	matches: MatchSummary[],
-	sortOrder = DEFAULT_SORT_ORDER,
-): MatchSummary[] {
-	const direction = sortOrder === "time-desc" ? -1 : 1;
+	ord: SortOrder = DEFAULT_SORT_ORDER,
+) => {
+	const dir = ord === "time-desc" ? -1 : 1;
 	return [...matches].sort(
-		(left, right) => direction * compareStartTime(left, right),
+		(l, r) =>
+			dir *
+			String(l.startTime || "\uffff").localeCompare(
+				String(r.startTime || "\uffff"),
+			),
 	);
-}
+};
 
-export function tournamentGroups(matches: MatchSummary[]): TournamentGroup[] {
+export const tournamentGroups = (
+	matches: MatchSummary[],
+): TournamentGroup[] => {
 	const groups = new Map<string, TournamentGroup>();
-	const sorted = sortedMatches(matches);
-	for (const match of sorted) {
-		const name = String(match.tournament || "BWF");
-		const current = groups.get(name);
-		if (current) {
-			current.matches.push(match);
-		} else {
-			groups.set(name, {
-				name,
-				logoUrl: match.tournamentLogoUrl,
-				matches: [match],
-			});
-		}
+	for (const m of sortedMatches(matches)) {
+		const name = m.tournament || "BWF";
+		const curr = groups.get(name);
+		if (curr) curr.matches.push(m);
+		else groups.set(name, { name, logoUrl: m.tournamentLogoUrl, matches: [m] });
 	}
-	return [...groups.values()].sort((left, right) =>
-		left.name.localeCompare(right.name, "ja"),
+	return [...groups.values()].sort((l, r) =>
+		l.name.localeCompare(r.name, "ja"),
 	);
-}
+};
 
-export function previousGameScoreline(
+export const previousGameScoreline = (
 	games?: Array<{ team1: number; team2: number }> | null,
-): string {
-	if (!Array.isArray(games)) {
-		return "";
-	}
-	return games
-		.filter(
-			(game) => Number.isFinite(game?.team1) && Number.isFinite(game?.team2),
-		)
-		.map((game) => `${game.team1}-${game.team2}`)
-		.join(" / ");
-}
+) =>
+	Array.isArray(games)
+		? games
+				.filter((g) => Number.isFinite(g?.team1) && Number.isFinite(g?.team2))
+				.map((g) => `${g.team1}-${g.team2}`)
+				.join(" / ")
+		: "";
 
 export function mergeLiveMatches(
 	currentMatches: MatchSummary[],
 	freshMatches: MatchSummary[],
 ): MatchSummary[] {
-	const currentById = new Map<string, MatchSummary>(
-		currentMatches.map((match) => [match.id, match]),
-	);
-	const freshLive = freshMatches.filter((match) => match.eventType === "live");
-	const freshLiveIds = new Set(freshLive.map((match) => match.id));
+	const currMap = new Map(currentMatches.map((m) => [m.id, m]));
+	const freshLive = freshMatches.filter((m) => m.eventType === "live");
+	const freshLiveIds = new Set(freshLive.map((m) => m.id));
+
 	const mergedLive = freshLive.map((fresh) => {
-		const current = currentById.get(fresh.id);
+		const curr = currMap.get(fresh.id);
 		const merged: MatchSummary & { scoreChangedTeam?: 1 | 2 } = {
-			...(current || {}),
+			...curr,
 			...fresh,
 		};
-		merged.scoreChangedTeam = changedScoreTeam(current, fresh);
-		if (current?.h2h && !fresh.h2h) {
-			merged.h2h = current.h2h;
-		}
-		if (!fresh.youtubeUrl) {
-			merged.youtubeUrl = isDirectYoutubeUrl(current?.youtubeUrl)
-				? current?.youtubeUrl || ""
-				: "";
+		merged.scoreChangedTeam = changedScoreTeam(curr, fresh);
+		if (curr?.h2h && !fresh.h2h) merged.h2h = curr.h2h;
+		if (
+			!fresh.youtubeUrl &&
+			curr?.youtubeUrl &&
+			isDirectYoutubeUrl(curr.youtubeUrl)
+		) {
+			merged.youtubeUrl = curr.youtubeUrl;
 		}
 		return merged;
 	});
-	const scheduled = currentMatches.filter(
-		(match) => match.eventType === "scheduled" && !freshLiveIds.has(match.id),
-	);
-	return [...mergedLive, ...scheduled];
+
+	return [
+		...mergedLive,
+		...currentMatches.filter(
+			(m) => m.eventType === "scheduled" && !freshLiveIds.has(m.id),
+		),
+	];
 }
 
-function changedScoreTeam(
-	current: MatchSummary | undefined,
+const changedScoreTeam = (
+	curr: MatchSummary | undefined,
 	fresh: MatchSummary,
-): 1 | 2 | undefined {
-	const previous = current?.scores?.at(-1);
+): 1 | 2 | undefined => {
+	const prev = curr?.scores?.at(-1);
 	const next = fresh?.scores?.at(-1);
-	if (!previous || !next) {
+	if (
+		!prev ||
+		!next ||
+		(prev.game === next.game &&
+			prev.team1 === next.team1 &&
+			prev.team2 === next.team2)
+	)
 		return undefined;
-	}
-	const unchanged =
-		previous.game === next.game &&
-		previous.team1 === next.team1 &&
-		previous.team2 === next.team2;
-	if (unchanged) {
-		return undefined;
-	}
-	if (next.lastPointWinner === 1 || next.lastPointWinner === 2) {
+	if (next.lastPointWinner === 1 || next.lastPointWinner === 2)
 		return next.lastPointWinner;
-	}
-	if (next.team1 > previous.team1 && next.team2 === previous.team2) {
-		return 1;
-	}
-	if (next.team2 > previous.team2 && next.team1 === previous.team1) {
-		return 2;
-	}
+	if (next.team1 > prev.team1 && next.team2 === prev.team2) return 1;
+	if (next.team2 > prev.team2 && next.team1 === prev.team1) return 2;
 	return undefined;
-}
+};
 
-function isDirectYoutubeUrl(value: string | undefined): boolean {
-	if (!value) {
-		return false;
-	}
+const isDirectYoutubeUrl = (v?: string): boolean => {
+	if (!v) return false;
 	try {
-		const url = new URL(value);
+		const u = new URL(v);
 		return (
-			(url.hostname === "youtu.be" && /^\/[\w-]{11}$/.test(url.pathname)) ||
+			(u.hostname === "youtu.be" && /^\/[\w-]{11}$/.test(u.pathname)) ||
 			(["youtube.com", "www.youtube.com", "m.youtube.com"].includes(
-				url.hostname,
+				u.hostname,
 			) &&
-				url.pathname === "/watch" &&
-				/^[\w-]{11}$/.test(url.searchParams.get("v") || ""))
+				u.pathname === "/watch" &&
+				/^[\w-]{11}$/.test(u.searchParams.get("v") || ""))
 		);
 	} catch {
 		return false;
 	}
-}
-
-function compareStartTime(left: MatchSummary, right: MatchSummary): number {
-	return String(left.startTime || "\uffff").localeCompare(
-		String(right.startTime || "\uffff"),
-	);
-}
+};

@@ -17,6 +17,7 @@ import {
 	sortedMatches,
 	teamLabel,
 	tournamentGroups,
+	useApp,
 	youtubeLink,
 } from "../lib/utils";
 
@@ -28,7 +29,6 @@ export function TeamBlock(props: {
 	side: "left" | "right";
 }) {
 	const isJapanese = () => props.team?.players?.some((p) => p.isJapanese);
-
 	return (
 		<div
 			class={`team team-${props.side} ${isJapanese() ? "japanese-team" : "foreign-team"}`}
@@ -46,19 +46,19 @@ export function TeamBlock(props: {
 				</Show>
 				<div class="player-photos">
 					<For each={props.team?.players || []}>
-						{(player: MatchPlayerSummary) => (
+						{(p: MatchPlayerSummary) => (
 							<Show
-								when={player.photoUrl}
+								when={p.photoUrl}
 								fallback={
 									<div class="player-photo player-photo-placeholder">
-										{playerInitial(player.name)}
+										{playerInitial(p.name)}
 									</div>
 								}
 							>
 								<img
 									class="player-photo"
-									src={proxiedImageUrl(player.photoUrl)}
-									alt={player.name}
+									src={proxiedImageUrl(p.photoUrl)}
+									alt={p.name}
 								/>
 							</Show>
 						)}
@@ -67,15 +67,15 @@ export function TeamBlock(props: {
 			</div>
 			<div class="player-names">
 				<For each={props.team?.players || []}>
-					{(player: MatchPlayerSummary, index) => (
+					{(p: MatchPlayerSummary, idx) => (
 						<>
-							<Show when={index() > 0}>
+							<Show when={idx() > 0}>
 								<span class="player-separator"> / </span>
 							</Show>
 							<span
-								class={`player-name ${player.isJapanese ? "japanese-player" : ""}`}
+								class={`player-name ${p.isJapanese ? "japanese-player" : ""}`}
 							>
-								{player.name}
+								{p.name}
 							</span>
 						</>
 					)}
@@ -88,15 +88,20 @@ export function TeamBlock(props: {
 // ==========================================
 // 2. MatchToolbar Component
 // ==========================================
-export function MatchToolbar(props: {
-	view: "live" | "scheduled";
-	liveCount: number;
-	scheduledCount: number;
-	sortOrder: SortOrder;
-	onViewChange: (view: "live" | "scheduled") => void;
-	onSortChange: (order: SortOrder) => void;
-	onRefresh: () => void;
-}) {
+export function MatchToolbar() {
+	const {
+		currentView,
+		setCurrentView,
+		matches,
+		sortOrder,
+		setSortOrder,
+		loadStatus,
+	} = useApp();
+	const liveCount = () =>
+		matches().filter((m) => m.eventType === "live").length;
+	const scheduledCount = () =>
+		matches().filter((m) => m.eventType === "scheduled").length;
+
 	return (
 		<div class="match-toolbar">
 			<div class="match-tabs" role="tablist" aria-label="試合状態">
@@ -105,20 +110,20 @@ export function MatchToolbar(props: {
 					class="match-tab"
 					type="button"
 					role="tab"
-					aria-selected={props.view === "live" ? "true" : "false"}
-					onClick={() => props.onViewChange("live")}
+					aria-selected={currentView() === "live" ? "true" : "false"}
+					onClick={() => setCurrentView("live")}
 				>
-					ライブ <span id="live-count">{props.liveCount}</span>
+					ライブ <span id="live-count">{liveCount()}</span>
 				</button>
 				<button
 					id="scheduled-tab"
 					class="match-tab"
 					type="button"
 					role="tab"
-					aria-selected={props.view === "scheduled" ? "true" : "false"}
-					onClick={() => props.onViewChange("scheduled")}
+					aria-selected={currentView() === "scheduled" ? "true" : "false"}
+					onClick={() => setCurrentView("scheduled")}
 				>
-					このあと <span id="scheduled-count">{props.scheduledCount}</span>
+					このあと <span id="scheduled-count">{scheduledCount()}</span>
 				</button>
 			</div>
 			<div class="match-controls">
@@ -128,14 +133,14 @@ export function MatchToolbar(props: {
 				<select
 					id="sort-order"
 					aria-label="ソート順"
-					value={props.sortOrder}
-					onChange={(e) => props.onSortChange(e.target.value as SortOrder)}
+					value={sortOrder()}
+					onChange={(e) => setSortOrder(e.target.value as SortOrder)}
 				>
 					<option value="time-asc">時間が早い順</option>
 					<option value="time-desc">時間が遅い順</option>
 					<option value="tournament">大会名順</option>
 				</select>
-				<button id="refresh-button" type="button" onClick={props.onRefresh}>
+				<button id="refresh-button" type="button" onClick={loadStatus}>
 					再読み込み
 				</button>
 			</div>
@@ -146,19 +151,37 @@ export function MatchToolbar(props: {
 // ==========================================
 // 3. MatchCard Component
 // ==========================================
-export type MatchCardProps = {
+export function MatchCard(props: {
 	match: MatchSummary & { scoreChangedTeam?: 1 | 2 };
 	showTournament?: boolean;
-	notificationEnabled: boolean;
-	notificationDisabled: boolean;
-	onNotificationChange: (matchId: string, enabled: boolean) => void;
-};
-
-export function MatchCard(props: MatchCardProps) {
+}) {
+	const { excludedMatchIds, notificationDisabled, onNotificationChange } =
+		useApp();
 	const scores = () => props.match.scores;
 	const lastScore = () => scores()?.at(-1);
 	const isLive = () => props.match.eventType === "live";
-	const changed = () => props.match.scoreChangedTeam;
+
+	const renderScoreSide = (sideIndex: 1 | 2) => {
+		const scoreVal = () =>
+			sideIndex === 1 ? lastScore()?.team1 : lastScore()?.team2;
+		const isServing = () => lastScore()?.servingTeam === sideIndex;
+		const isChanged = () => props.match.scoreChangedTeam === sideIndex;
+		return (
+			<div class={`score-side score-team-${sideIndex}`}>
+				{sideIndex === 1 && isServing() && (
+					<img class="shuttle-indicator" src="/view/shuttle.svg" alt="サーブ" />
+				)}
+				<Show when={isChanged()} fallback={<strong>{scoreVal() ?? 0}</strong>}>
+					<span class="score-updated">
+						<strong>{scoreVal() ?? 0}</strong>
+					</span>
+				</Show>
+				{sideIndex === 2 && isServing() && (
+					<img class="shuttle-indicator" src="/view/shuttle.svg" alt="サーブ" />
+				)}
+			</div>
+		);
+	};
 
 	return (
 		<div class={`match ${isLive() ? "live-match" : "scheduled-match"}`}>
@@ -205,7 +228,6 @@ export function MatchCard(props: MatchCardProps) {
 
 			<div class="matchup">
 				<TeamBlock team={props.match.teams[0]} side="left" />
-
 				<div class="match-centre">
 					<Show
 						when={isLive() && scores()?.length > 0}
@@ -220,45 +242,12 @@ export function MatchCard(props: MatchCardProps) {
 					>
 						<span class="current-game">GAME {scores().length}</span>
 						<div class="current-score">
-							<div class="score-side score-team-1">
-								<Show when={lastScore()?.servingTeam === 1}>
-									<img
-										class="shuttle-indicator"
-										src="/view/shuttle.svg"
-										alt="サーブ"
-									/>
-								</Show>
-								<Show
-									when={changed() === 1}
-									fallback={<strong>{lastScore()?.team1 ?? 0}</strong>}
-								>
-									<span class="score-updated">
-										<strong>{lastScore()?.team1 ?? 0}</strong>
-									</span>
-								</Show>
-							</div>
+							{renderScoreSide(1)}
 							<span class="score-separator">-</span>
-							<div class="score-side score-team-2">
-								<Show
-									when={changed() === 2}
-									fallback={<strong>{lastScore()?.team2 ?? 0}</strong>}
-								>
-									<span class="score-updated">
-										<strong>{lastScore()?.team2 ?? 0}</strong>
-									</span>
-								</Show>
-								<Show when={lastScore()?.servingTeam === 2}>
-									<img
-										class="shuttle-indicator"
-										src="/view/shuttle.svg"
-										alt="サーブ"
-									/>
-								</Show>
-							</div>
+							{renderScoreSide(2)}
 						</div>
 					</Show>
 				</div>
-
 				<TeamBlock team={props.match.teams[1]} side="right" />
 			</div>
 
@@ -296,8 +285,8 @@ export function MatchCard(props: MatchCardProps) {
 							<div class="previous-winner">
 								{props.match.h2h?.previous?.winner === 1
 									? teamLabel(props.match.teams[0])
-									: teamLabel(props.match.teams[1])}
-								{" 勝利"}
+									: teamLabel(props.match.teams[1])}{" "}
+								勝利
 							</div>
 							<div class="previous-scoreline">
 								{previousGameScoreline(props.match.h2h?.previous?.games)}
@@ -321,7 +310,6 @@ export function MatchCard(props: MatchCardProps) {
 						</span>
 					</a>
 				</Show>
-
 				<Show when={props.match.eventType === "scheduled"}>
 					<div class="match-notification-control">
 						<span>試合開始を通知</span>
@@ -329,10 +317,10 @@ export function MatchCard(props: MatchCardProps) {
 							<span class="visually-hidden">通知設定</span>
 							<input
 								type="checkbox"
-								checked={props.notificationEnabled}
-								disabled={props.notificationDisabled}
+								checked={!excludedMatchIds().has(props.match.id)}
+								disabled={notificationDisabled()}
 								onChange={(e) =>
-									props.onNotificationChange(props.match.id, e.target.checked)
+									onNotificationChange(props.match.id, e.target.checked)
 								}
 							/>
 							<span class="switch-track" aria-hidden="true" />
@@ -347,88 +335,64 @@ export function MatchCard(props: MatchCardProps) {
 // ==========================================
 // 4. MatchList Component
 // ==========================================
-export function MatchList(props: {
-	matches: MatchSummary[];
-	sortOrder: SortOrder;
-	view: "live" | "scheduled";
-	excludedMatchIds: Set<string>;
-	notificationDisabled: boolean;
-	onNotificationChange: (matchId: string, enabled: boolean) => void;
-}) {
-	const sorted = createMemo(() =>
-		sortedMatches(props.matches, props.sortOrder),
+export function MatchList() {
+	const { matches, sortOrder, currentView } = useApp();
+	const filtered = createMemo(() =>
+		matches().filter((m) => m.eventType === currentView()),
 	);
-	const grouped = createMemo(() => tournamentGroups(props.matches));
-	const isTournamentView = () => props.sortOrder === "tournament";
+	const sorted = createMemo(() => sortedMatches(filtered(), sortOrder()));
+	const grouped = createMemo(() => tournamentGroups(filtered()));
+	const isTournamentView = () => sortOrder() === "tournament";
 
 	return (
 		<div
 			id="match-list"
 			class={`match-list ${isTournamentView() ? "" : "time-grid"}`}
 			role="tabpanel"
-			aria-labelledby={`${props.view}-tab`}
+			aria-labelledby={`${currentView()}-tab`}
 			aria-live="polite"
 		>
 			<Show
-				when={props.matches.length > 0}
+				when={filtered().length > 0}
 				fallback={<p class="empty-state">対象の試合はありません</p>}
 			>
 				<Show
 					when={isTournamentView()}
 					fallback={
 						<For each={sorted()}>
-							{(match) => (
-								<MatchCard
-									match={match}
-									showTournament={true}
-									notificationEnabled={!props.excludedMatchIds.has(match.id)}
-									notificationDisabled={props.notificationDisabled}
-									onNotificationChange={props.onNotificationChange}
-								/>
-							)}
+							{(m) => <MatchCard match={m} showTournament={true} />}
 						</For>
 					}
 				>
 					<For each={grouped()}>
-						{(group) => (
+						{(g) => (
 							<div class="tournament-group">
 								<div class="tournament-hero">
 									<Show
-										when={group.matches[0]?.tournamentHeaderImageUrl}
+										when={g.matches[0]?.tournamentHeaderImageUrl}
 										fallback={
-											<div class="tournament-hero-fallback">{group.name}</div>
+											<div class="tournament-hero-fallback">{g.name}</div>
 										}
 									>
 										<img
 											class="tournament-hero-image"
 											src={proxiedImageUrl(
-												group.matches[0].tournamentHeaderImageUrl,
+												g.matches[0].tournamentHeaderImageUrl,
 											)}
-											alt={group.name}
+											alt={g.name}
 										/>
 									</Show>
 									<div class="tournament-hero-overlay">
-										<h2>{group.name}</h2>
-										<Show when={group.matches[0]?.tournamentCategory}>
+										<h2>{g.name}</h2>
+										<Show when={g.matches[0]?.tournamentCategory}>
 											<p class="tournament-category">
-												{group.matches[0].tournamentCategory}
+												{g.matches[0].tournamentCategory}
 											</p>
 										</Show>
 									</div>
 								</div>
 								<div class="tournament-matches">
-									<For each={group.matches}>
-										{(match) => (
-											<MatchCard
-												match={match}
-												notificationEnabled={
-													!props.excludedMatchIds.has(match.id)
-												}
-												notificationDisabled={props.notificationDisabled}
-												onNotificationChange={props.onNotificationChange}
-											/>
-										)}
-									</For>
+									<For each={g.matches}>{(m) => <MatchCard match={m} />}</For>
 								</div>
 							</div>
 						)}

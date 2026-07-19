@@ -9,6 +9,7 @@ import {
 	PermissionOverlay,
 } from "./components/Notifications";
 import {
+	AppContext,
 	api,
 	base64UrlToBytes,
 	DEFAULT_SORT_ORDER,
@@ -55,7 +56,7 @@ export default function App() {
 		null,
 	);
 
-	// --- Install / PWA state ---
+	// --- Install state ---
 	const [installPrompt, setInstallPrompt] =
 		createSignal<DeferredInstallPrompt | null>(null);
 	const [installOpen, setInstallOpen] = createSignal(false);
@@ -74,15 +75,6 @@ export default function App() {
 	let dismissBtn: HTMLButtonElement | undefined;
 
 	// --- Derived values ---
-	const liveCount = createMemo(
-		() => matches().filter((m) => m.eventType === "live").length,
-	);
-	const scheduledCount = createMemo(
-		() => matches().filter((m) => m.eventType === "scheduled").length,
-	);
-	const filtered = createMemo(() =>
-		matches().filter((m) => m.eventType === currentView()),
-	);
 	const standalone = () => isStandaloneDisplay();
 	const inApp = () => isInAppBrowser();
 	const notificationDisabled = createMemo(
@@ -137,9 +129,7 @@ export default function App() {
 			if (document.visibilityState === "visible") {
 				void refreshAll();
 				startPolling();
-			} else {
-				stopPolling();
-			}
+			} else stopPolling();
 		};
 		let idleThrottle: ReturnType<typeof setTimeout> | null = null;
 		const onActivity = () => {
@@ -227,7 +217,6 @@ export default function App() {
 		scheduleLive();
 	}
 
-	// stops the automatic polls (exposed for tests, or cleanups)
 	function stopPolling() {
 		if (liveTimer) {
 			clearTimeout(liveTimer);
@@ -375,7 +364,10 @@ export default function App() {
 	async function saveSubscription(sub: PushSubscription) {
 		const res = await api<{ excludedMatchIds?: string[] }>(
 			"/api/subscriptions",
-			{ method: "POST", body: JSON.stringify({ subscription: sub }) },
+			{
+				method: "POST",
+				body: JSON.stringify({ subscription: sub }),
+			},
 		);
 		setExcludedIds(
 			new Set(Array.isArray(res.excludedMatchIds) ? res.excludedMatchIds : []),
@@ -497,90 +489,85 @@ export default function App() {
 		}
 	}
 
-	function handleSortChange(order: string) {
-		if (isValidSortOrder(order)) {
-			localStorage.setItem("bwf-sort-order", order);
-			setSortOrder(order);
-		}
+	function handleSortChange(order: SortOrder) {
+		localStorage.setItem("bwf-sort-order", order);
+		setSortOrder(order);
 	}
+
+	// --- Context Value (Eliminates Prop Drilling) ---
+	const appState = {
+		matches,
+		excludedMatchIds: excludedIds,
+		notificationDisabled,
+		onNotificationChange: updateMatchNotif,
+		sortOrder,
+		setSortOrder: handleSortChange,
+		currentView,
+		setCurrentView,
+		loadStatus,
+
+		// Notification props
+		notifText,
+		notifError,
+		testDisabled,
+		toggleChecked,
+		toggleDisabled,
+		standalone,
+		inApp,
+		onTest: sendTest,
+		onToggleClick,
+		onToggleChange,
+		onShowInstall: openInstall,
+	};
 
 	// --- Render ---
 	return (
-		<div>
-			<main>
-				<AppHeader checkedAt={checkedAt()} hasError={notifError()} />
-
-				<PwaBanner
-					hidden={bannerHidden()}
-					inApp={inApp()}
-					onShowInstall={openInstall}
-				/>
-
-				<NotificationSettings
-					text={notifText()}
-					error={notifError()}
-					testDisabled={testDisabled()}
-					toggleChecked={toggleChecked()}
-					toggleDisabled={toggleDisabled()}
-					standalone={standalone()}
-					inApp={inApp()}
-					onTest={sendTest}
-					onToggleClick={onToggleClick}
-					onToggleChange={onToggleChange}
-					onShowInstall={openInstall}
-				/>
-
-				<section class="matches" aria-labelledby="matches-heading">
-					<h2 id="matches-heading" class="visually-hidden">
-						試合
-					</h2>
-					<MatchToolbar
-						view={currentView()}
-						liveCount={liveCount()}
-						scheduledCount={scheduledCount()}
-						sortOrder={sortOrder()}
-						onViewChange={setCurrentView}
-						onSortChange={handleSortChange}
-						onRefresh={() => void refreshAll()}
+		<AppContext.Provider value={appState}>
+			<div>
+				<main>
+					<AppHeader checkedAt={checkedAt()} hasError={notifError()} />
+					<PwaBanner
+						hidden={bannerHidden()}
+						inApp={inApp()}
+						onShowInstall={openInstall}
 					/>
-					<MatchList
-						matches={filtered()}
-						sortOrder={sortOrder()}
-						view={currentView()}
-						excludedMatchIds={excludedIds()}
-						notificationDisabled={notificationDisabled()}
-						onNotificationChange={updateMatchNotif}
+					<NotificationSettings />
+					<section class="matches" aria-labelledby="matches-heading">
+						<h2 id="matches-heading" class="visually-hidden">
+							試合
+						</h2>
+						<MatchToolbar />
+						<MatchList />
+					</section>
+					<AppFooter />
+				</main>
+
+				<Show when={installOpen()}>
+					<InstallOverlay
+						guidance={guidance()}
+						onClose={() => closeInstall(true)}
+						onInstall={handleInstall}
+						dismissRef={(el) => {
+							dismissBtn = el;
+						}}
 					/>
-				</section>
+				</Show>
 
-				<AppFooter />
-			</main>
-
-			<Show when={installOpen()}>
-				<InstallOverlay
-					guidance={guidance()}
-					onClose={() => closeInstall(true)}
-					onInstall={handleInstall}
-					dismissRef={(el) => {
-						dismissBtn = el;
-					}}
-				/>
-			</Show>
-
-			<Show when={permissionOpen()}>
-				<PermissionOverlay
-					onCancel={() => {
-						closePermission();
-						setToggleChecked(false);
-					}}
-					onConfirm={() => {
-						closePermission();
-						setToggleChecked(true);
-						void updateSubscription(true);
-					}}
-				/>
-			</Show>
-		</div>
+				<Show when={permissionOpen()}>
+					<PermissionOverlay
+						onCancel={() => {
+							closePermission();
+							setToggleChecked(false);
+						}}
+						onConfirm={() => {
+							closePermission();
+							setToggleChecked(true);
+							void updateSubscription(true);
+						}}
+					/>
+				</Show>
+			</div>
+		</AppContext.Provider>
 	);
 }
 

@@ -1,4 +1,5 @@
 import { Show } from "solid-js";
+import { useApp } from "../lib/utils";
 
 // ==========================================
 // 1. InstallOverlay Component
@@ -22,9 +23,7 @@ export function InstallOverlay(props: {
 			onClick={props.onClose}
 			role="dialog"
 			tabIndex={-1}
-			onKeyDown={(e) => {
-				if (e.key === "Escape") props.onClose();
-			}}
+			onKeyDown={(e) => e.key === "Escape" && props.onClose()}
 		>
 			<section
 				class="install-sheet"
@@ -32,9 +31,7 @@ export function InstallOverlay(props: {
 				aria-modal="true"
 				aria-labelledby="install-overlay-heading"
 				onClick={(e) => e.stopPropagation()}
-				onKeyDown={(e) => {
-					if (e.key === "Enter" || e.key === " ") e.stopPropagation();
-				}}
+				onKeyDown={(e) => e.stopPropagation()}
 			>
 				<button
 					id="install-overlay-close"
@@ -100,9 +97,7 @@ export function PermissionOverlay(props: {
 			onClick={props.onCancel}
 			role="dialog"
 			tabIndex={-1}
-			onKeyDown={(e) => {
-				if (e.key === "Escape") props.onCancel();
-			}}
+			onKeyDown={(e) => e.key === "Escape" && props.onCancel()}
 		>
 			<section
 				class="install-sheet permission-sheet"
@@ -110,9 +105,7 @@ export function PermissionOverlay(props: {
 				aria-modal="true"
 				aria-labelledby="permission-heading"
 				onClick={(e) => e.stopPropagation()}
-				onKeyDown={(e) => {
-					if (e.key === "Enter" || e.key === " ") e.stopPropagation();
-				}}
+				onKeyDown={(e) => e.stopPropagation()}
 			>
 				<p class="overlay-step-count">通知許可の前に</p>
 				<h2 id="permission-heading">試合開始を通知します</h2>
@@ -148,21 +141,23 @@ export function PermissionOverlay(props: {
 // ==========================================
 // 3. NotificationSettings Component
 // ==========================================
-export function NotificationSettings(props: {
-	text: string;
-	error: boolean;
-	testDisabled: boolean;
-	toggleChecked: boolean;
-	toggleDisabled: boolean;
-	standalone: boolean;
-	inApp: boolean;
-	onTest: () => void;
-	onToggleClick: (e: Event) => void;
-	onToggleChange: (e: Event) => void;
-	onShowInstall: () => void;
-}) {
+export function NotificationSettings() {
+	const {
+		notifText,
+		notifError,
+		testDisabled,
+		toggleChecked,
+		toggleDisabled,
+		standalone,
+		inApp,
+		onTest,
+		onToggleClick,
+		onToggleChange,
+		onShowInstall,
+	} = useApp();
+
 	const handleSectionClick = () => {
-		if (!props.standalone && !props.inApp) props.onShowInstall();
+		if (!standalone() && !inApp()) onShowInstall();
 	};
 
 	return (
@@ -170,32 +165,32 @@ export function NotificationSettings(props: {
 			class="notification-settings"
 			aria-labelledby="notification-heading"
 			onClick={handleSectionClick}
-			onKeyDown={(e) => {
-				if (e.key === "Enter" || e.key === " ") handleSectionClick();
-			}}
+			onKeyDown={(e) =>
+				(e.key === "Enter" || e.key === " ") && handleSectionClick()
+			}
 		>
 			<div>
 				<h2 id="notification-heading">通知</h2>
 				<p
 					id="notification-status"
 					role="status"
-					class={props.error ? "error" : ""}
+					class={notifError() ? "error" : ""}
 				>
-					{props.text}
+					{notifText()}
 				</p>
 			</div>
 			<fieldset
 				class="notification-controls"
 				onClick={(e) => e.stopPropagation()}
-				onKeyDown={(e) => {
-					if (e.key === "Enter" || e.key === " ") e.stopPropagation();
-				}}
+				onKeyDown={(e) =>
+					(e.key === "Enter" || e.key === " ") && e.stopPropagation()
+				}
 			>
 				<button
 					id="test-notification-button"
 					type="button"
-					disabled={props.testDisabled}
-					onClick={props.onTest}
+					disabled={testDisabled()}
+					onClick={onTest}
 				>
 					テスト通知
 				</button>
@@ -204,10 +199,10 @@ export function NotificationSettings(props: {
 					<input
 						id="notification-toggle"
 						type="checkbox"
-						disabled={props.toggleDisabled}
-						checked={props.toggleChecked}
-						onClick={props.onToggleClick}
-						onChange={props.onToggleChange}
+						disabled={toggleDisabled()}
+						checked={toggleChecked()}
+						onClick={onToggleClick}
+						onChange={onToggleChange}
 					/>
 					<span class="switch-track" aria-hidden="true" />
 				</label>
