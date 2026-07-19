@@ -25,22 +25,22 @@
 	},
 	"type": "module",
 	"scripts": {
-		"dev": "WRANGLER_LOG_PATH=.wrangler/logs wrangler dev --test-scheduled",
-		"deploy": "wrangler deploy",
-		"dry-run": "WRANGLER_LOG_PATH=.wrangler/logs wrangler deploy --dry-run",
+		"dev": "vite & WRANGLER_LOG_PATH=.wrangler/logs wrangler dev --test-scheduled",
+		"build": "vite build",
+		"deploy": "bun run build && wrangler deploy",
+		"dry-run": "bun run build && WRANGLER_LOG_PATH=.wrangler/logs wrangler deploy --dry-run",
 		"types": "wrangler types",
 		"types:check": "WRANGLER_LOG_PATH=.wrangler/logs wrangler types --check",
 		"typecheck": "tsc --noEmit",
 		"test": "bun run test:unit && bun run test:integration",
 		"test:unit": "bun test ./test/",
 		"test:integration": "WRANGLER_LOG_PATH=.wrangler/logs vitest run --config vitest.config.ts",
-		"test:layout": "playwright test",
+		"test:layout": "bun run build && playwright test",
 		"lint": "biome check .",
 		"check": "bun run types:check && bun run typecheck && bun run lint && bun run test",
 		"precommit": "bun run check && bun run test:layout && bun run dry-run",
 		"format": "biome check --write .",
 		"generate:vapid": "web-push generate-vapid-keys --json",
-		"version:bump": "bun run scripts/bump-version.ts",
 		"prepare": "husky"
 	},
 	"dependencies": {
@@ -55,6 +55,7 @@
 		"@types/web-push": "^3.6.4",
 		"husky": "^9.1.7",
 		"typescript": "^7.0.2",
+		"vite": "^8.1.5",
 		"vitest": "^4.1.0",
 		"wrangler": "^4.112.0"
 	}

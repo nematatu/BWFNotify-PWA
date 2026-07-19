@@ -30,9 +30,9 @@ BWFNotify-PWA は、バドミントン世界連盟（BWF）の公式大会にお
 ## 2. アーキテクチャと使用サービス
 
 ### フロントエンド (SPA)
-- **構成**: HTML5、Vanilla JavaScript、Vanilla CSS（CSSフレームワーク不使用）。
+- **構成**: HTML5、Vanilla JavaScript、Vanilla CSS（Viteによるビルド環境を適用）。
 - **特徴**: ライトテーマ固定（ダークモードなし）、フォントは `LINE Seed JP`。
-- **PWA / Service Worker**: `public/pwa/sw.js` がオフライン対応、キャッシュ、および Web Push の受け取りと表示を担当。iOS Safari のホーム画面追加（PWA）におけるプッシュ受信に対応。
+- **PWA / Service Worker**: `src/frontend/pwa/sw.js` がテンプレートとなり、Viteビルドプラグインがハッシュ付きアセット（CSS/JS）のリストを動的に埋め込み、`dist/pwa/sw.js` へ出力します。オフライン対応、キャッシュ、および Web Push の受信と表示を担当。iOS Safari のホーム画面追加（PWA）におけるプッシュ受信に対応。
 
 ### バックエンド (Serverless)
 - **環境**: Cloudflare Workers + Hono フレームワーク。

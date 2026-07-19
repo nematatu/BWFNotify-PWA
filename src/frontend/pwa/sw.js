@@ -1,15 +1,5 @@
-const CACHE_NAME = "bwfnotify-shell-v42";
-const APP_SHELL = [
-	"/",
-	"/view/app.css?v=42",
-	"/view/app.js?v=42",
-	"/view/match-groups.js?v=42",
-	"/view/shuttle.svg",
-	"/pwa/manifest.webmanifest",
-	"/pwa/icons/icon.svg",
-	"/pwa/icons/icon-192.png",
-	"/pwa/icons/icon-512.png",
-];
+const CACHE_NAME = __CACHE_NAME__;
+const APP_SHELL = __APP_SHELL__;
 
 self.addEventListener("install", (event) => {
 	event.waitUntil(

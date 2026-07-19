@@ -4,7 +4,7 @@ import {
 	previousGameScoreline,
 	sortedMatches,
 	tournamentGroups,
-} from "../public/view/match-groups.js";
+} from "../src/frontend/match-groups.js";
 
 describe("match sorting", () => {
 	const matches = [
@@ -164,7 +164,7 @@ describe("live score updates", () => {
 	});
 
 	test("polls live scores only while the page is active", async () => {
-		const script = await Bun.file("public/view/app.js").text();
+		const script = await Bun.file("src/frontend/app.js").text();
 		expect(script).toContain('api("/api/live", { cache: "no-store" })');
 		expect(script).toContain("LIVE_REFRESH_INTERVAL_MS = 15_000");
 		expect(script).toContain('document.visibilityState !== "visible"');
@@ -176,7 +176,7 @@ describe("live score updates", () => {
 
 describe("page structure", () => {
 	test("uses square cards without decorative partial color borders", async () => {
-		const css = await Bun.file("public/view/app.css").text();
+		const css = await Bun.file("src/frontend/app.css").text();
 		expect(css).toContain(
 			".match {\n\tmargin-bottom: 18px;\n\tborder: 1px solid #bcbcbc;\n\tborder-radius: 0;",
 		);
@@ -186,13 +186,13 @@ describe("page structure", () => {
 	});
 
 	test("does not draw a rectangular border around country flags", async () => {
-		const css = await Bun.file("public/view/app.css").text();
+		const css = await Bun.file("src/frontend/app.css").text();
 		const flagRule = css.match(/\.country-flag \{([^}]+)\}/)?.[1] || "";
 		expect(flagRule).not.toContain("border:");
 	});
 
 	test("uses a light interface without permanent dark surfaces", async () => {
-		const css = await Bun.file("public/view/app.css").text();
+		const css = await Bun.file("src/frontend/app.css").text();
 		expect(css).toContain("color-scheme: light");
 		expect(css).toContain("background: rgb(255 255 255 / 82%)");
 		for (const darkBackground of [
@@ -207,8 +207,8 @@ describe("page structure", () => {
 	});
 
 	test("uses LINE Seed JP from the official Google Fonts distribution", async () => {
-		const html = await Bun.file("public/index.html").text();
-		const css = await Bun.file("public/view/app.css").text();
+		const html = await Bun.file("index.html").text();
+		const css = await Bun.file("src/frontend/app.css").text();
 		const headers = await Bun.file("public/_headers").text();
 		expect(html).toContain(
 			"https://fonts.googleapis.com/css2?family=LINE+Seed+JP:wght@400;700;800&display=swap",
@@ -219,7 +219,7 @@ describe("page structure", () => {
 	});
 
 	test("includes complete OGP metadata", async () => {
-		const html = await Bun.file("public/index.html").text();
+		const html = await Bun.file("index.html").text();
 		for (const property of [
 			'property="og:title"',
 			'property="og:description"',
@@ -242,8 +242,8 @@ describe("page structure", () => {
 	});
 
 	test("uses the Japanese player photo for notification image and icon", async () => {
-		const app = await Bun.file("public/view/app.js").text();
-		const worker = await Bun.file("public/pwa/sw.js").text();
+		const app = await Bun.file("src/frontend/app.js").text();
+		const worker = await Bun.file("src/frontend/pwa/sw.js").text();
 		expect(app).toContain(
 			"const notificationImage = proxiedImageUrl(imageUrl)",
 		);
@@ -255,7 +255,7 @@ describe("page structure", () => {
 	});
 
 	test("separates live and scheduled matches in one tab panel", async () => {
-		const html = await Bun.file("public/index.html").text();
+		const html = await Bun.file("index.html").text();
 		expect(html).toContain('data-match-view="live"');
 		expect(html).toContain('data-match-view="scheduled"');
 		expect(html).toContain('id="match-list"');
@@ -264,20 +264,20 @@ describe("page structure", () => {
 	});
 
 	test("shows match notification controls only before a match starts", async () => {
-		const script = await Bun.file("public/view/app.js").text();
+		const script = await Bun.file("src/frontend/app.js").text();
 		expect(script).toContain('if (match.eventType === "scheduled") {');
 		expect(script).toContain("actions.append(matchNotificationToggle(match))");
 		expect(script).toContain("if (actions.childElementCount > 0)");
 	});
 
 	test("explains installation and notification permission before prompting", async () => {
-		const html = await Bun.file("public/index.html").text();
+		const html = await Bun.file("index.html").text();
 		expect(html).toContain("通知を使うまで 3ステップ");
 		expect(html).toContain('id="install-action"');
 		expect(html).toContain('id="permission-overlay"');
 		expect(html).toContain("通知する");
 		expect(html).toContain("通知しない");
-		const script = await Bun.file("public/view/app.js").text();
+		const script = await Bun.file("src/frontend/app.js").text();
 		expect(script).toContain('window.addEventListener("beforeinstallprompt"');
 		expect(script).toContain("SafariまたはChromeで開く");
 		expect(script.indexOf("Notification.requestPermission()")).toBeLessThan(
@@ -289,7 +289,7 @@ describe("page structure", () => {
 	});
 
 	test("uses YouTube links and removes the previous BWF match link", async () => {
-		const script = await Bun.file("public/view/app.js").text();
+		const script = await Bun.file("src/frontend/app.js").text();
 		expect(script).toContain("youtubeLink(match.youtubeUrl)");
 		expect(script).toContain('link.append("配信を見る")');
 		expect(script).not.toContain("YouTube検索");
@@ -298,8 +298,8 @@ describe("page structure", () => {
 	});
 
 	test("uses clear Japanese labels instead of decorative English", async () => {
-		const html = await Bun.file("public/index.html").text();
-		const script = await Bun.file("public/view/app.js").text();
+		const html = await Bun.file("index.html").text();
+		const script = await Bun.file("src/frontend/app.js").text();
 		expect(html).toContain("<h1>ライブスコア</h1>");
 		expect(html).toContain("<p>日本人選手</p>");
 		expect(script).toContain('live.textContent = "ライブ中"');
@@ -313,10 +313,10 @@ describe("page structure", () => {
 	});
 
 	test("uses BWF tournament media in each time-sorted match", async () => {
-		const script = await Bun.file("public/view/app.js").text();
+		const script = await Bun.file("src/frontend/app.js").text();
 		expect(script).toContain("match.tournamentHeaderImageUrl");
 		expect(script).toContain('"match-tournament-image"');
-		const css = await Bun.file("public/view/app.css").text();
+		const css = await Bun.file("src/frontend/app.css").text();
 		expect(css).toContain(".match-tournament-image");
 		expect(css).not.toContain("linear-gradient");
 	});

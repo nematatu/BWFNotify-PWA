@@ -89,7 +89,7 @@
 - 日本人選手名の辞書は `src/config/japanese-player-names.ts` で管理してください。画面表示、検索用別名、YouTube照合の用途を混同しないでください。
 - 大会別の公式配信元は `src/config/youtube-stream-sources.ts` で管理してください。
 - 選手名辞書を追加したら、BWFデータから日本語表示へ反映されるテストを必ず追加してください。
-- PWAのCSS、JavaScript、Service Workerを変更した場合は、HTMLのクエリ版、モジュールimport版、Service Workerのキャッシュ名とアセット版を同時に更新してください。
+- PWAのCSS、JavaScript、Service Workerを変更した場合は、必ず `bun run build` を実行してアセットビルドを行ってください。手動でのバージョンクエリやキャッシュ名の書き換えは不要です（Viteとカスタムプラグインがビルド時に自動でハッシュ値とタイムスタンプを埋め込みます）。
 
 ## 10. 必須の開発サイクル
 
