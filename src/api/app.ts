@@ -234,6 +234,18 @@ export async function runNotificationCheck(
 		...delivery,
 	};
 	console.log(JSON.stringify({ event: "notification-check", ...result }));
+	console.log(
+		JSON.stringify({
+			event: "notification-check-detail",
+			previousLiveIds: (previous?.matches || [])
+				.filter((m) => m.eventType === "live")
+				.map((m) => m.id),
+			notifiedLiveMatchIds: Object.keys(previous?.notifiedLiveMatches || {}),
+			notificationAttempts: previous?.notificationAttempts || {},
+			currentLiveIds: liveMatches.map((m) => m.id),
+			candidateIds: newMatches.map((m) => m.id),
+		}),
+	);
 	return result;
 }
 
@@ -328,13 +340,18 @@ function nextNotifiedLiveMatches(
 		}),
 	);
 
-	// Existing live matches predate this compact ledger and must not be resent.
-	for (const match of previous?.matches || []) {
-		if (
-			match.eventType === "live" &&
-			!previous?.notificationAttempts?.[match.id]
-		) {
-			next[match.id] = previous?.checkedAt || now.toISOString();
+	// Migration: when upgrading from a version without notifiedLiveMatches,
+	// seed the ledger with any matches already live to prevent double-sending.
+	// Skip this block once notifiedLiveMatches exists so that genuinely new
+	// live matches are not silently registered as already-notified.
+	if (!previous?.notifiedLiveMatches) {
+		for (const match of previous?.matches || []) {
+			if (
+				match.eventType === "live" &&
+				!previous?.notificationAttempts?.[match.id]
+			) {
+				next[match.id] = previous?.checkedAt || now.toISOString();
+			}
 		}
 	}
 	for (const match of candidates) {

@@ -18,7 +18,6 @@ const liveMatch: MatchSummary = {
 	teams: [],
 	scores: [{ game: 1, team1: 10, team2: 8 }],
 	eventType: "live",
-	status: "Live",
 };
 
 afterEach(async () => {
@@ -145,6 +144,36 @@ describe("Worker integration", () => {
 		const restored = await runNotificationCheck(env, dependencies);
 
 		expect(restored.newMatches).toBe(0);
+		expect(notificationCalls).toBe(1);
+	});
+
+	test("notifies a new live match even when notifiedLiveMatches ledger already exists", async () => {
+		const otherMatch = { ...liveMatch, id: "other-old-match" };
+		let notificationCalls = 0;
+		const dependencies = {
+			fetchMatches: async () => [liveMatch],
+			sendNotifications: async () => {
+				notificationCalls += 1;
+				return { sent: 1, failed: 0, removed: 0 };
+			},
+			now: () => new Date("2026-07-18T00:00:00.000Z"),
+		};
+
+		// Simulate state where notifiedLiveMatches already exists (migration done)
+		// but does NOT contain liveMatch.id — it's a brand-new live match.
+		await env.NOTIFIED_MATCHES.put(
+			"push:state",
+			JSON.stringify({
+				checkedAt: "2026-07-17T23:58:00.000Z",
+				matches: [],
+				notifiedLiveMatches: {
+					[otherMatch.id]: "2026-07-17T00:00:00.000Z",
+				},
+			}),
+		);
+
+		const result = await runNotificationCheck(env, dependencies);
+		expect(result.newMatches).toBe(1);
 		expect(notificationCalls).toBe(1);
 	});
 

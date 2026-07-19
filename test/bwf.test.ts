@@ -79,24 +79,21 @@ describe("extractJapaneseMatches", () => {
 
 		const result = extractJapaneseMatches(matches);
 		expect(
-			result.map(({ id, players, eventType, status }) => ({
+			result.map(({ id, players, eventType }) => ({
 				id,
 				players,
 				eventType,
-				status,
 			})),
 		).toEqual([
 			{
 				id: "japan-live",
 				players: ["Player A", "Player B"],
 				eventType: "live",
-				status: "P",
 			},
 			{
 				id: "japan-scheduled",
 				players: ["Player C", "Player D"],
 				eventType: "scheduled",
-				status: "",
 			},
 		]);
 		expect(result[0]?.teams[0]?.players[0]).toEqual({
@@ -179,8 +176,6 @@ describe("extractJapaneseMatches", () => {
 				tournamentHeaderImageMobileUrl:
 					"https://img.bwfbadminton.com/header-mobile.jpg",
 				tournamentCategory: "HSBC BWF World Tour Super 750",
-				tournamentLink:
-					"https://bwfworldtour.bwfbadminton.com/tournament/5213/daihatsu-japan-open-2026/results/",
 				matchStatus: "N",
 				matchTime: "2026-07-18 10:00:00",
 				team1: {

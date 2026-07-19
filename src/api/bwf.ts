@@ -28,6 +28,17 @@ const TARGET_COUNTRY = "JPN";
 const H2H_CACHE_PREFIX = "bwf:h2h:v3:";
 const H2H_CACHE_TTL_SECONDS = 30 * 24 * 60 * 60;
 
+const BWF_FETCH_HEADERS: HeadersInit[] = [
+	{
+		accept: "application/json,text/plain,*/*",
+		"accept-language": "en-US,en;q=0.9",
+		referer: "https://bwfbadminton.com/",
+		"user-agent":
+			"Mozilla/5.0 (Macintosh; Intel Mac OS X 14_0) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
+	},
+	{ accept: "application/json,text/plain,*/*" },
+];
+
 type Tournament = {
 	code: string;
 	name?: string;
@@ -142,7 +153,6 @@ export function extractJapaneseMatches(matches: BwfMatch[]): MatchSummary[] {
 			teams,
 			scores: matchScores(match.score, teamsWithSource[0]?.sourceIndex === 1),
 			eventType: type,
-			status: type === "live" ? displayStatus(match) : "",
 			round: match.roundName || match.matchTypeValue,
 			court: match.courtName,
 			startTime: match.matchTimeUtc || match.matchTime,
@@ -219,7 +229,6 @@ function parseMatch(value: unknown, tournament: Tournament): BwfMatch | null {
 		tournamentHeaderImageUrl: tournament.headerImageUrl,
 		tournamentHeaderImageMobileUrl: tournament.headerImageMobileUrl,
 		tournamentCategory: tournament.category,
-		tournamentLink: tournament.link,
 		matchStatus: optionalString(item.matchStatus),
 		matchStatusValue: optionalString(item.matchStatusValue),
 		scoreStatus:
@@ -556,13 +565,6 @@ function optionalNumber(value: unknown): number | undefined {
 		: undefined;
 }
 
-function displayStatus(match: BwfMatch): string {
-	return (
-		statusCandidates(match).find((status) => status.toLowerCase() !== "none") ||
-		"Live"
-	);
-}
-
 function statusCandidates(match: BwfMatch): string[] {
 	return [
 		match.matchStatusValue,
@@ -578,18 +580,8 @@ async function fetchBwfJson(
 	url: string,
 	cacheTtlSeconds?: number,
 ): Promise<unknown> {
-	const headerOptions: HeadersInit[] = [
-		{
-			accept: "application/json,text/plain,*/*",
-			"accept-language": "en-US,en;q=0.9",
-			referer: "https://bwfbadminton.com/",
-			"user-agent":
-				"Mozilla/5.0 (Macintosh; Intel Mac OS X 14_0) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
-		},
-		{ accept: "application/json,text/plain,*/*" },
-	];
 	let lastStatus = 0;
-	for (const headers of headerOptions) {
+	for (const headers of BWF_FETCH_HEADERS) {
 		const response = await fetch(url, {
 			headers,
 			...(cacheTtlSeconds

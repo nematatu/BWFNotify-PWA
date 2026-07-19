@@ -9,6 +9,16 @@ import {
 const LIVE_REFRESH_INTERVAL_MS = 15_000;
 const FULL_REFRESH_INTERVAL_MS = 2 * 60_000;
 
+const FMT_DATE_MEDIUM = new Intl.DateTimeFormat("ja-JP", {
+	dateStyle: "medium",
+});
+const FMT_DATETIME = new Intl.DateTimeFormat("ja-JP", {
+	month: "numeric",
+	day: "numeric",
+	hour: "2-digit",
+	minute: "2-digit",
+});
+
 const toggle = document.querySelector("#notification-toggle");
 const notificationStatus = document.querySelector("#notification-status");
 const testNotificationButton = document.querySelector(
@@ -60,7 +70,7 @@ window.addEventListener("beforeinstallprompt", (event) => {
 
 window.addEventListener("appinstalled", () => {
 	deferredInstallPrompt = null;
-	hideInstallOverlay();
+	hideInstallOverlay(true);
 });
 
 toggle.addEventListener("change", () => {
@@ -1040,9 +1050,7 @@ function proxiedImageUrl(value) {
 	if (!url) {
 		return null;
 	}
-	const source = new URL("/api/media", window.location.origin);
-	source.searchParams.set("url", url.toString());
-	return source.toString();
+	return `/api/media?url=${encodeURIComponent(url.toString())}`;
 }
 
 function safeHttpsUrl(value) {
@@ -1060,23 +1068,24 @@ function displayRound(value) {
 	}
 	const round = String(value).trim();
 	const normalized = round.toUpperCase().replace(/[-_]+/g, " ");
-	const labels = {
-		FINAL: "決勝",
-		FINALS: "決勝",
-		F: "決勝",
-		SF: "準決勝",
-		SEMIFINAL: "準決勝",
-		"SEMI FINAL": "準決勝",
-		SEMIFINALS: "準決勝",
-		"SEMI FINALS": "準決勝",
-		QF: "準々決勝",
-		QUARTERFINAL: "準々決勝",
-		"QUARTER FINAL": "準々決勝",
-		QUARTERFINALS: "準々決勝",
-		"QUARTER FINALS": "準々決勝",
-	};
-	if (labels[normalized]) {
-		return labels[normalized];
+	const ROUND_MAP = new Map([
+		["F", "決勝"],
+		["FINAL", "決勝"],
+		["FINALS", "決勝"],
+		["SF", "準決勝"],
+		["SEMIFINAL", "準決勝"],
+		["SEMI FINAL", "準決勝"],
+		["SEMIFINALS", "準決勝"],
+		["SEMI FINALS", "準決勝"],
+		["QF", "準々決勝"],
+		["QUARTERFINAL", "準々決勝"],
+		["QUARTER FINAL", "準々決勝"],
+		["QUARTERFINALS", "準々決勝"],
+		["QUARTER FINALS", "準々決勝"],
+	]);
+	const roundLabel = ROUND_MAP.get(normalized);
+	if (roundLabel) {
+		return roundLabel;
 	}
 	const numbered = normalized.match(/^(?:R|ROUND OF )(16|32|64|128)$/);
 	if (numbered) {
@@ -1122,7 +1131,7 @@ function formatPreviousDate(value) {
 	const date = new Date(`${value}T00:00:00`);
 	return Number.isNaN(date.getTime())
 		? String(value)
-		: new Intl.DateTimeFormat("ja-JP", { dateStyle: "medium" }).format(date);
+		: FMT_DATE_MEDIUM.format(date);
 }
 
 function formatMatchTime(value) {
@@ -1136,27 +1145,29 @@ function formatMatchTime(value) {
 	if (Number.isNaN(date.getTime())) {
 		return String(value);
 	}
-	return new Intl.DateTimeFormat("ja-JP", {
-		month: "numeric",
-		day: "numeric",
-		hour: "2-digit",
-		minute: "2-digit",
-	}).format(date);
+	return FMT_DATETIME.format(date);
 }
 
 async function api(path, options = {}) {
-	const response = await fetch(path, {
-		...options,
-		headers: {
-			...(options.body ? { "content-type": "application/json" } : {}),
-			...options.headers,
-		},
-	});
-	const payload = await response.json();
-	if (!response.ok) {
-		throw new Error(payload.error || `Request failed (${response.status})`);
+	const abortController = new AbortController();
+	const timeoutTimer = setTimeout(() => abortController.abort(), 15_000);
+	try {
+		const response = await fetch(path, {
+			...options,
+			headers: {
+				...(options.body ? { "content-type": "application/json" } : {}),
+				...options.headers,
+			},
+			signal: abortController.signal,
+		});
+		const payload = await response.json();
+		if (!response.ok) {
+			throw new Error(payload.error || `Request failed (${response.status})`);
+		}
+		return payload;
+	} finally {
+		clearTimeout(timeoutTimer);
 	}
-	return payload;
 }
 
 function setNotificationStatus(text, isError = false) {
@@ -1166,14 +1177,7 @@ function setNotificationStatus(text, isError = false) {
 
 function formatDate(value) {
 	const date = new Date(value);
-	return Number.isNaN(date.getTime())
-		? "時刻不明"
-		: new Intl.DateTimeFormat("ja-JP", {
-				month: "numeric",
-				day: "numeric",
-				hour: "2-digit",
-				minute: "2-digit",
-			}).format(date);
+	return Number.isNaN(date.getTime()) ? "時刻不明" : FMT_DATETIME.format(date);
 }
 
 function base64UrlToBytes(value) {

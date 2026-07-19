@@ -21,7 +21,6 @@ export type BwfMatch = {
 	tournamentHeaderImageUrl?: string;
 	tournamentHeaderImageMobileUrl?: string;
 	tournamentCategory?: string;
-	tournamentLink?: string;
 	matchStatus?: string;
 	matchStatusValue?: string;
 	scoreStatus?: number;
@@ -94,7 +93,6 @@ export type MatchSummary = {
 	teams: MatchTeamSummary[];
 	scores: MatchGameScore[];
 	eventType: "live" | "scheduled";
-	status: string;
 	round?: string;
 	court?: string;
 	startTime?: string;

@@ -49,6 +49,7 @@ export async function fetchBwfImage(
 
 	const headers = new Headers({
 		"Cache-Control": "public, max-age=86400",
+		Vary: "Accept",
 		"Content-Type": contentType,
 		"Cross-Origin-Resource-Policy": "same-origin",
 		"X-Content-Type-Options": "nosniff",
