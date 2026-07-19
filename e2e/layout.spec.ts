@@ -419,3 +419,47 @@ test("match information hierarchy prioritizes actions and matchup", async ({
 	await expect(card.locator(".match-primary-row .match-time")).toBeVisible();
 	await expect(card.locator(".match-primary-row .youtube-link")).toBeVisible();
 });
+
+test("normal polling switches to live score polling after a match starts", async ({
+	page,
+}) => {
+	await page.clock.install({ time: new Date("2026-07-18T09:00:00.000Z") });
+	await page.addInitScript(() => {
+		sessionStorage.setItem("bwf-install-overlay-dismissed", "1");
+	});
+	let statusCalls = 0;
+	let liveCalls = 0;
+	await page.route("**/api/config", (route) =>
+		route.fulfill({ json: { vapidPublicKey: "" } }),
+	);
+	await page.route("**/api/status", (route) => {
+		statusCalls += 1;
+		return route.fulfill({
+			json: {
+				checkedAt: "2026-07-18T09:00:00.000Z",
+				matches: statusCalls === 1 ? [singlesMatch] : [doublesMatch],
+			},
+		});
+	});
+	await page.route("**/api/live", (route) => {
+		liveCalls += 1;
+		return route.fulfill({
+			json: {
+				checkedAt: "2026-07-18T09:02:15.000Z",
+				matches: [doublesMatch],
+			},
+		});
+	});
+
+	await page.goto("/");
+	await expect(page.locator("#scheduled-count")).toHaveText("1");
+	expect(statusCalls).toBe(1);
+	expect(liveCalls).toBe(0);
+
+	await page.clock.fastForward(120_000);
+	await expect(page.locator("#live-count")).toHaveText("1");
+	expect(statusCalls).toBe(2);
+
+	await page.clock.fastForward(15_000);
+	await expect.poll(() => liveCalls).toBe(1);
+});
