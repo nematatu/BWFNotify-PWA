@@ -1,4 +1,9 @@
-import { ExternalLink, RefreshCw } from "lucide-solid";
+import {
+	ArrowDownWideNarrow,
+	ChevronDown,
+	ExternalLink,
+	RefreshCw,
+} from "lucide-solid";
 import { createMemo, For, Show } from "solid-js";
 import type {
 	MatchPlayerSummary,
@@ -131,19 +136,31 @@ export function MatchToolbar() {
 				</button>
 			</div>
 			<div class="match-controls">
-				<label class="visually-hidden" for="sort-order">
-					ソート順
-				</label>
-				<select
-					id="sort-order"
-					aria-label="ソート順"
-					value={sortOrder()}
-					onChange={(e) => setSortOrder(e.target.value as SortOrder)}
-				>
-					<option value="time-asc">時間が早い順</option>
-					<option value="time-desc">時間が遅い順</option>
-					<option value="tournament">大会名順</option>
-				</select>
+				<div class="sort-select">
+					<ArrowDownWideNarrow
+						class="sort-select-leading"
+						size={17}
+						aria-hidden="true"
+					/>
+					<label class="visually-hidden" for="sort-order">
+						ソート順
+					</label>
+					<select
+						id="sort-order"
+						aria-label="ソート順"
+						value={sortOrder()}
+						onChange={(e) => setSortOrder(e.target.value as SortOrder)}
+					>
+						<option value="time-asc">時間が早い順</option>
+						<option value="time-desc">時間が遅い順</option>
+						<option value="tournament">大会名順</option>
+					</select>
+					<ChevronDown
+						class="sort-select-chevron"
+						size={16}
+						aria-hidden="true"
+					/>
+				</div>
 				<button
 					id="refresh-button"
 					type="button"

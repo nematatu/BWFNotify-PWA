@@ -231,6 +231,24 @@ for (const viewport of [
 			"background-color",
 			"rgb(247, 247, 247)",
 		);
+		await expect(page.locator(".notification-controls")).toHaveCSS(
+			"border-top-width",
+			"0px",
+		);
+		await expect(page.locator(".sort-select")).toHaveCSS(
+			"border-radius",
+			"4px",
+		);
+		await expect(page.locator("#sort-order")).toHaveCSS("appearance", "none");
+		await expect(
+			page.getByRole("navigation", { name: "関連リンク" }),
+		).toBeVisible();
+		await expect(
+			page.getByRole("link", { name: "GitHubリポジトリ" }),
+		).toBeVisible();
+		await expect(page.getByRole("link", { name: "開発者のX" })).toBeVisible();
+		await expect(page.locator(".app-footer svg.brand-icon")).toHaveCount(2);
+		await expect(page.locator(".footer-message")).not.toContainText("💡");
 		const card = page.locator(".match:has(.matchup)").first();
 		await expect(card).toHaveCSS("border-radius", "0px");
 		await expect(card).toHaveCSS("border-top-width", "1px");

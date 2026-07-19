@@ -144,6 +144,10 @@ main {
 	display: flex;
 	align-items: center;
 	gap: 12px;
+	min-width: 0;
+	margin: 0;
+	padding: 0;
+	border: 0;
 }
 
 #test-notification-button {
@@ -263,14 +267,57 @@ main {
 	padding-bottom: 8px;
 }
 
+.sort-select {
+	position: relative;
+	display: flex;
+	width: 178px;
+	min-width: 0;
+	align-items: center;
+	border-radius: 4px;
+	background: #f0f0f0;
+}
+
+.sort-select:hover {
+	background: #e8e8e8;
+}
+
+.sort-select:focus-within {
+	outline: 2px solid #151515;
+	outline-offset: 2px;
+}
+
+.sort-select-leading,
+.sort-select-chevron {
+	position: absolute;
+	pointer-events: none;
+}
+
+.sort-select-leading {
+	left: 11px;
+	color: #555555;
+}
+
+.sort-select-chevron {
+	right: 10px;
+	color: #333333;
+}
+
 #sort-order {
+	width: 100%;
 	min-height: 38px;
-	max-width: 170px;
-	padding: 0 30px 0 10px;
-	border: 1px solid #a8a8a8;
-	border-radius: 0;
+	padding: 0 34px;
+	border: 0;
+	border-radius: 4px;
+	appearance: none;
 	color: #151515;
-	background: #ffffff;
+	background: transparent;
+	cursor: pointer;
+	font-size: 13px;
+	font-weight: 700;
+}
+
+#sort-order:focus-visible {
+	outline: 0;
 }
 
 .match-list {
@@ -1258,25 +1305,32 @@ main {
 	display: flex;
 	justify-content: center;
 	align-items: center;
-	gap: 12px;
-	margin: 0 0 10px;
-	font-size: 13px;
-	font-weight: 700;
+	gap: 8px;
+	margin: 0 0 12px;
 }
 
 .footer-links a {
-	color: #d71920;
+	display: grid;
+	width: 38px;
+	height: 38px;
+	place-items: center;
+	border-radius: 50%;
+	color: #151515;
 	text-decoration: none;
-	transition: color 150ms ease;
+	transition:
+		color 120ms ease,
+		background-color 120ms ease;
 }
 
 .footer-links a:hover {
-	color: #b51218;
-	text-decoration: underline;
+	color: #d71920;
+	background: #f1f1f1;
 }
 
-.footer-links .divider {
-	color: #bcbcbc;
+.brand-icon {
+	width: 21px;
+	height: 21px;
+	fill: currentColor;
 }
 
 .footer-message {
@@ -1312,9 +1366,9 @@ main {
 }
 
 .pwa-guide-icon {
-	font-size: 16px;
+	display: inline-flex;
 	flex-shrink: 0;
-	line-height: 1.4;
+	color: #d71920;
 }
 
 .pwa-guide-text {
