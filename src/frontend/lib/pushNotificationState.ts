@@ -1,4 +1,10 @@
 import { createMemo, createSignal } from "solid-js";
+import type {
+	SaveSubscriptionRequest,
+	SubscriptionResponse,
+	TestNotificationRequest,
+	UpdateSubscriptionPreferencesRequest,
+} from "../../type";
 import { registerServiceWorker } from "./pwa";
 import { openInstall } from "./pwaInstallState";
 import {
@@ -24,7 +30,8 @@ const [subscription, setSubscription] = createSignal<PushSubscription | null>(
 
 let registration: ServiceWorkerRegistration | undefined;
 let vapidKey: string | undefined;
-let savingPrefs = false;
+let preferenceWrite: Promise<void> = Promise.resolve();
+let preferenceVersion = 0;
 
 export const notificationDisabled = createMemo(
 	() =>
@@ -41,9 +48,19 @@ const setStatus = (text: string, isError = false) => {
 };
 
 const saveSubscription = async (sub: PushSubscription) => {
-	const res = await api<{ excludedMatchIds?: string[] }>("/api/subscriptions", {
+	const json = sub.toJSON();
+	const request: SaveSubscriptionRequest = {
+		subscription: {
+			endpoint: sub.endpoint,
+			keys: {
+				p256dh: json.keys?.p256dh || "",
+				auth: json.keys?.auth || "",
+			},
+		},
+	};
+	const res = await api<SubscriptionResponse>("/api/subscriptions", {
 		method: "POST",
-		body: JSON.stringify({ subscription: sub }),
+		body: JSON.stringify(request),
 	});
 	setExcludedIds(
 		new Set(Array.isArray(res.excludedMatchIds) ? res.excludedMatchIds : []),
@@ -136,12 +153,14 @@ export const sendTest = async () => {
 	if (!sub) return;
 	setTestDisabled(true);
 	try {
-		await api("/api/subscriptions", {
+		const request: TestNotificationRequest = { endpoint: sub.endpoint };
+		await api("/api/subscriptions/test", {
 			method: "POST",
-			body: JSON.stringify({ subscription: sub, test: true }),
+			body: JSON.stringify(request),
 		});
+		setStatus("テスト通知を送信しました");
 	} catch (e) {
-		alert(errorMessage(e));
+		setStatus(errorMessage(e), true);
 	} finally {
 		setTestDisabled(false);
 	}
@@ -149,28 +168,36 @@ export const sendTest = async () => {
 
 export const updateMatchNotif = async (matchId: string, enabled: boolean) => {
 	const sub = subscription();
-	if (!sub || savingPrefs) return;
-	savingPrefs = true;
-	const prev = new Set(excludedIds());
-	const next = new Set(prev);
+	if (!sub) return;
+	const next = new Set(excludedIds());
 	if (enabled) next.delete(matchId);
 	else next.add(matchId);
 	setExcludedIds(next);
-	try {
-		await api("/api/subscriptions", {
-			method: "PATCH",
-			body: JSON.stringify({
-				endpoint: sub.endpoint,
-				matchId,
-				excluded: !enabled,
-			}),
+	const version = ++preferenceVersion;
+	const request: UpdateSubscriptionPreferencesRequest = {
+		endpoint: sub.endpoint,
+		excludedMatchIds: [...next],
+	};
+	preferenceWrite = preferenceWrite
+		.catch(() => undefined)
+		.then(async () => {
+			try {
+				const saved = await api<SubscriptionResponse>("/api/subscriptions", {
+					method: "PATCH",
+					body: JSON.stringify(request),
+				});
+				if (version === preferenceVersion) {
+					setExcludedIds(new Set(saved.excludedMatchIds));
+				}
+			} catch (e) {
+				if (version === preferenceVersion) {
+					setStatus(errorMessage(e), true);
+					await saveSubscription(sub);
+				}
+				throw e;
+			}
 		});
-	} catch (e) {
-		alert(errorMessage(e));
-		setExcludedIds(prev);
-	} finally {
-		savingPrefs = false;
-	}
+	await preferenceWrite.catch(() => undefined);
 };
 
 export const onToggleClick = (e: Event) => {

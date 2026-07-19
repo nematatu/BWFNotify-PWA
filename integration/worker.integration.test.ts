@@ -25,6 +25,67 @@ afterEach(async () => {
 });
 
 describe("Worker integration", () => {
+	test("uses one notification preference contract from registration through update", async () => {
+		const endpoint = "https://fcm.googleapis.com/fcm/send/integration";
+		const subscription = {
+			endpoint,
+			keys: { p256dh: "A".repeat(87), auth: "B".repeat(22) },
+		};
+		const registerContext = createExecutionContext();
+		const registered = await worker.fetch(
+			new Request("https://example.com/api/subscriptions", {
+				method: "POST",
+				headers: { "content-type": "application/json" },
+				body: JSON.stringify({ subscription }),
+			}),
+			env,
+			registerContext,
+		);
+		await waitOnExecutionContext(registerContext);
+		expect(registered.status).toBe(201);
+		expect(await registered.json()).toEqual({
+			ok: true,
+			excludedMatchIds: [],
+		});
+
+		const updateContext = createExecutionContext();
+		const updated = await worker.fetch(
+			new Request("https://example.com/api/subscriptions", {
+				method: "PATCH",
+				headers: { "content-type": "application/json" },
+				body: JSON.stringify({ endpoint, excludedMatchIds: ["match-1"] }),
+			}),
+			env,
+			updateContext,
+		);
+		await waitOnExecutionContext(updateContext);
+		expect(updated.status).toBe(200);
+		expect(await updated.json()).toEqual({
+			ok: true,
+			excludedMatchIds: ["match-1"],
+		});
+	});
+
+	test("keeps test delivery separate and rejects an unknown subscription", async () => {
+		const context = createExecutionContext();
+		const response = await worker.fetch(
+			new Request("https://example.com/api/subscriptions/test", {
+				method: "POST",
+				headers: { "content-type": "application/json" },
+				body: JSON.stringify({
+					endpoint: "https://fcm.googleapis.com/fcm/send/missing",
+				}),
+			}),
+			env,
+			context,
+		);
+		await waitOnExecutionContext(context);
+		expect(response.status).toBe(404);
+		expect(await response.json()).toEqual({
+			error: "Push subscription not found",
+		});
+	});
+
 	test("serves status from edge cache without exposing internal retry state", async () => {
 		await env.NOTIFIED_MATCHES.put(
 			"push:state",

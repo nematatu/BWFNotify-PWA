@@ -95,23 +95,47 @@ export async function deleteSubscription(
 	await kv.delete(await subscriptionKey(endpoint));
 }
 
+export async function sendTestNotification(
+	env: Env,
+	endpoint: string,
+): Promise<"sent" | "missing" | "removed"> {
+	const subscription = await env.NOTIFIED_MATCHES.get<StoredSubscription>(
+		await subscriptionKey(endpoint),
+		"json",
+	);
+	if (!subscription || subscription.endpoint !== endpoint) return "missing";
+
+	try {
+		await webpush.sendNotification(
+			subscription,
+			JSON.stringify({
+				title: "テスト通知",
+				body: "BWFNotifyから通知を受信できました",
+				url: "/",
+				icon: "/view/icon-512.png",
+				tag: `bwf-test:${Date.now()}`,
+			}),
+			pushOptions(env, "bwf-test"),
+		);
+		return "sent";
+	} catch (error) {
+		const status =
+			error instanceof webpush.WebPushError ? error.statusCode : undefined;
+		if (status === 404 || status === 410) {
+			await deleteSubscription(env.NOTIFIED_MATCHES, endpoint);
+			return "removed";
+		}
+		throw error;
+	}
+}
+
 export async function sendPushNotifications(
 	env: Env,
 	matches: MatchSummary[],
 ): Promise<DeliveryResult> {
 	const subscriptions = await listSubscriptions(env.NOTIFIED_MATCHES);
 	const result: DeliveryResult = { sent: 0, failed: 0, removed: 0 };
-	const options = {
-		TTL: 60 * 60,
-		urgency: "high" as const,
-		topic: "bwf-live",
-		contentEncoding: "aes128gcm" as const,
-		vapidDetails: {
-			subject: env.VAPID_SUBJECT,
-			publicKey: env.VAPID_PUBLIC_KEY,
-			privateKey: env.VAPID_PRIVATE_KEY,
-		},
-	};
+	const options = pushOptions(env, "bwf-live");
 
 	for (const subscription of subscriptions) {
 		const eligibleMatches = matchesForSubscription(subscription, matches);
@@ -146,6 +170,20 @@ export async function sendPushNotifications(
 	}
 
 	return result;
+}
+
+function pushOptions(env: Env, topic: string) {
+	return {
+		TTL: 60 * 60,
+		urgency: "high" as const,
+		topic,
+		contentEncoding: "aes128gcm" as const,
+		vapidDetails: {
+			subject: env.VAPID_SUBJECT,
+			publicKey: env.VAPID_PUBLIC_KEY,
+			privateKey: env.VAPID_PRIVATE_KEY,
+		},
+	};
 }
 
 export function parseExcludedMatchIds(value: unknown): string[] | null {

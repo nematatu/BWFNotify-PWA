@@ -121,3 +121,29 @@ export type DeliveryResult = {
 	failed: number;
 	removed: number;
 };
+
+export type PushSubscriptionInput = {
+	endpoint: string;
+	keys: {
+		p256dh: string;
+		auth: string;
+	};
+};
+
+export type SaveSubscriptionRequest = {
+	subscription: PushSubscriptionInput;
+};
+
+export type UpdateSubscriptionPreferencesRequest = {
+	endpoint: string;
+	excludedMatchIds: string[];
+};
+
+export type TestNotificationRequest = {
+	endpoint: string;
+};
+
+export type SubscriptionResponse = {
+	ok: true;
+	excludedMatchIds: string[];
+};

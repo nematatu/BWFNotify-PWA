@@ -18,7 +18,9 @@ export function AppHeader() {
 				</div>
 			</div>
 			<p id="last-updated" class={notifError() ? "error" : ""}>
-				{checkedAt() ? `更新: ${formatDate(checkedAt()!)}` : "未取得"}
+				<Show when={checkedAt()} fallback="未取得">
+					{(value) => `更新: ${formatDate(value())}`}
+				</Show>
 			</p>
 		</header>
 	);

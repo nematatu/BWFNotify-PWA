@@ -1,5 +1,12 @@
 import { type Context, Hono } from "hono";
-import type { DeliveryResult, MatchSummary, PublicState } from "../type";
+import type {
+	DeliveryResult,
+	MatchSummary,
+	PublicState,
+	SaveSubscriptionRequest,
+	TestNotificationRequest,
+	UpdateSubscriptionPreferencesRequest,
+} from "../type";
 import { errorMessage, object, optionalString } from "../utils";
 import { fetchJapaneseMatches } from "./bwf";
 import { fetchBwfImage } from "./media";
@@ -10,6 +17,7 @@ import {
 	parsePushSubscription,
 	saveSubscription,
 	sendPushNotifications,
+	sendTestNotification,
 	updateSubscriptionExclusions,
 } from "./push";
 
@@ -109,7 +117,10 @@ app.post("/api/subscriptions", async (c) => {
 		return c.json({ error: "Request is too large" }, 413);
 	}
 
-	const subscription = parsePushSubscription(await readJson(c.req.raw));
+	const body = object(
+		await readJson(c.req.raw),
+	) as Partial<SaveSubscriptionRequest>;
+	const subscription = parsePushSubscription(body.subscription);
 	if (!subscription) {
 		return c.json({ error: "Invalid push subscription" }, 400);
 	}
@@ -130,7 +141,9 @@ app.patch("/api/subscriptions", async (c) => {
 		return c.json({ error: "Request is too large" }, 413);
 	}
 
-	const body = object(await readJson(c.req.raw));
+	const body = object(
+		await readJson(c.req.raw),
+	) as Partial<UpdateSubscriptionPreferencesRequest>;
 	const endpoint = optionalString(body.endpoint);
 	const excludedMatchIds = parseExcludedMatchIds(body.excludedMatchIds);
 	if (!endpoint || !isAllowedPushEndpoint(endpoint) || !excludedMatchIds) {
@@ -146,6 +159,29 @@ app.patch("/api/subscriptions", async (c) => {
 		return c.json({ error: "Push subscription not found" }, 404);
 	}
 	return c.json({ ok: true, excludedMatchIds: updated.excludedMatchIds || [] });
+});
+
+app.post("/api/subscriptions/test", async (c) => {
+	if (requestTooLarge(c.req.header("content-length"))) {
+		return c.json({ error: "Request is too large" }, 413);
+	}
+
+	const body = object(
+		await readJson(c.req.raw),
+	) as Partial<TestNotificationRequest>;
+	const endpoint = optionalString(body.endpoint);
+	if (!endpoint || !isAllowedPushEndpoint(endpoint)) {
+		return c.json({ error: "Invalid push endpoint" }, 400);
+	}
+
+	const result = await sendTestNotification(c.env, endpoint);
+	if (result === "missing") {
+		return c.json({ error: "Push subscription not found" }, 404);
+	}
+	if (result === "removed") {
+		return c.json({ error: "Push subscription expired" }, 410);
+	}
+	return c.json({ ok: true });
 });
 
 app.delete("/api/subscriptions", async (c) => {

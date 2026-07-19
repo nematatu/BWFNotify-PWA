@@ -6,7 +6,6 @@ import {
 	notifText,
 	onToggleChange,
 	onToggleClick,
-	permissionOpen,
 	sendTest,
 	testDisabled,
 	toggleChecked,
@@ -16,7 +15,6 @@ import {
 	closeInstall,
 	guidance,
 	handleInstall,
-	installOpen,
 	openInstall,
 	standalone,
 } from "../lib/pwaInstallState";
