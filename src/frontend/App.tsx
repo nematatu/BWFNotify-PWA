@@ -267,6 +267,28 @@ export default function App() {
 
 	// --- Notifications ---
 	async function initNotifications() {
+		const isDev = import.meta.env.DEV;
+		if (isDev && !standalone()) {
+			if ("serviceWorker" in navigator) {
+				try {
+					const registrations =
+						await navigator.serviceWorker.getRegistrations();
+					for (const reg of registrations) {
+						await reg.unregister();
+						console.log(
+							"Development mode (browser): Unregistered Service Worker.",
+						);
+					}
+				} catch (e) {
+					console.error("Failed to unregister SW in dev mode:", e);
+				}
+			}
+			setStatus("開発環境: 通知は無効化されています");
+			setToggleDisabled(true);
+			setTestDisabled(true);
+			return;
+		}
+
 		if (!window.isSecureContext) {
 			setStatus("通知にはHTTPS接続が必要です", true);
 			return;
