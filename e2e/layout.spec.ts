@@ -145,6 +145,19 @@ const completedMatch = {
 	],
 };
 
+const completedDoublesLoss = {
+	...doublesMatch,
+	id: "layout-completed-doubles-loss",
+	eventType: "completed",
+	tournamentDate: "2026-07-16",
+	round: "R16",
+	h2h: undefined,
+	scores: [
+		{ game: 1, team1: 18, team2: 21 },
+		{ game: 2, team1: 16, team2: 21 },
+	],
+};
+
 const upcomingTournament = {
 	id: "2026-07-21:中国オープン2026",
 	name: "中国オープン2026",
@@ -191,7 +204,7 @@ async function preparePage(page: Page) {
 					secondSinglesMatch,
 					thirdSinglesMatch,
 				],
-				recentResults: [completedMatch],
+				recentResults: [completedMatch, completedDoublesLoss],
 				calendarCheckedAt: "2026-07-18T08:00:00.000Z",
 				upcomingTournaments: [upcomingTournament],
 			},
@@ -355,9 +368,59 @@ for (const viewport of [
 		).toHaveCount(0);
 		await expect(page.getByRole("link", { name: "配信を見る" })).toHaveCount(0);
 		await page.getByRole("tab", { name: /結果/ }).click();
-		await expect(page.locator(".result-row")).toHaveCount(1);
-		await expect(page.locator(".result-team-japan")).toContainText("山口茜");
-		await expect(page.locator(".result-outcome")).toHaveText("WIN");
+		const resultRows = page.locator(".result-row");
+		await expect(resultRows).toHaveCount(2);
+		await expect(resultRows.nth(0)).toHaveClass(/result-win/);
+		await expect(resultRows.nth(0)).toHaveCSS(
+			"background-image",
+			/rgba\(215, 25, 32, 0\.14\)/,
+		);
+		await expect(resultRows.nth(0).locator(".result-outcome")).toHaveText(
+			"WIN",
+		);
+		await expect(resultRows.nth(1)).toHaveClass(/result-loss/);
+		await expect(resultRows.nth(1)).toHaveCSS(
+			"background-image",
+			/rgba\(25, 103, 173, 0\.14\)/,
+		);
+		await expect(resultRows.nth(1).locator(".result-outcome")).toHaveText(
+			"LOSE",
+		);
+		for (const row of await resultRows.all()) {
+			await expect(
+				row.locator(".result-matchup > .result-team").first(),
+			).toHaveClass(/result-team-japan/);
+			await expect(row.locator(".result-flag")).toHaveCount(2);
+		}
+		await expect(resultRows.nth(0).locator(".result-team-japan")).toContainText(
+			"山口茜",
+		);
+		const doublesNames = resultRows
+			.nth(1)
+			.locator(".result-team-japan .result-player-names");
+		await expect(doublesNames).toContainText("福島由紀");
+		await expect(doublesNames).toContainText("松本麻佑");
+		await expect(doublesNames.locator(".result-name-separator")).toHaveText(
+			"/",
+		);
+		await expect(doublesNames).toHaveCSS("white-space", "normal");
+		const [japaneseNameSize, opponentNameSize] = await Promise.all([
+			doublesNames.evaluate((element) =>
+				Number.parseFloat(getComputedStyle(element).fontSize),
+			),
+			resultRows
+				.nth(1)
+				.locator(".result-team:not(.result-team-japan) .result-player-names")
+				.evaluate((element) =>
+					Number.parseFloat(getComputedStyle(element).fontSize),
+				),
+		]);
+		expect(japaneseNameSize).toBeGreaterThan(opponentNameSize);
+		await resultRows.nth(1).locator(".result-details summary").click();
+		await expect(resultRows.nth(1).locator(".result-details")).toHaveAttribute(
+			"open",
+			"",
+		);
 		if (process.env.CAPTURE_LAYOUT === "1") {
 			await page.screenshot({
 				path: `/tmp/bwfnotify-results-${viewport.name}.png`,
@@ -368,6 +431,9 @@ for (const viewport of [
 		await expect(page.locator(".upcoming-row")).toHaveCount(1);
 		await expect(page.locator(".upcoming-row")).toContainText(
 			"中国オープン2026",
+		);
+		await expect(page.locator(".upcoming-row")).not.toContainText(
+			/選手|所属|時刻|コート|Court/,
 		);
 		await expect(
 			page.locator(".upcoming-row a, .upcoming-row details"),
