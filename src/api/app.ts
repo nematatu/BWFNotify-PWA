@@ -35,8 +35,10 @@ const LIVE_CACHE_TTL_SECONDS = 10;
 const NOTIFICATION_DEDUP_AGE_MS = 30 * 24 * 60 * 60 * 1000;
 export const STATE_MAX_AGE_MS = 30 * 60 * 1000;
 export const MAX_NOTIFICATION_ATTEMPTS = 3;
+const CALENDAR_REVISION = 1;
 
 type StoredState = PublicState & {
+	calendarRevision?: number;
 	notificationAttempts?: Record<string, number>;
 	notifiedLiveMatches?: Record<string, string>;
 };
@@ -269,7 +271,10 @@ export async function runNotificationCheck(
 	let calendarCheckedAt = previous?.calendarCheckedAt || null;
 	let calendarAttemptedAt = previous?.calendarAttemptedAt || calendarCheckedAt;
 	let calendarError = previous?.calendarError || null;
-	if (calendarRefreshDue(calendarAttemptedAt, now)) {
+	if (
+		previous?.calendarRevision !== CALENDAR_REVISION ||
+		calendarRefreshDue(calendarAttemptedAt, now)
+	) {
 		calendarAttemptedAt = now.toISOString();
 		const knownMatches = [...matches, ...(previous?.recentResults || [])];
 		try {
@@ -331,6 +336,7 @@ export async function runNotificationCheck(
 		calendarAttemptedAt,
 		calendarError,
 		upcomingTournaments,
+		calendarRevision: CALENDAR_REVISION,
 	};
 	const notificationAttempts = nextNotificationAttempts(
 		previous,
@@ -393,6 +399,7 @@ export function shouldPersistState(
 		(previous.calendarAttemptedAt || null) !==
 			(next.calendarAttemptedAt || null) ||
 		(previous.calendarError || null) !== (next.calendarError || null) ||
+		previous.calendarRevision !== next.calendarRevision ||
 		JSON.stringify(previous.notificationAttempts || {}) !==
 			JSON.stringify(next.notificationAttempts || {}) ||
 		JSON.stringify(previous.notifiedLiveMatches || {}) !==

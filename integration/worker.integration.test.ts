@@ -306,11 +306,13 @@ describe("Worker integration", () => {
 		const stored = await env.NOTIFIED_MATCHES.get<{
 			calendarAttemptedAt: string;
 			calendarError: string;
+			calendarRevision: number;
 		}>("push:state", "json");
 		expect(calendarCalls).toBe(1);
 		expect(stored).toMatchObject({
 			calendarAttemptedAt: "2026-07-20T00:00:00.000Z",
 			calendarError: "BAJ unavailable",
+			calendarRevision: 1,
 		});
 	});
 
