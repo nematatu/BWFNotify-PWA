@@ -8,6 +8,9 @@ import {
 	mergeLiveMatches,
 	type SortOrder,
 } from "./utils";
+import { type MainView, preferredInitialView } from "./viewPolicy";
+
+export type { MainView } from "./viewPolicy";
 
 const LIVE_POLL_MS = 15_000;
 const FULL_POLL_MS = 2 * 60_000;
@@ -30,8 +33,8 @@ export const [calendarCheckedAt, setCalendarCheckedAt] = createSignal<
 export const [upcomingTournaments, setUpcomingTournaments] = createSignal<
 	UpcomingTournament[]
 >([]);
-export type MainView = "live" | "scheduled" | "results" | "upcoming";
-export const [currentView, setCurrentView] = createSignal<MainView>("live");
+export const [currentView, setCurrentViewSignal] =
+	createSignal<MainView>("live");
 export const [sortOrder, setSortOrderSignal] = createSignal<SortOrder>(
 	readSavedSort() || DEFAULT_SORT_ORDER,
 );
@@ -42,6 +45,12 @@ let liveTimer: ReturnType<typeof setTimeout> | null = null;
 let fullTimer: ReturnType<typeof setTimeout> | null = null;
 let idleTimer: ReturnType<typeof setTimeout> | null = null;
 let currentPollingMode: PollingMode = "paused";
+let initialViewSelected = false;
+
+export const setCurrentView = (view: MainView) => {
+	initialViewSelected = true;
+	setCurrentViewSignal(view);
+};
 
 // --- Domain Actions ---
 export const loadStatus = async () => {
@@ -52,6 +61,16 @@ export const loadStatus = async () => {
 		setRecentResults(state.recentResults || []);
 		setCalendarCheckedAt(state.calendarCheckedAt || null);
 		setUpcomingTournaments(state.upcomingTournaments || []);
+		if (!initialViewSelected) {
+			setCurrentViewSignal(
+				preferredInitialView(
+					state.matches || [],
+					state.recentResults?.length || 0,
+					state.upcomingTournaments?.length || 0,
+				),
+			);
+			initialViewSelected = true;
+		}
 		syncPollingMode();
 	} catch (e) {
 		console.error("Failed to load status:", e);

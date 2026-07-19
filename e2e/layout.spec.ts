@@ -512,6 +512,41 @@ test("wide: match cards use multiple columns in both sort modes", async ({
 	}
 });
 
+test("opens results when there are no live or scheduled matches", async ({
+	page,
+}) => {
+	await page.route("**/api/config", (route) =>
+		route.fulfill({ json: { vapidPublicKey: "" } }),
+	);
+	await page.route("**/api/media?**", (route) =>
+		route.fulfill({
+			body: Buffer.from(pixel, "base64"),
+			contentType: "image/png",
+		}),
+	);
+	await page.route("**/api/status", (route) =>
+		route.fulfill({
+			json: {
+				checkedAt: "2026-07-20T00:00:00.000Z",
+				matches: [],
+				recentResults: [completedMatch],
+				calendarCheckedAt: "2026-07-20T00:00:00.000Z",
+				upcomingTournaments: [upcomingTournament],
+			},
+		}),
+	);
+
+	await page.goto("/");
+	await expect(page.getByRole("tab", { name: "結果 1" })).toHaveAttribute(
+		"aria-selected",
+		"true",
+	);
+	await expect(page.locator(".result-row")).toHaveCount(1);
+
+	await page.getByRole("tab", { name: "大会 1" }).click();
+	await expect(page.locator(".upcoming-row")).toHaveCount(1);
+});
+
 test("match information hierarchy prioritizes actions and matchup", async ({
 	page,
 }) => {

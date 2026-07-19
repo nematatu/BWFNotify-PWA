@@ -15,6 +15,7 @@ import {
 	teamLabel,
 	tournamentGroups,
 } from "../src/frontend/lib/utils.ts";
+import { preferredInitialView } from "../src/frontend/lib/viewPolicy.ts";
 
 describe("notification toggle policy", () => {
 	test("allows notifications from supported non-iOS browsers without installation", () => {
@@ -51,6 +52,23 @@ describe("polling policy", () => {
 		expect(
 			pollingMode({ visible: true, idle: true, hasLiveMatches: true }),
 		).toBe("paused");
+	});
+});
+
+describe("initial view policy", () => {
+	test("opens results when there are no current matches", () => {
+		expect(preferredInitialView([], 142, 8)).toBe("results");
+	});
+
+	test("prioritizes current matches over historical data", () => {
+		expect(preferredInitialView([{ eventType: "scheduled" }], 142, 8)).toBe(
+			"scheduled",
+		);
+		expect(preferredInitialView([{ eventType: "live" }], 142, 8)).toBe("live");
+	});
+
+	test("opens upcoming tournaments when no results exist", () => {
+		expect(preferredInitialView([], 0, 8)).toBe("upcoming");
 	});
 });
 
