@@ -141,13 +141,7 @@ export async function sendTestNotification(
 	try {
 		await webpush.sendNotification(
 			subscription,
-			JSON.stringify({
-				title: "テスト通知",
-				body: "BWFNotifyから通知を受信できました",
-				url: "/",
-				icon: "/view/icon-512.png",
-				tag: `bwf-test:${Date.now()}`,
-			}),
+			JSON.stringify(testNotificationPayload()),
 			pushOptions(env, "bwf-test"),
 		);
 		return "sent";
@@ -160,6 +154,16 @@ export async function sendTestNotification(
 		}
 		throw error;
 	}
+}
+
+export function testNotificationPayload(now = Date.now()) {
+	return {
+		title: "テスト通知",
+		body: "BWFNotifyから通知を受信できました",
+		url: "/",
+		icon: "/pwa/icons/icon-192.png",
+		tag: `bwf-test:${now}`,
+	};
 }
 
 export async function sendPushNotifications(

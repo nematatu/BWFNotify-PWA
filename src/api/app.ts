@@ -20,6 +20,7 @@ import {
 	sendTestNotification,
 	updateSubscriptionExclusions,
 } from "./push";
+import { defaultWorkerCache } from "./workerCache";
 
 const STATE_KEY = "push:state";
 const MAX_REQUEST_BYTES = 4096;
@@ -414,13 +415,8 @@ async function cachedJson(
 	const cacheUrl = new URL(c.req.url);
 	cacheUrl.search = "";
 	const cacheKey = new Request(cacheUrl.toString(), { method: "GET" });
-	interface WorkerCache {
-		match(req: Request): Promise<Response | undefined>;
-		put(req: Request, res: Response): Promise<void>;
-	}
-	const cached = await (
-		caches as unknown as { default: WorkerCache }
-	).default.match(cacheKey);
+	const cache = defaultWorkerCache();
+	const cached = await cache.match(cacheKey);
 	if (cached) {
 		const response = new Response(cached.body, cached);
 		response.headers.set("X-BWF-Cache", "HIT");
@@ -430,12 +426,7 @@ async function cachedJson(
 	const response = c.json(await load());
 	response.headers.set("Cache-Control", `public, max-age=${ttlSeconds}`);
 	response.headers.set("X-BWF-Cache", "MISS");
-	c.executionCtx.waitUntil(
-		(caches as unknown as { default: WorkerCache }).default.put(
-			cacheKey,
-			response.clone(),
-		),
-	);
+	c.executionCtx.waitUntil(cache.put(cacheKey, response.clone()));
 	return response;
 }
 

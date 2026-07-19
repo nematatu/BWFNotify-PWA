@@ -7,6 +7,7 @@ import {
 	parseExcludedMatchIds,
 	parsePushSubscription,
 	subscriptionMetadata,
+	testNotificationPayload,
 } from "../src/api/push";
 import type { MatchSummary, StoredSubscription } from "../src/type";
 
@@ -39,6 +40,17 @@ describe("parsePushSubscription", () => {
 });
 
 describe("notificationPayload", () => {
+	test("builds a test notification with an existing app icon", async () => {
+		expect(testNotificationPayload(123)).toEqual({
+			title: "テスト通知",
+			body: "BWFNotifyから通知を受信できました",
+			url: "/",
+			icon: "/pwa/icons/icon-192.png",
+			tag: "bwf-test:123",
+		});
+		expect(await Bun.file("public/pwa/icons/icon-192.png").exists()).toBe(true);
+	});
+
 	test("builds a match-specific notification", () => {
 		const payload = notificationPayload({
 			id: "1",
