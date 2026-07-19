@@ -1,3 +1,4 @@
+import { parseHTML } from "linkedom";
 import { extractTextItems, getDocumentProxy } from "unpdf";
 import type { MatchSummary, UpcomingTournament } from "../type";
 
@@ -13,12 +14,6 @@ type TournamentDraft = Omit<
 	UpcomingTournament,
 	"id" | "japanesePlayers" | "matchDataAvailable" | "timetableAvailable"
 >;
-
-type LinkDraft = { label: string; url: string };
-type ParsedDraft = Partial<TournamentDraft> & {
-	date?: string;
-	links: LinkDraft[];
-};
 
 export async function fetchUpcomingTournaments(
 	now: Date,
@@ -101,96 +96,47 @@ export function updateTournamentAvailability(
 	});
 }
 
-export function calendarRefreshDue(
-	checkedAt: string | null | undefined,
-	now: Date,
-): boolean {
-	const previous = checkedAt ? Date.parse(checkedAt) : Number.NaN;
-	return (
-		!Number.isFinite(previous) ||
-		now.getTime() - previous >= 12 * 60 * 60 * 1000
-	);
-}
-
 export async function parseTournamentPage(
 	response: Response,
 ): Promise<TournamentDraft[]> {
-	const handler = new TournamentPageHandler();
-	await new HTMLRewriter()
-		.on("li.v-tournament__item", handler)
-		.on(".v-tournament__date", handler.fieldHandler("date"))
-		.on(".v-tournament__ttl", handler.fieldHandler("name"))
-		.on(".v-tournament__place", handler.fieldHandler("place"))
-		.on(".c-tag", handler.fieldHandler("category"))
-		.on(".v-tournament__links-link", handler.link())
-		.transform(response)
-		.arrayBuffer();
-	return handler.results();
-}
-
-class TournamentPageHandler {
-	private current: ParsedDraft | undefined;
-	private readonly tournaments: TournamentDraft[] = [];
-
-	element(element: Element) {
-		this.current = { links: [] };
-		element.onEndTag(() => this.finish());
-	}
-
-	fieldHandler(field: "date" | "name" | "place" | "category") {
-		return {
-			text: (chunk: Text) => {
-				if (!this.current) return;
-				this.current[field] =
-					`${this.current[field] || ""}${chunk.text}`.trim();
-			},
-		};
-	}
-
-	link() {
-		let link: LinkDraft | undefined;
-		return {
-			element: (element: Element) => {
-				const url = element.getAttribute("href");
-				link = url ? { label: "", url } : undefined;
-				if (link) this.current?.links.push(link);
-			},
-			text: (chunk: Text) => {
-				if (link) link.label += chunk.text.trim();
-			},
-		};
-	}
-
-	results() {
-		return this.tournaments;
-	}
-
-	private finish() {
-		const current = this.current;
-		this.current = undefined;
-		if (!current?.name || !current.date) return;
-		const dates = current.date.match(
-			/(\d{4}\.\d{1,2}\.\d{1,2})\s*-\s*(\d{4}\.\d{1,2}\.\d{1,2})/,
-		);
-		if (!dates) return;
-		const links = current.links || [];
-		const participantSourceUrls = links
-			.filter((link) => /^(派遣|参加者)$/.test(link.label))
-			.map((link) => absoluteBajUrl(link.url))
-			.sort();
-		const officialUrl = links.find((link) =>
-			/BWF|大会サイト|速報サイト/i.test(`${link.label} ${link.url}`),
-		)?.url;
-		this.tournaments.push({
-			name: current.name,
-			category: current.category,
-			startDate: normalizeDate(dates[1]),
-			endDate: normalizeDate(dates[2]),
-			place: current.place,
-			officialUrl,
-			participantSourceUrls,
-		});
-	}
+	const { document } = parseHTML(await response.text());
+	return [...document.querySelectorAll("li.v-tournament__item")].flatMap(
+		(item) => {
+			const name = item.querySelector(".v-tournament__ttl")?.textContent.trim();
+			const date = item
+				.querySelector(".v-tournament__date")
+				?.textContent.trim();
+			if (!name || !date) return [];
+			const dates = date.match(
+				/(\d{4}\.\d{1,2}\.\d{1,2})\s*-\s*(\d{4}\.\d{1,2}\.\d{1,2})/,
+			);
+			if (!dates) return [];
+			const links = [...item.querySelectorAll(".v-tournament__links-link")]
+				.map((link) => ({
+					label: link.textContent.trim(),
+					url: link.getAttribute("href") || "",
+				}))
+				.filter((link) => link.url);
+			const participantSourceUrls = links
+				.filter((link) => /^(派遣|参加者)$/.test(link.label))
+				.map((link) => absoluteBajUrl(link.url))
+				.sort();
+			const officialUrl = links.find((link) =>
+				/BWF|大会サイト|速報サイト/i.test(`${link.label} ${link.url}`),
+			)?.url;
+			return [
+				{
+					name,
+					category: item.querySelector(".c-tag")?.textContent.trim(),
+					startDate: normalizeDate(dates[1]),
+					endDate: normalizeDate(dates[2]),
+					place: item.querySelector(".v-tournament__place")?.textContent.trim(),
+					officialUrl,
+					participantSourceUrls,
+				},
+			];
+		},
+	);
 }
 
 async function playersFromPdfs(

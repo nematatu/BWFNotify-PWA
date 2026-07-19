@@ -120,8 +120,6 @@ export type PublicState = {
 	matches: MatchSummary[];
 	recentResults: MatchSummary[];
 	calendarCheckedAt: string | null;
-	calendarAttemptedAt: string | null;
-	calendarError: string | null;
 	upcomingTournaments: UpcomingTournament[];
 };
 

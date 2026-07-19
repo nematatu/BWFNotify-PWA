@@ -5,6 +5,7 @@ import {
 } from "cloudflare:test";
 import { env } from "cloudflare:workers";
 import { afterEach, describe, expect, test } from "vitest";
+import calendarSnapshot from "../config/upcoming-tournaments.json";
 import worker from "../src";
 import { runNotificationCheck } from "../src/api/app";
 import { parseTournamentPage } from "../src/api/baj";
@@ -23,7 +24,6 @@ const liveMatch: MatchSummary = {
 
 const noCalendar = {
 	fetchHistory: async () => [],
-	fetchTournaments: async () => [],
 };
 
 afterEach(async () => {
@@ -152,8 +152,6 @@ describe("Worker integration", () => {
 			matches: [liveMatch],
 			recentResults: [],
 			calendarCheckedAt: null,
-			calendarAttemptedAt: null,
-			calendarError: null,
 			upcomingTournaments: [],
 		});
 
@@ -239,7 +237,7 @@ describe("Worker integration", () => {
 		expect(notificationCalls).toBe(3);
 	});
 
-	test("keeps completed matches for seven days and stores calendar data together", async () => {
+	test("keeps completed matches for seven days and stores generated calendar data", async () => {
 		const completed: MatchSummary = {
 			...liveMatch,
 			id: "completed-recent",
@@ -254,18 +252,6 @@ describe("Worker integration", () => {
 		await runNotificationCheck(env, {
 			fetchMatches: async () => [completed],
 			fetchHistory: async () => [completed, expired],
-			fetchTournaments: async () => [
-				{
-					id: "2026-07-21:中国オープン2026",
-					name: "中国オープン2026",
-					startDate: "2026-07-21",
-					endDate: "2026-07-26",
-					participantSourceUrls: ["https://www.badminton.or.jp/players.pdf"],
-					japanesePlayers: ["山口茜"],
-					matchDataAvailable: false,
-					timetableAvailable: false,
-				},
-			],
 			sendNotifications: async () => ({
 				sent: 0,
 				failed: 0,
@@ -283,37 +269,10 @@ describe("Worker integration", () => {
 		expect(stored?.recentResults.map((match) => match.id)).toEqual([
 			"completed-recent",
 		]);
-		expect(stored?.calendarCheckedAt).toBe("2026-07-20T00:00:00.000Z");
-		expect(stored?.upcomingTournaments).toHaveLength(1);
-	});
-
-	test("does not retry a failed calendar refresh on the next cron", async () => {
-		let now = new Date("2026-07-20T00:00:00.000Z");
-		let calendarCalls = 0;
-		const dependencies = {
-			...noCalendar,
-			fetchTournaments: async () => {
-				calendarCalls += 1;
-				throw new Error("BAJ unavailable");
-			},
-			now: () => now,
-		};
-
-		await runNotificationCheck(env, dependencies);
-		now = new Date("2026-07-20T00:02:00.000Z");
-		await runNotificationCheck(env, dependencies);
-
-		const stored = await env.NOTIFIED_MATCHES.get<{
-			calendarAttemptedAt: string;
-			calendarError: string;
-			calendarRevision: number;
-		}>("push:state", "json");
-		expect(calendarCalls).toBe(1);
-		expect(stored).toMatchObject({
-			calendarAttemptedAt: "2026-07-20T00:00:00.000Z",
-			calendarError: "BAJ unavailable",
-			calendarRevision: 1,
-		});
+		expect(stored?.calendarCheckedAt).toBe(calendarSnapshot.generatedAt);
+		expect(stored?.upcomingTournaments).toHaveLength(
+			calendarSnapshot.tournaments.length,
+		);
 	});
 
 	test("retries only the match whose deliveries all failed", async () => {

@@ -1,5 +1,9 @@
 import { describe, expect, test } from "bun:test";
-import { STATE_MAX_AGE_MS, shouldPersistState } from "../src/api/app";
+import {
+	historyRefreshDue,
+	STATE_MAX_AGE_MS,
+	shouldPersistState,
+} from "../src/api/app";
 import type { MatchSummary, PublicState } from "../src/type";
 
 const match = (score = 10): MatchSummary => ({
@@ -19,8 +23,6 @@ describe("KV state persistence", () => {
 		matches: [match()],
 		recentResults: [],
 		calendarCheckedAt: null,
-		calendarAttemptedAt: null,
-		calendarError: null,
 		upcomingTournaments: [],
 	};
 
@@ -86,5 +88,26 @@ describe("YouTube discovery load", () => {
 	test("keeps per-user live polling free of YouTube discovery", async () => {
 		const source = await Bun.file("src/api/app.ts").text();
 		expect(source).toContain("resolveYoutubeStreams: false");
+	});
+});
+
+describe("match history refresh", () => {
+	const checkedAt = "2026-07-20T00:00:00.000Z";
+
+	test("runs at most once per 12 hours", () => {
+		expect(historyRefreshDue(checkedAt, new Date("2026-07-20T11:59:59Z"))).toBe(
+			false,
+		);
+		expect(historyRefreshDue(checkedAt, new Date("2026-07-20T12:00:00Z"))).toBe(
+			true,
+		);
+	});
+});
+
+describe("BAJ discovery load", () => {
+	test("keeps BAJ crawling out of the production Worker", async () => {
+		const source = await Bun.file("src/api/app.ts").text();
+		expect(source).not.toContain("fetchUpcomingTournaments");
+		expect(source).toContain("upcoming-tournaments.json");
 	});
 });

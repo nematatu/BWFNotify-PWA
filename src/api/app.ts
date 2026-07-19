@@ -1,4 +1,5 @@
 import { type Context, Hono } from "hono";
+import calendarSnapshot from "../../config/upcoming-tournaments.json";
 import type {
 	DeliveryResult,
 	MatchSummary,
@@ -9,11 +10,7 @@ import type {
 	UpdateSubscriptionPreferencesRequest,
 } from "../type";
 import { errorMessage, object, optionalString, todayJst } from "../utils";
-import {
-	calendarRefreshDue,
-	fetchUpcomingTournaments,
-	updateTournamentAvailability,
-} from "./baj";
+import { updateTournamentAvailability } from "./baj";
 import { fetchJapaneseMatches } from "./bwf";
 import { fetchBwfImage } from "./media";
 import {
@@ -35,10 +32,9 @@ const LIVE_CACHE_TTL_SECONDS = 10;
 const NOTIFICATION_DEDUP_AGE_MS = 30 * 24 * 60 * 60 * 1000;
 export const STATE_MAX_AGE_MS = 30 * 60 * 1000;
 export const MAX_NOTIFICATION_ATTEMPTS = 3;
-const CALENDAR_REVISION = 1;
-
 type StoredState = PublicState & {
-	calendarRevision?: number;
+	calendarAttemptedAt?: string;
+	historyCheckedAt?: string;
 	notificationAttempts?: Record<string, number>;
 	notifiedLiveMatches?: Record<string, string>;
 };
@@ -53,11 +49,6 @@ type NotificationCheckDependencies = {
 		knownMatches: MatchSummary[],
 		now: Date,
 	) => Promise<MatchSummary[]>;
-	fetchTournaments: (
-		now: Date,
-		previous: UpcomingTournament[],
-		matches: MatchSummary[],
-	) => Promise<UpcomingTournament[]>;
 	sendNotifications: (
 		env: Env,
 		matches: MatchSummary[],
@@ -247,7 +238,6 @@ export async function runNotificationCheck(
 				enrichHeadToHead: false,
 				dates: recentDates(todayJst(now)),
 			}),
-		fetchTournaments: fetchUpcomingTournaments,
 		sendNotifications: sendPushNotifications,
 		now: () => new Date(),
 		...overrides,
@@ -267,15 +257,10 @@ export async function runNotificationCheck(
 	let completed = fetchedMatches.filter(
 		(match) => match.eventType === "completed",
 	);
-	let upcomingTournaments = previous?.upcomingTournaments || [];
-	let calendarCheckedAt = previous?.calendarCheckedAt || null;
-	let calendarAttemptedAt = previous?.calendarAttemptedAt || calendarCheckedAt;
-	let calendarError = previous?.calendarError || null;
-	if (
-		previous?.calendarRevision !== CALENDAR_REVISION ||
-		calendarRefreshDue(calendarAttemptedAt, now)
-	) {
-		calendarAttemptedAt = now.toISOString();
+	let historyCheckedAt =
+		previous?.historyCheckedAt || previous?.calendarAttemptedAt || null;
+	if (historyRefreshDue(historyCheckedAt, now)) {
+		historyCheckedAt = now.toISOString();
 		const knownMatches = [...matches, ...(previous?.recentResults || [])];
 		try {
 			const history = await dependencies.fetchHistory(
@@ -295,26 +280,10 @@ export async function runNotificationCheck(
 				}),
 			);
 		}
-		try {
-			upcomingTournaments = await dependencies.fetchTournaments(
-				now,
-				upcomingTournaments,
-				matches,
-			);
-			calendarCheckedAt = now.toISOString();
-			calendarError = null;
-		} catch (error) {
-			calendarError = errorMessage(error);
-			console.error(
-				JSON.stringify({
-					event: "calendar-refresh-error",
-					error: calendarError,
-				}),
-			);
-		}
 	}
-	upcomingTournaments = updateTournamentAvailability(
-		upcomingTournaments,
+	const calendarCheckedAt = calendarSnapshot.generatedAt;
+	const upcomingTournaments = updateTournamentAvailability(
+		calendarSnapshot.tournaments as UpcomingTournament[],
 		matches,
 	);
 	const recentResults = mergeRecentResults(
@@ -333,10 +302,8 @@ export async function runNotificationCheck(
 		matches,
 		recentResults,
 		calendarCheckedAt,
-		calendarAttemptedAt,
-		calendarError,
 		upcomingTournaments,
-		calendarRevision: CALENDAR_REVISION,
+		historyCheckedAt: historyCheckedAt || undefined,
 	};
 	const notificationAttempts = nextNotificationAttempts(
 		previous,
@@ -396,10 +363,7 @@ export function shouldPersistState(
 		JSON.stringify(previous.upcomingTournaments || []) !==
 			JSON.stringify(next.upcomingTournaments || []) ||
 		(previous.calendarCheckedAt || null) !== (next.calendarCheckedAt || null) ||
-		(previous.calendarAttemptedAt || null) !==
-			(next.calendarAttemptedAt || null) ||
-		(previous.calendarError || null) !== (next.calendarError || null) ||
-		previous.calendarRevision !== next.calendarRevision ||
+		(previous.historyCheckedAt || null) !== (next.historyCheckedAt || null) ||
 		JSON.stringify(previous.notificationAttempts || {}) !==
 			JSON.stringify(next.notificationAttempts || {}) ||
 		JSON.stringify(previous.notifiedLiveMatches || {}) !==
@@ -413,6 +377,17 @@ export function shouldPersistState(
 	return (
 		!Number.isFinite(previousCheck) ||
 		now.getTime() - previousCheck >= STATE_MAX_AGE_MS
+	);
+}
+
+export function historyRefreshDue(
+	checkedAt: string | null | undefined,
+	now: Date,
+): boolean {
+	const previous = checkedAt ? Date.parse(checkedAt) : Number.NaN;
+	return (
+		!Number.isFinite(previous) ||
+		now.getTime() - previous >= 12 * 60 * 60 * 1000
 	);
 }
 
@@ -511,8 +486,6 @@ function publicState(state: StoredState | null): PublicState {
 			? state.recentResults
 			: [],
 		calendarCheckedAt: state?.calendarCheckedAt || null,
-		calendarAttemptedAt: state?.calendarAttemptedAt || null,
-		calendarError: state?.calendarError || null,
 		upcomingTournaments: Array.isArray(state?.upcomingTournaments)
 			? state.upcomingTournaments
 			: [],

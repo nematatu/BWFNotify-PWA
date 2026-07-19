@@ -1,7 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import {
-	calendarRefreshDue,
 	extractBajPlayersFromItems,
+	fetchUpcomingTournaments,
 	updateTournamentAvailability,
 } from "../src/api/baj";
 
@@ -48,23 +48,44 @@ describe("BAJ participant PDFs", () => {
 });
 
 describe("BAJ refresh policy", () => {
-	const checkedAt = "2026-07-20T00:00:00.000Z";
-	test("does not refresh before 12 hours", () => {
-		expect(
-			calendarRefreshDue(checkedAt, new Date("2026-07-20T11:59:59Z")),
-		).toBe(false);
-	});
+	test("reuses players without refetching unchanged PDFs", async () => {
+		const pdfUrl = "https://www.badminton.or.jp/storage/players.pdf";
+		const requested: string[] = [];
+		const html = `<li class="v-tournament__item">
+			<div class="v-tournament__date">2026.7.21 - 2026.7.26</div>
+			<span class="c-tag">BWF Super 1000</span>
+			<h3 class="v-tournament__ttl">中国オープン2026</h3>
+			<a class="v-tournament__links-link" href="https://bwfbadminton.com/tournament/1">大会サイト</a>
+			<a class="v-tournament__links-link" href="${pdfUrl}">参加者</a>
+		</li>`;
+		const fetcher = (async (input: RequestInfo | URL) => {
+			requested.push(String(input));
+			return new Response(html);
+		}) as typeof fetch;
 
-	test("refreshes after 12 hours", () => {
-		expect(
-			calendarRefreshDue(checkedAt, new Date("2026-07-20T12:00:00Z")),
-		).toBe(true);
-	});
+		const tournaments = await fetchUpcomingTournaments(
+			new Date("2026-07-20T00:00:00Z"),
+			[
+				{
+					id: "2026-07-21:中国オープン2026",
+					name: "中国オープン2026",
+					category: "BWF Super 1000",
+					startDate: "2026-07-21",
+					endDate: "2026-07-26",
+					officialUrl: "https://bwfbadminton.com/tournament/1",
+					participantSourceUrls: [pdfUrl],
+					japanesePlayers: ["山口茜"],
+					matchDataAvailable: false,
+					timetableAvailable: false,
+				},
+			],
+			[],
+			fetcher,
+		);
 
-	test("backs off for 12 hours after a failed attempt", () => {
-		expect(
-			calendarRefreshDue(checkedAt, new Date("2026-07-20T02:00:00Z")),
-		).toBe(false);
+		expect(requested).toHaveLength(6);
+		expect(requested).not.toContain(pdfUrl);
+		expect(tournaments[0]?.japanesePlayers).toEqual(["山口茜"]);
 	});
 });
 
