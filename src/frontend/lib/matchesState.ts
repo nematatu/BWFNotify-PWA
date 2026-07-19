@@ -1,5 +1,6 @@
 import { createSignal } from "solid-js";
 import type { MatchSummary, PublicState } from "../../type";
+import { type PollingMode, pollingMode } from "./pollingPolicy";
 import {
 	api,
 	DEFAULT_SORT_ORDER,
@@ -32,6 +33,7 @@ let livePromise: Promise<void> | null = null;
 let liveTimer: ReturnType<typeof setTimeout> | null = null;
 let fullTimer: ReturnType<typeof setTimeout> | null = null;
 let idleTimer: ReturnType<typeof setTimeout> | null = null;
+let currentPollingMode: PollingMode = "paused";
 
 // --- Domain Actions ---
 export const loadStatus = async () => {
@@ -39,6 +41,7 @@ export const loadStatus = async () => {
 		const state = await api<PublicState>("/api/status");
 		setCheckedAt(state.checkedAt);
 		setMatches(state.matches);
+		syncPollingMode();
 	} catch (e) {
 		console.error("Failed to load status:", e);
 	}
@@ -52,6 +55,7 @@ export const loadLive = async () => {
 				cache: "no-store",
 			});
 			setMatches((prev) => mergeLiveMatches(prev, state.matches));
+			syncPollingMode();
 		} catch (e) {
 			console.error("Failed to load live:", e);
 		} finally {
@@ -87,14 +91,7 @@ const scheduleLive = () => {
 	}, LIVE_POLL_MS);
 };
 
-const startPolling = () => {
-	stopPolling();
-	if (idle() || document.visibilityState !== "visible") return;
-	fullTimer = setInterval(() => void loadStatus(), FULL_POLL_MS);
-	scheduleLive();
-};
-
-const stopPolling = () => {
+const stopTimers = () => {
 	if (liveTimer) {
 		clearTimeout(liveTimer);
 		liveTimer = null;
@@ -103,6 +100,29 @@ const stopPolling = () => {
 		clearInterval(fullTimer);
 		fullTimer = null;
 	}
+};
+
+const syncPollingMode = () => {
+	const next = pollingMode({
+		visible: document.visibilityState === "visible",
+		idle: idle(),
+		hasLiveMatches: matches().some((match) => match.eventType === "live"),
+	});
+	if (next === currentPollingMode) return;
+
+	stopTimers();
+	currentPollingMode = next;
+	if (next === "paused") return;
+
+	fullTimer = setInterval(() => void loadStatus(), FULL_POLL_MS);
+	if (next === "live") scheduleLive();
+};
+
+const startPolling = () => syncPollingMode();
+
+const stopPolling = () => {
+	stopTimers();
+	currentPollingMode = "paused";
 };
 
 const resetIdle = () => {

@@ -1,4 +1,5 @@
 import { describe, expect, test } from "bun:test";
+import { pollingMode } from "../src/frontend/lib/pollingPolicy.ts";
 import {
 	displayCourt,
 	displayRound,
@@ -14,6 +15,29 @@ import {
 	tournamentGroups,
 	youtubeLink,
 } from "../src/frontend/lib/utils.ts";
+
+describe("polling policy", () => {
+	test("starts live polling as soon as a live match exists", () => {
+		expect(
+			pollingMode({ visible: true, idle: false, hasLiveMatches: true }),
+		).toBe("live");
+	});
+
+	test("uses normal polling without a live match", () => {
+		expect(
+			pollingMode({ visible: true, idle: false, hasLiveMatches: false }),
+		).toBe("active");
+	});
+
+	test("pauses polling while hidden or idle", () => {
+		expect(
+			pollingMode({ visible: false, idle: false, hasLiveMatches: true }),
+		).toBe("paused");
+		expect(
+			pollingMode({ visible: true, idle: true, hasLiveMatches: true }),
+		).toBe("paused");
+	});
+});
 
 // ---------------------------------------------------------------------------
 // match sorting
