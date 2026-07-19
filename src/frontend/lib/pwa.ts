@@ -11,12 +11,18 @@ export async function registerServiceWorker(
 	}
 
 	const isDev = import.meta.env.DEV;
-	// 開発環境かつ通常のブラウザでのアクセスの場合は、SWを登録せず、既存のSWをすべて強制的に登録解除する
+
+	// 開発環境（Vite / wrangler dev）かつ通常のブラウザでのアクセスの場合は、
+	// Service Workerを一切登録せず、既存の古い登録があればすべて強制解除する
 	if (isDev && !isStandaloneDisplay()) {
-		const registrations = await navigator.serviceWorker.getRegistrations();
-		for (const reg of registrations) {
-			await reg.unregister();
-			console.log("Development mode (browser): Unregistered Service Worker.");
+		try {
+			const registrations = await navigator.serviceWorker.getRegistrations();
+			for (const reg of registrations) {
+				await reg.unregister();
+				console.log("Development mode (browser): Unregistered Service Worker.");
+			}
+		} catch (e) {
+			console.warn("Failed to unregister service workers:", e);
 		}
 		return undefined;
 	}

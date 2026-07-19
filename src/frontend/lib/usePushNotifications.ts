@@ -1,20 +1,8 @@
 import { createMemo, createSignal } from "solid-js";
 import { registerServiceWorker } from "./pwa";
-import {
-	api,
-	base64UrlToBytes,
-	errorMessage,
-	isMobileBrowser,
-	isStandaloneDisplay,
-} from "./utils";
+import { api, base64UrlToBytes, errorMessage } from "./utils";
 
-export function usePushNotifications(
-	setBannerHidden: (v: boolean) => void,
-	openInstall: () => void,
-	openPermission: () => void,
-	toggleChecked: () => boolean,
-	setToggleChecked: (v: boolean) => void,
-) {
+export function usePushNotifications(setToggleChecked: (v: boolean) => void) {
 	const [notifText, setNotifText] = createSignal("確認中");
 	const [notifError, setNotifError] = createSignal(false);
 	const [testDisabled, setTestDisabled] = createSignal(true);
@@ -27,8 +15,6 @@ export function usePushNotifications(
 	let registration: ServiceWorkerRegistration | undefined;
 	let vapidKey: string | undefined;
 	let savingPrefs = false;
-
-	const standalone = () => isStandaloneDisplay();
 
 	const notificationDisabled = createMemo(
 		() =>
@@ -61,9 +47,6 @@ export function usePushNotifications(
 		if (!window.isSecureContext) {
 			setStatus("通知にはHTTPS接続が必要です", true);
 			return;
-		}
-		if (!standalone() && isMobileBrowser()) {
-			setBannerHidden(false);
 		}
 
 		try {
@@ -182,27 +165,6 @@ export function usePushNotifications(
 		}
 	};
 
-	const onToggleClick = (e: Event) => {
-		if (!standalone()) {
-			e.preventDefault();
-			openInstall();
-			return;
-		}
-		if (
-			!toggleChecked() &&
-			"Notification" in window &&
-			Notification.permission === "default"
-		) {
-			e.preventDefault();
-			openPermission();
-		}
-	};
-
-	const onToggleChange = (e: Event) => {
-		if (!standalone()) return;
-		void updateSubscription((e.target as HTMLInputElement).checked);
-	};
-
 	return {
 		notifText,
 		notifError,
@@ -214,7 +176,5 @@ export function usePushNotifications(
 		updateSubscription,
 		sendTest,
 		updateMatchNotif,
-		onToggleClick,
-		onToggleChange,
 	};
 }

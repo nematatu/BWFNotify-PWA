@@ -1,134 +1,106 @@
 const CACHE_NAME = __CACHE_NAME__;
 const APP_SHELL = __APP_SHELL__;
 
-const isDev =
-	self.location.hostname === "localhost" ||
-	self.location.hostname === "127.0.0.1";
+// Production Service Worker
+self.addEventListener("install", (event) => {
+	event.waitUntil(
+		caches
+			.open(CACHE_NAME)
+			.then((cache) => cache.addAll(APP_SHELL))
+			.then(() => self.skipWaiting()),
+	);
+});
 
-if (isDev) {
-	// Local development self-destruct to prevent zombie caching when server is shut down
-	self.addEventListener("install", () => {
-		self.skipWaiting();
-	});
-	self.addEventListener("activate", (event) => {
-		event.waitUntil(
-			self.registration.unregister().then(() => {
-				return self.clients.matchAll({ type: "window" }).then((clients) => {
-					for (const client of clients) {
-						try {
-							client.navigate(client.url);
-						} catch (e) {
-							console.warn("Failed to navigate client:", e);
-						}
-					}
-				});
-			}),
-		);
-	});
-} else {
-	// Production Service Worker
-	self.addEventListener("install", (event) => {
-		event.waitUntil(
-			caches
-				.open(CACHE_NAME)
-				.then((cache) => cache.addAll(APP_SHELL))
-				.then(() => self.skipWaiting()),
-		);
-	});
-
-	self.addEventListener("activate", (event) => {
-		event.waitUntil(
-			caches
-				.keys()
-				.then((names) =>
-					Promise.all(
-						names
-							.filter((name) => name !== CACHE_NAME)
-							.map((name) => caches.delete(name)),
-					),
-				)
-				.then(() => self.clients.claim()),
-		);
-	});
-
-	self.addEventListener("fetch", (event) => {
-		const url = new URL(event.request.url);
-		if (
-			event.request.method !== "GET" ||
-			url.origin !== self.location.origin ||
-			url.pathname.startsWith("/api/")
-		) {
-			return;
-		}
-
-		if (event.request.mode === "navigate") {
-			event.respondWith(
-				fetch(event.request).catch(() =>
-					caches.match("/").then(requiredResponse),
+self.addEventListener("activate", (event) => {
+	event.waitUntil(
+		caches
+			.keys()
+			.then((names) =>
+				Promise.all(
+					names
+						.filter((name) => name !== CACHE_NAME)
+						.map((name) => caches.delete(name)),
 				),
-			);
-			return;
-		}
+			)
+			.then(() => self.clients.claim()),
+	);
+});
 
+self.addEventListener("fetch", (event) => {
+	const url = new URL(event.request.url);
+	if (
+		event.request.method !== "GET" ||
+		url.origin !== self.location.origin ||
+		url.pathname.startsWith("/api/")
+	) {
+		return;
+	}
+
+	if (event.request.mode === "navigate") {
 		event.respondWith(
-			caches
-				.match(event.request)
-				.then((cached) => cached || fetch(event.request)),
+			fetch(event.request).catch(() =>
+				caches.match("/").then(requiredResponse),
+			),
 		);
-	});
+		return;
+	}
 
-	self.addEventListener("push", (event) => {
-		let payload = {
-			title: "BWF Notify",
-			body: "日本人選手の試合が始まりました",
-			url: "/",
-			tag: "bwf-live",
-			image: undefined,
-		};
+	event.respondWith(
+		caches
+			.match(event.request)
+			.then((cached) => cached || fetch(event.request)),
+	);
+});
 
-		if (event.data) {
-			try {
-				payload = { ...payload, ...event.data.json() };
-			} catch {
-				payload.body = event.data.text();
-			}
+self.addEventListener("push", (event) => {
+	let payload = {
+		title: "BWF Notify",
+		body: "日本人選手の試合が始まりました",
+		url: "/",
+		tag: "bwf-live",
+		image: undefined,
+	};
+
+	if (event.data) {
+		try {
+			payload = { ...payload, ...event.data.json() };
+		} catch {
+			payload.body = event.data.text();
 		}
+	}
 
-		const mediaUrl = notificationMediaUrl(payload.image);
-		event.waitUntil(
-			self.registration.showNotification(payload.title, {
-				body: payload.body,
-				icon:
-					mediaUrl ||
-					notificationMediaUrl(payload.icon) ||
-					"/pwa/icons/icon-192.png",
-				badge: "/pwa/icons/icon-192.png",
-				...(mediaUrl ? { image: mediaUrl } : {}),
-				tag: payload.tag,
-				data: { url: payload.url || "/" },
+	const mediaUrl = notificationMediaUrl(payload.image);
+	event.waitUntil(
+		self.registration.showNotification(payload.title, {
+			body: payload.body,
+			icon:
+				mediaUrl ||
+				notificationMediaUrl(payload.icon) ||
+				"/pwa/icons/icon-192.png",
+			badge: "/pwa/icons/icon-192.png",
+			...(mediaUrl ? { image: mediaUrl } : {}),
+			tag: payload.tag,
+			data: { url: payload.url || "/" },
+		}),
+	);
+});
+
+self.addEventListener("notificationclick", (event) => {
+	event.notification.close();
+	const targetUrl = new URL(
+		event.notification.data?.url || "/",
+		self.location.origin,
+	).href;
+
+	event.waitUntil(
+		self.clients
+			.matchAll({ type: "window", includeUncontrolled: true })
+			.then((clients) => {
+				const existing = clients.find((client) => client.url === targetUrl);
+				return existing ? existing.focus() : self.clients.openWindow(targetUrl);
 			}),
-		);
-	});
-
-	self.addEventListener("notificationclick", (event) => {
-		event.notification.close();
-		const targetUrl = new URL(
-			event.notification.data?.url || "/",
-			self.location.origin,
-		).href;
-
-		event.waitUntil(
-			self.clients
-				.matchAll({ type: "window", includeUncontrolled: true })
-				.then((clients) => {
-					const existing = clients.find((client) => client.url === targetUrl);
-					return existing
-						? existing.focus()
-						: self.clients.openWindow(targetUrl);
-				}),
-		);
-	});
-}
+	);
+});
 
 function requiredResponse(response) {
 	if (!response) {

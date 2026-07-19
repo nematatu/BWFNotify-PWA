@@ -12,6 +12,7 @@ import { usePwaInstall } from "./lib/usePwaInstall";
 import {
 	AppContext,
 	DEFAULT_SORT_ORDER,
+	isMobileBrowser,
 	isValidSortOrder,
 	type SortOrder,
 } from "./lib/utils";
@@ -55,21 +56,13 @@ export default function App() {
 		updateSubscription,
 		sendTest,
 		updateMatchNotif,
-		onToggleClick,
-		onToggleChange,
-	} = usePushNotifications(
-		setBannerHidden,
-		openInstall,
-		() => {
-			setPermissionOpen(true);
-			document.body.classList.add("overlay-open");
-		},
-		toggleChecked,
-		setToggleChecked,
-	);
+	} = usePushNotifications(setToggleChecked);
 
 	onMount(() => {
 		void initNotifications();
+		if (!standalone() && isMobileBrowser()) {
+			setBannerHidden(false);
+		}
 	});
 
 	function closePermission() {
@@ -96,6 +89,30 @@ export default function App() {
 		setSortOrder(order);
 	}
 
+	// --- Orchestrated Toggle Click Event Handler ---
+	function onToggleClick(e: Event) {
+		if (!standalone()) {
+			e.preventDefault();
+			openInstall();
+			return;
+		}
+		if (
+			!toggleChecked() &&
+			"Notification" in window &&
+			Notification.permission === "default"
+		) {
+			e.preventDefault();
+			setPermissionOpen(true);
+			document.body.classList.add("overlay-open");
+		}
+	}
+
+	// --- Orchestrated Toggle Change Event Handler ---
+	function onToggleChange(e: Event) {
+		if (!standalone()) return;
+		void updateSubscription((e.target as HTMLInputElement).checked);
+	}
+
 	// --- Orchestrated App State Context ---
 	const appState = {
 		matches,
@@ -115,7 +132,7 @@ export default function App() {
 		toggleChecked,
 		toggleDisabled,
 		standalone,
-		inApp: () => false, // No longer used dynamically on DOM
+		inApp: () => false,
 		onTest: sendTest,
 		onToggleClick,
 		onToggleChange,
