@@ -82,7 +82,10 @@ self.addEventListener("push", (event) => {
 	event.waitUntil(
 		self.registration.showNotification(payload.title, {
 			body: payload.body,
-			icon: mediaUrl || "/pwa/icons/icon-192.png",
+			icon:
+				mediaUrl ||
+				notificationMediaUrl(payload.icon) ||
+				"/pwa/icons/icon-192.png",
 			badge: "/pwa/icons/icon-192.png",
 			...(mediaUrl ? { image: mediaUrl } : {}),
 			tag: payload.tag,

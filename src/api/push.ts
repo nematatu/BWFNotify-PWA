@@ -163,11 +163,13 @@ export function notificationPayload(match: MatchSummary) {
 		? match.players.join(" vs ")
 		: "対戦カード未定";
 	const details = [match.tournament, match.court].filter(Boolean).join(" / ");
+	const img = notificationImage(match);
 	return {
 		title: `${card} が始まりました`,
 		body: details || "日本人選手の試合が始まりました",
 		url: match.youtubeUrl || "/",
-		image: notificationImage(match),
+		icon: img,
+		image: img,
 		tag: `bwf-live:${match.id}`,
 	};
 }

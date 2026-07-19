@@ -47,7 +47,6 @@ describe("notificationPayload", () => {
 			scores: [],
 			youtubeUrl: "https://www.youtube.com/watch?v=abcdefghijk",
 			eventType: "live",
-			status: "Live",
 		});
 
 		expect(payload.title).toBe("Player A vs Player B が始まりました");
@@ -56,7 +55,7 @@ describe("notificationPayload", () => {
 		expect(payload.tag).toBe("bwf-live:1");
 	});
 
-	test("uses the Japanese player photo as the notification image", () => {
+	test("uses the Japanese player photo as the notification image and icon", () => {
 		const payload = notificationPayload({
 			id: "photo",
 			tournament: "Japan Open",
@@ -75,9 +74,9 @@ describe("notificationPayload", () => {
 			scores: [],
 			youtubeUrl: "https://www.youtube.com/watch?v=photo000001",
 			eventType: "live",
-			status: "Live",
 		});
 		expect(payload.image).toContain("img.bwfbadminton.com");
+		expect(payload.icon).toBe(payload.image);
 	});
 
 	test("keeps each match YouTube destination independent", () => {
@@ -89,7 +88,6 @@ describe("notificationPayload", () => {
 			scores: [],
 			youtubeUrl: "https://www.youtube.com/watch?v=matchone001",
 			eventType: "live",
-			status: "Live",
 		};
 		const first = notificationPayload(base);
 		const second = notificationPayload({
@@ -113,7 +111,6 @@ describe("notification exclusions", () => {
 			scores: [],
 			youtubeUrl: "https://www.youtube.com/watch?v=included001",
 			eventType: "live",
-			status: "Live",
 		},
 		{
 			id: "excluded",
@@ -123,7 +120,6 @@ describe("notification exclusions", () => {
 			scores: [],
 			youtubeUrl: "https://www.youtube.com/watch?v=excluded001",
 			eventType: "live",
-			status: "Live",
 		},
 	];
 	const subscription: StoredSubscription = {

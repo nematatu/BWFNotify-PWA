@@ -25,7 +25,6 @@ const liveMatch: MatchSummary = {
 	],
 	scores: [],
 	eventType: "live",
-	status: "On Court",
 	round: "SF",
 	court: "Court 1",
 };

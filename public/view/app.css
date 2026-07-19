@@ -297,7 +297,7 @@ main {
 .tournament-hero {
 	position: relative;
 	display: flex;
-	min-height: 280px;
+	min-height: 120px;
 	align-items: flex-end;
 	margin-bottom: 14px;
 	border-bottom: 1px solid #bcbcbc;
@@ -330,15 +330,16 @@ main {
 	position: relative;
 	z-index: 1;
 	display: flex;
-	min-height: 116px;
+	min-height: 70px;
 	align-items: center;
 	gap: 16px;
-	padding: 18px 22px;
+	padding: 10px 18px;
 	color: #151515;
 }
 
 .tournament-hero-info h3 {
-	font-size: 22px;
+	font-size: 15px;
+	font-weight: 700;
 	line-height: 1.4;
 }
 
@@ -349,10 +350,10 @@ main {
 }
 
 .tournament-logo {
-	width: 98px;
-	height: 98px;
-	flex: 0 0 98px;
-	padding: 5px;
+	width: 50px;
+	height: 50px;
+	flex: 0 0 50px;
+	padding: 3px;
 	background: #ffffff;
 	object-fit: contain;
 }
@@ -363,8 +364,8 @@ main {
 	min-width: 0;
 	align-items: center;
 	gap: 18px;
-	min-height: 190px;
-	padding: 22px 26px;
+	min-height: 76px;
+	padding: 10px 16px;
 	border-bottom: 1px solid #dedede;
 	color: #151515;
 	background: #f2f2f2;
@@ -387,10 +388,10 @@ main {
 .match-tournament-logo {
 	position: relative;
 	z-index: 1;
-	width: 106px;
-	height: 106px;
-	flex: 0 0 106px;
-	padding: 6px;
+	width: 44px;
+	height: 44px;
+	flex: 0 0 44px;
+	padding: 3px;
 	background: #ffffff;
 	object-fit: contain;
 }
@@ -401,8 +402,8 @@ main {
 }
 
 .match-tournament h3 {
-	font-size: 22px;
-	font-weight: 800;
+	font-size: 14px;
+	font-weight: 700;
 	line-height: 1.35;
 	overflow-wrap: anywhere;
 }
@@ -434,9 +435,15 @@ main {
 }
 
 .live-label {
+	display: inline-flex;
+	align-items: center;
+	padding: 2px 6px;
+	background: #ffd9da;
 	color: #d71920;
-	font-size: 12px;
-	letter-spacing: 0;
+	font-size: 11px;
+	font-weight: 800;
+	border-radius: 2px;
+	letter-spacing: 0.05em;
 }
 
 .match-time {
@@ -486,15 +493,16 @@ main {
 
 .youtube-link {
 	display: inline-flex;
-	min-height: 34px;
+	min-height: 32px;
 	align-items: center;
-	padding: 0 10px;
-	border: 1px solid #d71920;
-	border-radius: 0;
-	color: #b51218;
+	padding: 0 12px;
+	background: #d71920;
+	color: #ffffff;
 	font-size: 11px;
 	font-weight: 800;
 	text-decoration: none;
+	border: 0;
+	transition: background 150ms ease;
 }
 
 .external-mark {
@@ -504,8 +512,8 @@ main {
 }
 
 .youtube-link:hover {
+	background: #b51218;
 	color: #ffffff;
-	background: #d71920;
 }
 
 .matchup {
@@ -1092,22 +1100,22 @@ main {
 	}
 
 	.tournament-hero {
-		min-height: 220px;
+		min-height: 90px;
 	}
 
 	.match-tournament {
-		min-height: 160px;
-		padding: 16px;
+		min-height: 64px;
+		padding: 8px 12px;
 	}
 
 	.match-tournament-logo {
-		width: 82px;
-		height: 82px;
-		flex-basis: 82px;
+		width: 36px;
+		height: 36px;
+		flex-basis: 36px;
 	}
 
 	.match-tournament h3 {
-		font-size: 18px;
+		font-size: 12px;
 	}
 
 	.install-overlay {
@@ -1139,19 +1147,19 @@ main {
 	}
 
 	.match-tournament {
-		min-height: 146px;
-		gap: 12px;
-		padding: 14px;
+		min-height: 56px;
+		gap: 8px;
+		padding: 6px 10px;
 	}
 
 	.match-tournament-logo {
-		width: 70px;
-		height: 70px;
-		flex-basis: 70px;
+		width: 30px;
+		height: 30px;
+		flex-basis: 30px;
 	}
 
 	.match-tournament h3 {
-		font-size: 16px;
+		font-size: 11px;
 	}
 
 	.match-actions {
@@ -1267,19 +1275,19 @@ main {
 	}
 
 	.match-list.time-grid .match-tournament {
-		min-height: 150px;
-		gap: 14px;
-		padding: 16px 20px;
+		min-height: 70px;
+		gap: 10px;
+		padding: 8px 14px;
 	}
 
 	.match-list.time-grid .match-tournament-logo {
-		width: 82px;
-		height: 82px;
-		flex-basis: 82px;
+		width: 40px;
+		height: 40px;
+		flex-basis: 40px;
 	}
 
 	.match-list.time-grid .match-tournament h3 {
-		font-size: 18px;
+		font-size: 13px;
 	}
 
 	.tournament-matches > .match:only-child {
@@ -1295,6 +1303,6 @@ main {
 	}
 
 	.tournament-hero {
-		min-height: 220px;
+		min-height: 120px;
 	}
 }

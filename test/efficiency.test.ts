@@ -10,7 +10,6 @@ const match = (score = 10): MatchSummary => ({
 	teams: [],
 	scores: [{ game: 1, team1: score, team2: 8 }],
 	eventType: "live",
-	status: "Live",
 });
 
 describe("KV state persistence", () => {
