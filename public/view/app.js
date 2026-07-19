@@ -4,7 +4,7 @@ import {
 	previousGameScoreline,
 	sortedMatches,
 	tournamentGroups,
-} from "./match-groups.js?v=41";
+} from "./match-groups.js?v=42";
 
 const LIVE_REFRESH_INTERVAL_MS = 15_000;
 const FULL_REFRESH_INTERVAL_MS = 2 * 60_000;

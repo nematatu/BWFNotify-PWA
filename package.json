@@ -40,6 +40,7 @@
 		"precommit": "bun run check && bun run test:layout && bun run dry-run",
 		"format": "biome check --write .",
 		"generate:vapid": "web-push generate-vapid-keys --json",
+		"version:bump": "bun run scripts/bump-version.ts",
 		"prepare": "husky"
 	},
 	"dependencies": {
