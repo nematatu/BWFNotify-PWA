@@ -3,7 +3,7 @@ import { developmentPwaResponse } from "../src/api/developmentPwa";
 import { clearDevelopmentPwaStorage } from "../src/frontend/lib/pwa";
 
 describe("development PWA isolation", () => {
-	test("keeps the development Worker API-only and aligned with runtime config", async () => {
+	test("keeps the development Worker API-only and isolated from production resources", async () => {
 		const production = JSON.parse(await Bun.file("wrangler.jsonc").text());
 		const development = JSON.parse(await Bun.file("wrangler.dev.jsonc").text());
 		expect(development.main).toBe("src/api/development.ts");
@@ -12,7 +12,10 @@ describe("development PWA isolation", () => {
 		expect(development.compatibility_flags).toEqual(
 			production.compatibility_flags,
 		);
-		expect(development.kv_namespaces).toEqual(production.kv_namespaces);
+		expect(production.kv_namespaces[0].id).toBeTruthy();
+		expect(development.kv_namespaces).toEqual([
+			{ binding: "NOTIFIED_MATCHES" },
+		]);
 	});
 
 	test("serves a self-removing service worker without offline fetch handling", async () => {

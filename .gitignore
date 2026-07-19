@@ -5,3 +5,10 @@ node_modules/
 !.dev.vars.example
 dist/
 test-results/
+playwright-report/
+coverage/
+.DS_Store
+*.pem
+*.p12
+*.pfx
+.npmrc
