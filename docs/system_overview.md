@@ -32,7 +32,7 @@ BWFNotify-PWA は、バドミントン世界連盟（BWF）の公式大会にお
 ### フロントエンド (SPA)
 - **構成**: SolidJS + TypeScript (Viteによる高速ビルドパイプラインを適用)。
 - **特徴**: ライトテーマ固定（ダークモードなし）、フォントは `LINE Seed JP`。SolidJSのリアクティブ設計（Signals, Memos）を活用し、状態同期やUI更新の負荷を最小化。
-- **モジュール分割**: アプリケーションはUI層（`Layout.tsx`、`Matches.tsx`、`Notifications.tsx`）と、各機能ドメインごとに完全に状態とロジックをカプセル化した Context / Provider 層（`useMatches.tsx`、`usePushNotifications.tsx`、`usePwaInstall.tsx`）、インフラ層（`pwa.ts`）に綺麗に責任分離されています。
+- **モジュール分割**: アプリケーションはUI層（`Layout.tsx`、`Matches.tsx`、`Notifications.tsx`）と、各機能ドメイン（試合情報、PWAインストール、プッシュ通知）ごとに完全に状態とアクションを局所化してエクスポートする「ドメイン状態モジュール（`matchesState.ts`、`pwaInstallState.ts`、`pushNotificationState.ts`）」、インフラ層（`pwa.ts`）に綺麗に責任分離されています。
 - **PWA / Service Worker**: `src/frontend/pwa/sw.js` がテンプレートとなり、Viteビルドプラグインがハッシュ付きアセット（CSS/JS）のリストを動的に埋め込み、`dist/pwa/sw.js` へ出力します。オフライン対応、キャッシュ、および Web Push の受信と表示を担当。iOS Safari のホーム画面追加（PWA）におけるプッシュ受信に対応。
 
 ### バックエンド (Serverless)
@@ -55,12 +55,12 @@ BWFNotify-PWA は、バドミントン世界連盟（BWF）の公式大会にお
 
 ## 4. 解決済みの主要な課題 (Solved Challenges)
 
-### フロントエンドの近代化: 責任の完全な分離（Custom Hooks ＆ Context アーキテクチャ）
+### フロントエンドの近代化: 責任の完全な分離（ドメイン状態モジュール設計）
 - **課題**: 以前は1ファイルにすべてのロジック・HTML・CSS・ダミーテスト回避用コードが詰め込まれた巨大なVanilla JSモノリス（`app.js`）となっており、可読性が極めて低く、拡張が不可能な状態になっていました。
 - **解決策**:
-  - **ドメイン毎の Context / Provider 化**: 状態管理と非同期ポーリング、Web Push、PWAインストール制御の各ドメインを、独立したコンテキスト（`MatchesProvider`, `PushNotificationProvider`, `PwaInstallProvider`）へカプセル化。
+  - **ドメイン毎の状態モジュール化**: 状態管理と非同期ポーリング、Web Push、PWAインストール制御の各ドメインを、独立したモジュール（`matchesState.ts`, `pushNotificationState.ts`, `pwaInstallState.ts`）にカプセル化。Reactのような `createContext` / `useContext` / `Provider` 等の冗長なボイラープレートを一切排除。
   - **インフラ層の隔離**: Service Worker の管理を `pwa.ts` に隠蔽。
-  - **Context による Prop Drilling の完全撤廃**: UIコンポーネント（`Matches.tsx`, `Notifications.tsx`, `Layout.tsx`）が各ドメインのコンテキスト経由で必要なステートやアクション（ダイアログ開閉やインストールプロンプト処理）を直接取得。これによって `App.tsx` から状態やハンドラーのオーケストレーションロジックが一掃され、単なる Provider のネストとレイアウトの定義のみへ極限までスリム化。
+  - **直接インポートによる Prop Drilling の完全撤廃**: UIコンポーネント（`Matches.tsx`, `Notifications.tsx`, `Layout.tsx`）が各ドメインモジュールから必要なステート（シグナル）やアクション（関数）を直接インポートして使用。これによって `App.tsx` から状態やハンドラーのオーケストレーションロジック、および Provider のネスト構造が完全に一掃され、単なるレイアウトの定義のみへ極限までスリム化。
   - **ステートのリアクティブ化**: アイドル状態やプッシュ購読状態を SolidJS Signals に置き換え、非同期通信とUI同期におけるバグや再描画の無駄を排除。
 
 ### 開発環境における Service Worker ゾンビ画面の排除
