@@ -1,11 +1,13 @@
 import { Show } from "solid-js";
 import {
 	cancelPermission,
+	closeBlockedPermission,
 	confirmPermission,
 	notifError,
 	notifText,
 	onToggleChange,
 	onToggleClick,
+	retryNotificationPermission,
 	sendTest,
 	testDisabled,
 	toggleChecked,
@@ -33,7 +35,7 @@ export function InstallOverlay(props: {
 	dismissRef?: (el: HTMLButtonElement) => void;
 }) {
 	const handleClose = () => {
-		closeInstall(true);
+		closeInstall();
 	};
 
 	let localDismissBtn: HTMLButtonElement | undefined;
@@ -163,6 +165,47 @@ export function PermissionOverlay() {
 						onClick={confirmPermission}
 					>
 						通知を許可する
+					</button>
+				</div>
+			</section>
+		</div>
+	);
+}
+
+export function BlockedPermissionOverlay() {
+	return (
+		<div
+			id="blocked-permission-overlay"
+			class="install-overlay"
+			onClick={closeBlockedPermission}
+			role="dialog"
+			tabIndex={-1}
+			onKeyDown={(e) => e.key === "Escape" && closeBlockedPermission()}
+		>
+			<section
+				class="install-sheet permission-sheet"
+				role="dialog"
+				aria-modal="true"
+				aria-labelledby="blocked-permission-heading"
+				onClick={(e) => e.stopPropagation()}
+				onKeyDown={(e) => e.stopPropagation()}
+			>
+				<p class="overlay-step-count">通知がブロックされています</p>
+				<h2 id="blocked-permission-heading">通知の許可を変更してください</h2>
+				<p class="permission-note">
+					端末またはブラウザのサイト設定で、このサイトの通知を「許可」に変更してください。変更後に再確認すると通知をオンにできます。
+				</p>
+				<div class="permission-actions">
+					<button type="button" onClick={closeBlockedPermission}>
+						閉じる
+					</button>
+					<button
+						id="blocked-permission-retry"
+						class="primary-action"
+						type="button"
+						onClick={retryNotificationPermission}
+					>
+						再確認
 					</button>
 				</div>
 			</section>

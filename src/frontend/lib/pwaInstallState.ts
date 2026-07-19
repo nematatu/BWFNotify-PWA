@@ -15,31 +15,16 @@ export const [bannerHidden, setBannerHidden] = createSignal(true);
 
 export const standalone = () => isStandaloneDisplay();
 
-const installDismissed = (): boolean => {
-	try {
-		return sessionStorage.getItem("bwf-install-overlay-dismissed") === "1";
-	} catch {
-		return false;
-	}
-};
-
 // --- Domain Actions ---
 export const openInstall = () => {
-	if (standalone() || installDismissed()) return;
+	if (standalone()) return;
 	setInstallOpen(true);
 	document.body.classList.add("overlay-open");
 };
 
-export const closeInstall = (dismiss = false) => {
+export const closeInstall = () => {
 	setInstallOpen(false);
 	document.body.classList.remove("overlay-open");
-	if (dismiss) {
-		try {
-			sessionStorage.setItem("bwf-install-overlay-dismissed", "1");
-		} catch {
-			/* private mode */
-		}
-	}
 };
 
 export const handleInstall = async (
@@ -52,7 +37,7 @@ export const handleInstall = async (
 		const choice = await prompt.userChoice;
 		setInstallPrompt(null);
 		if (choice?.outcome === "accepted") {
-			closeInstall(true);
+			closeInstall();
 		} else if (dismissBtnRef) {
 			dismissBtnRef.focus();
 		}
@@ -101,7 +86,7 @@ if (typeof window !== "undefined") {
 	};
 	const onAppInstalled = () => {
 		setInstallPrompt(null);
-		closeInstall(true);
+		closeInstall();
 	};
 
 	window.addEventListener("beforeinstallprompt", onBeforeInstall);

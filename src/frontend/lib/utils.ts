@@ -129,6 +129,18 @@ export const isStandaloneDisplay = () =>
 	window.matchMedia("(display-mode: standalone)").matches ||
 	(window.navigator as unknown as { standalone?: boolean }).standalone === true;
 
+export type NotificationToggleAction = "toggle" | "install" | "blocked";
+
+export const notificationToggleAction = (
+	permission: NotificationPermission,
+	isIos: boolean,
+	isStandalone: boolean,
+): NotificationToggleAction => {
+	if (isIos && !isStandalone) return "install";
+	if (permission === "denied") return "blocked";
+	return "toggle";
+};
+
 export const base64UrlToBytes = (v: string) => {
 	const pad = "=".repeat((4 - (v.length % 4)) % 4);
 	const dec = atob((v + pad).replace(/-/g, "+").replace(/_/g, "/"));

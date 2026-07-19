@@ -6,6 +6,7 @@ import {
 	displayTournamentCategory,
 	formatMatchTime,
 	mergeLiveMatches,
+	notificationToggleAction,
 	playerInitial,
 	previousGameScoreline,
 	proxiedImageUrl,
@@ -15,6 +16,21 @@ import {
 	tournamentGroups,
 	youtubeLink,
 } from "../src/frontend/lib/utils.ts";
+
+describe("notification toggle policy", () => {
+	test("allows notifications from supported non-iOS browsers without installation", () => {
+		expect(notificationToggleAction("default", false, false)).toBe("toggle");
+	});
+
+	test("guides non-installed iOS users to the home screen version", () => {
+		expect(notificationToggleAction("default", true, false)).toBe("install");
+		expect(notificationToggleAction("default", true, true)).toBe("toggle");
+	});
+
+	test("keeps a denied permission actionable so settings guidance can open", () => {
+		expect(notificationToggleAction("denied", false, false)).toBe("blocked");
+	});
+});
 
 describe("polling policy", () => {
 	test("starts live polling as soon as a live match exists", () => {

@@ -11,7 +11,9 @@ import {
 	api,
 	base64UrlToBytes,
 	errorMessage,
+	isIosDevice,
 	isStandaloneDisplay,
+	notificationToggleAction,
 } from "./utils";
 
 // --- Domain States ---
@@ -24,6 +26,8 @@ export const [excludedIds, setExcludedIds] = createSignal<Set<string>>(
 	new Set(),
 );
 export const [permissionOpen, setPermissionOpen] = createSignal(false);
+export const [permissionBlockedOpen, setPermissionBlockedOpen] =
+	createSignal(false);
 const [subscription, setSubscription] = createSignal<PushSubscription | null>(
 	null,
 );
@@ -69,6 +73,9 @@ const saveSubscription = async (sub: PushSubscription) => {
 
 // --- Domain Actions ---
 export const initNotifications = async () => {
+	setStatus("確認中");
+	setToggleDisabled(true);
+	setTestDisabled(true);
 	if (!window.isSecureContext) {
 		setStatus("通知にはHTTPS接続が必要です", true);
 		return;
@@ -101,11 +108,11 @@ export const initNotifications = async () => {
 			setTestDisabled(false);
 			setStatus("有効");
 		} else if (Notification.permission === "denied") {
-			setStatus("ブラウザ設定で拒否されています", true);
+			setStatus("通知がブロックされています", true);
 		} else {
 			setStatus("オフ");
 		}
-		setToggleDisabled(Notification.permission === "denied");
+		setToggleDisabled(false);
 	} catch (e) {
 		setStatus(errorMessage(e), true);
 	}
@@ -144,7 +151,7 @@ export const updateSubscription = async (enabled: boolean) => {
 		setStatus(errorMessage(e), true);
 		setToggleChecked(false);
 	} finally {
-		setToggleDisabled(Notification.permission === "denied");
+		setToggleDisabled(false);
 	}
 };
 
@@ -201,9 +208,20 @@ export const updateMatchNotif = async (matchId: string, enabled: boolean) => {
 };
 
 export const onToggleClick = (e: Event) => {
-	if (!isStandaloneDisplay()) {
+	const action = notificationToggleAction(
+		Notification.permission,
+		isIosDevice(),
+		isStandaloneDisplay(),
+	);
+	if (action === "install") {
 		e.preventDefault();
 		openInstall();
+		return;
+	}
+	if (action === "blocked") {
+		e.preventDefault();
+		setPermissionBlockedOpen(true);
+		document.body.classList.add("overlay-open");
 		return;
 	}
 	if (
@@ -218,7 +236,6 @@ export const onToggleClick = (e: Event) => {
 };
 
 export const onToggleChange = (e: Event) => {
-	if (!isStandaloneDisplay()) return;
 	void updateSubscription((e.target as HTMLInputElement).checked);
 };
 
@@ -236,4 +253,14 @@ export const confirmPermission = () => {
 export const cancelPermission = () => {
 	closePermission();
 	setToggleChecked(false);
+};
+
+export const closeBlockedPermission = () => {
+	setPermissionBlockedOpen(false);
+	document.body.classList.remove("overlay-open");
+};
+
+export const retryNotificationPermission = () => {
+	closeBlockedPermission();
+	void initNotifications();
 };

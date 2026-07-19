@@ -136,7 +136,6 @@ const thirdSinglesMatch = {
 
 async function preparePage(page: Page) {
 	await page.addInitScript(() => {
-		sessionStorage.setItem("bwf-install-overlay-dismissed", "1");
 		localStorage.setItem("bwf-sort-order", "time-asc");
 	});
 	await page.route("https://img.bwfbadminton.com/**", (route) => {
@@ -424,9 +423,6 @@ test("normal polling switches to live score polling after a match starts", async
 	page,
 }) => {
 	await page.clock.install({ time: new Date("2026-07-18T09:00:00.000Z") });
-	await page.addInitScript(() => {
-		sessionStorage.setItem("bwf-install-overlay-dismissed", "1");
-	});
 	let statusCalls = 0;
 	let liveCalls = 0;
 	await page.route("**/api/config", (route) =>
@@ -482,4 +478,35 @@ test("production build keeps its manifest and service worker", async ({
 			}),
 		)
 		.toBe(true);
+});
+
+test("blocked notification permission keeps the toggle actionable", async ({
+	page,
+}) => {
+	await preparePage(page);
+	await expect(page.locator("#notification-status")).toHaveText(
+		"通知がブロックされています",
+	);
+	const toggle = page.locator("#notification-toggle");
+	await expect(toggle).toBeEnabled();
+	await page.locator(".notification-settings .switch-track").click();
+	await expect(page.locator("#blocked-permission-overlay")).toBeVisible();
+	await expect(page.locator("#blocked-permission-retry")).toBeVisible();
+});
+
+test("regular browsers can start notification setup without installing the PWA", async ({
+	page,
+}) => {
+	await page.addInitScript(() => {
+		Object.defineProperty(Notification, "permission", {
+			configurable: true,
+			get: () => "default",
+		});
+	});
+	await preparePage(page);
+	await expect(page.locator("#notification-status")).toHaveText("オフ");
+	await expect(page.locator("#notification-toggle")).toBeEnabled();
+	await page.locator(".notification-settings .switch-track").click();
+	await expect(page.locator("#permission-overlay")).toBeVisible();
+	await expect(page.locator("#install-overlay")).toHaveCount(0);
 });

@@ -2,12 +2,17 @@ import { onMount, Show } from "solid-js";
 import { AppFooter, AppHeader, PwaBanner } from "./components/Layout";
 import { MatchList, MatchToolbar } from "./components/Matches";
 import {
+	BlockedPermissionOverlay,
 	InstallOverlay,
 	NotificationSettings,
 	PermissionOverlay,
 } from "./components/Notifications";
 import { initMatchesState } from "./lib/matchesState";
-import { initNotifications, permissionOpen } from "./lib/pushNotificationState";
+import {
+	initNotifications,
+	permissionBlockedOpen,
+	permissionOpen,
+} from "./lib/pushNotificationState";
 import {
 	installOpen,
 	setBannerHidden,
@@ -46,6 +51,10 @@ export default function App() {
 
 			<Show when={permissionOpen()}>
 				<PermissionOverlay />
+			</Show>
+
+			<Show when={permissionBlockedOpen()}>
+				<BlockedPermissionOverlay />
 			</Show>
 		</div>
 	);
