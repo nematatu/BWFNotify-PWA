@@ -377,7 +377,7 @@ async function cachedJson(
 	const cacheUrl = new URL(c.req.url);
 	cacheUrl.search = "";
 	const cacheKey = new Request(cacheUrl.toString(), { method: "GET" });
-	const cached = await caches.default.match(cacheKey);
+	const cached = await (caches as any).default.match(cacheKey);
 	if (cached) {
 		const response = new Response(cached.body, cached);
 		response.headers.set("X-BWF-Cache", "HIT");
@@ -387,7 +387,7 @@ async function cachedJson(
 	const response = c.json(await load());
 	response.headers.set("Cache-Control", `public, max-age=${ttlSeconds}`);
 	response.headers.set("X-BWF-Cache", "MISS");
-	c.executionCtx.waitUntil(caches.default.put(cacheKey, response.clone()));
+c.executionCtx.waitUntil((caches as any).default.put(cacheKey, response.clone()));
 	return response;
 }
 

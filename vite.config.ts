@@ -1,6 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { defineConfig } from "vite";
+import solidPlugin from "vite-plugin-solid";
 
 function pwaPlugin() {
 	return {
@@ -84,5 +85,5 @@ export default defineConfig({
 			"/api": "http://127.0.0.1:8787",
 		},
 	},
-	plugins: [pwaPlugin()],
+	plugins: [solidPlugin(), pwaPlugin()],
 });

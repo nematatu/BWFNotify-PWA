@@ -164,7 +164,7 @@ describe("live score updates", () => {
 	});
 
 	test("polls live scores only while the page is active", async () => {
-		const script = await Bun.file("src/frontend/app.js").text();
+		const script = await Bun.file("src/frontend/App.tsx").text();
 		expect(script).toContain('api("/api/live", { cache: "no-store" })');
 		expect(script).toContain("LIVE_REFRESH_INTERVAL_MS = 15_000");
 		expect(script).toContain('document.visibilityState !== "visible"');
@@ -255,7 +255,7 @@ describe("page structure", () => {
 	});
 
 	test("separates live and scheduled matches in one tab panel", async () => {
-		const html = await Bun.file("index.html").text();
+		const html = await Bun.file("src/frontend/App.tsx").text();
 		expect(html).toContain('data-match-view="live"');
 		expect(html).toContain('data-match-view="scheduled"');
 		expect(html).toContain('id="match-list"');
@@ -264,20 +264,20 @@ describe("page structure", () => {
 	});
 
 	test("shows match notification controls only before a match starts", async () => {
-		const script = await Bun.file("src/frontend/app.js").text();
+		const script = await Bun.file("src/frontend/App.tsx").text();
 		expect(script).toContain('if (match.eventType === "scheduled") {');
 		expect(script).toContain("actions.append(matchNotificationToggle(match))");
 		expect(script).toContain("if (actions.childElementCount > 0)");
 	});
 
 	test("explains installation and notification permission before prompting", async () => {
-		const html = await Bun.file("index.html").text();
+		const html = await Bun.file("src/frontend/App.tsx").text();
 		expect(html).toContain("通知を使うまで 3ステップ");
 		expect(html).toContain('id="install-action"');
 		expect(html).toContain('id="permission-overlay"');
 		expect(html).toContain("通知する");
 		expect(html).toContain("通知しない");
-		const script = await Bun.file("src/frontend/app.js").text();
+		const script = await Bun.file("src/frontend/App.tsx").text();
 		expect(script).toContain('window.addEventListener("beforeinstallprompt"');
 		expect(script).toContain("SafariまたはChromeで開く");
 		expect(script.indexOf("Notification.requestPermission()")).toBeLessThan(
@@ -289,7 +289,7 @@ describe("page structure", () => {
 	});
 
 	test("uses YouTube links and removes the previous BWF match link", async () => {
-		const script = await Bun.file("src/frontend/app.js").text();
+		const script = await Bun.file("src/frontend/App.tsx").text();
 		expect(script).toContain("youtubeLink(match.youtubeUrl)");
 		expect(script).toContain('link.append("配信を見る")');
 		expect(script).not.toContain("YouTube検索");
@@ -298,8 +298,8 @@ describe("page structure", () => {
 	});
 
 	test("uses clear Japanese labels instead of decorative English", async () => {
-		const html = await Bun.file("index.html").text();
-		const script = await Bun.file("src/frontend/app.js").text();
+		const html = await Bun.file("src/frontend/App.tsx").text();
+		const script = await Bun.file("src/frontend/App.tsx").text();
 		expect(html).toContain("<h1>ライブスコア</h1>");
 		expect(html).toContain("<p>日本人選手</p>");
 		expect(script).toContain('live.textContent = "ライブ中"');

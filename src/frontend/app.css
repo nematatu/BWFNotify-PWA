@@ -1245,6 +1245,14 @@ main {
 		flex-basis: 23px;
 	}
 
+	/* Allow photos to shrink on narrow viewports so they don't overflow the team box */
+	.player-photo {
+		flex: 0 1 38px;
+		width: 38px;
+		height: 38px;
+		flex-basis: 38px;
+	}
+
 	.player-count-2 .player-photo {
 		width: 38px;
 		height: 38px;

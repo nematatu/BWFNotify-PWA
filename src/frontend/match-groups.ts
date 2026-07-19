@@ -1,14 +1,25 @@
+import type { MatchSummary, MatchGameScore } from "../type";
+
 export const DEFAULT_SORT_ORDER = "time-asc";
 
-export function sortedMatches(matches, sortOrder = DEFAULT_SORT_ORDER) {
+export interface TournamentGroup {
+	name: string;
+	logoUrl?: string;
+	matches: MatchSummary[];
+}
+
+export function sortedMatches(
+	matches: MatchSummary[],
+	sortOrder = DEFAULT_SORT_ORDER,
+): MatchSummary[] {
 	const direction = sortOrder === "time-desc" ? -1 : 1;
 	return [...matches].sort(
 		(left, right) => direction * compareStartTime(left, right),
 	);
 }
 
-export function tournamentGroups(matches) {
-	const groups = new Map();
+export function tournamentGroups(matches: MatchSummary[]): TournamentGroup[] {
+	const groups = new Map<string, TournamentGroup>();
 	const sorted = sortedMatches(matches);
 	for (const match of sorted) {
 		const name = String(match.tournament || "BWF");
@@ -28,7 +39,9 @@ export function tournamentGroups(matches) {
 	);
 }
 
-export function previousGameScoreline(games) {
+export function previousGameScoreline(
+	games?: Array<{ team1: number; team2: number }> | null,
+): string {
 	if (!Array.isArray(games)) {
 		return "";
 	}
@@ -40,20 +53,28 @@ export function previousGameScoreline(games) {
 		.join(" / ");
 }
 
-export function mergeLiveMatches(currentMatches, freshMatches) {
-	const currentById = new Map(currentMatches.map((match) => [match.id, match]));
+export function mergeLiveMatches(
+	currentMatches: MatchSummary[],
+	freshMatches: MatchSummary[],
+): MatchSummary[] {
+	const currentById = new Map<string, MatchSummary>(
+		currentMatches.map((match) => [match.id, match]),
+	);
 	const freshLive = freshMatches.filter((match) => match.eventType === "live");
 	const freshLiveIds = new Set(freshLive.map((match) => match.id));
 	const mergedLive = freshLive.map((fresh) => {
 		const current = currentById.get(fresh.id);
-		const merged = { ...current, ...fresh };
+		const merged: MatchSummary & { scoreChangedTeam?: 1 | 2 } = {
+			...(current || {}),
+			...fresh,
+		};
 		merged.scoreChangedTeam = changedScoreTeam(current, fresh);
 		if (current?.h2h && !fresh.h2h) {
 			merged.h2h = current.h2h;
 		}
 		if (!fresh.youtubeUrl) {
 			merged.youtubeUrl = isDirectYoutubeUrl(current?.youtubeUrl)
-				? current.youtubeUrl
+				? (current?.youtubeUrl || "")
 				: "";
 		}
 		return merged;
@@ -64,7 +85,10 @@ export function mergeLiveMatches(currentMatches, freshMatches) {
 	return [...mergedLive, ...scheduled];
 }
 
-function changedScoreTeam(current, fresh) {
+function changedScoreTeam(
+	current: MatchSummary | undefined,
+	fresh: MatchSummary,
+): 1 | 2 | undefined {
 	const previous = current?.scores?.at(-1);
 	const next = fresh?.scores?.at(-1);
 	if (!previous || !next) {
@@ -89,7 +113,10 @@ function changedScoreTeam(current, fresh) {
 	return undefined;
 }
 
-function isDirectYoutubeUrl(value) {
+function isDirectYoutubeUrl(value: string | undefined): boolean {
+	if (!value) {
+		return false;
+	}
 	try {
 		const url = new URL(value);
 		return (
@@ -105,7 +132,7 @@ function isDirectYoutubeUrl(value) {
 	}
 }
 
-function compareStartTime(left, right) {
+function compareStartTime(left: MatchSummary, right: MatchSummary): number {
 	return String(left.startTime || "\uffff").localeCompare(
 		String(right.startTime || "\uffff"),
 	);

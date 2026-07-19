@@ -134,7 +134,7 @@ async function cachedResolution(
 		return null;
 	}
 	try {
-		const response = await caches.default.match(
+		const response = await (caches as any).default.match(
 			resolutionCacheRequest(match, source),
 		);
 		if (!response) {
@@ -160,7 +160,7 @@ async function cacheResolution(
 			? LIVE_CACHE_TTL_SECONDS
 			: PAGE_CACHE_TTL_SECONDS;
 	try {
-		await caches.default.put(
+		await (caches as any).default.put(
 			resolutionCacheRequest(match, source),
 			Response.json(
 				{ url },

@@ -6,7 +6,7 @@
 		<meta name="theme-color" content="#d71920" />
 		<meta name="apple-mobile-web-app-capable" content="yes" />
 		<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-		<meta name="description" content="日本人選手が出場するBWFライブ試合と試合予定の通知" />
+		<meta name="description" content="日本人選手が出場するBWFライブ試合と試合予定 of notifications" />
 		<link rel="canonical" href="https://bwfnotify-pwa.amtt.workers.dev/" />
 		<meta property="og:type" content="website" />
 		<meta property="og:locale" content="ja_JP" />
@@ -44,176 +44,10 @@
 			rel="stylesheet"
 			href="https://fonts.googleapis.com/css2?family=LINE+Seed+JP:wght@400;700;800&display=swap"
 		/>
-		<link rel="stylesheet" href="/src/frontend/app.css" />
-		<link rel="modulepreload" href="/src/frontend/app.js" />
 		<title>BWF 日本人選手通知</title>
 	</head>
 	<body>
-		<main>
-			<header class="app-header">
-				<div class="brand-lockup">
-					<span class="brand-name">BWF</span>
-					<div>
-						<h1>ライブスコア</h1>
-						<p>日本人選手</p>
-					</div>
-				</div>
-				<p id="last-updated">未取得</p>
-			</header>
-
-			<div id="pwa-guide-banner" class="pwa-guide-banner" hidden>
-				<div class="pwa-guide-content">
-					<span class="pwa-guide-icon">💡</span>
-					<p class="pwa-guide-text">
-						ホーム画面に追加すると、<strong>日本人選手の試合開始をプッシュ通知で受信</strong>できるようになります！
-					</p>
-				</div>
-				<button id="pwa-guide-button" class="pwa-guide-button" type="button">追加方法を見る</button>
-			</div>
-
-			<section class="notification-settings" aria-labelledby="notification-heading">
-				<div>
-					<h2 id="notification-heading">通知</h2>
-					<p id="notification-status" role="status">確認中</p>
-				</div>
-				<div class="notification-controls">
-					<button id="test-notification-button" type="button" disabled>
-						テスト通知
-					</button>
-					<label class="switch">
-						<span class="visually-hidden">プッシュ通知</span>
-						<input id="notification-toggle" type="checkbox" disabled />
-						<span class="switch-track" aria-hidden="true"></span>
-					</label>
-				</div>
-			</section>
-
-			<section class="matches" aria-labelledby="matches-heading">
-				<h2 id="matches-heading" class="visually-hidden">試合</h2>
-				<div class="match-toolbar">
-					<div class="match-tabs" role="tablist" aria-label="試合状態">
-						<button
-							id="live-tab"
-							class="match-tab"
-							type="button"
-							role="tab"
-							aria-selected="true"
-							data-match-view="live"
-						>
-							ライブ <span id="live-count">0</span>
-						</button>
-						<button
-							id="scheduled-tab"
-							class="match-tab"
-							type="button"
-							role="tab"
-							aria-selected="false"
-							data-match-view="scheduled"
-						>
-							このあと <span id="scheduled-count">0</span>
-						</button>
-					</div>
-					<div class="match-controls">
-						<label class="visually-hidden" for="sort-order">ソート順</label>
-						<select id="sort-order" aria-label="ソート順">
-							<option value="time-asc">時間が早い順</option>
-							<option value="time-desc">時間が遅い順</option>
-							<option value="tournament">大会名順</option>
-						</select>
-						<button id="refresh-button" type="button">再読み込み</button>
-					</div>
-				</div>
-				<div
-					id="match-list"
-					class="match-list"
-					role="tabpanel"
-					aria-labelledby="live-tab"
-					aria-live="polite"
-				>
-					<p class="empty-state">読み込み中</p>
-				</div>
-			</section>
-			<footer class="app-footer">
-				<p class="footer-links">
-					<a href="https://github.com/nematatu/BWFNotify-PWA" target="_blank" rel="noopener noreferrer">GitHubリポジトリ</a>
-					<span class="divider">/</span>
-					<a href="https://x.com/nematatu" target="_blank" rel="noopener noreferrer">開発者X (Twitter)</a>
-				</p>
-				<p class="footer-message">
-					💡 コントリビューション大歓迎です！不具合やご要望があれば、XのDMまたはGitHubのIssueまでお気軽にお知らせください。
-				</p>
-			</footer>
-		</main>
-		<div id="install-overlay" class="install-overlay" hidden>
-			<section
-				class="install-sheet"
-				role="dialog"
-				aria-modal="true"
-				aria-labelledby="install-overlay-heading"
-			>
-				<button
-					id="install-overlay-close"
-					class="install-overlay-close"
-					type="button"
-					aria-label="案内を閉じる"
-				>
-					×
-				</button>
-				<p class="overlay-step-count">通知を使うまで 3ステップ</p>
-				<h2 id="install-overlay-heading">ホーム画面から開いてください</h2>
-				<ol class="install-steps">
-					<li>
-						<strong id="install-step-title">ホーム画面に追加</strong>
-						<span id="install-step-description"
-							>共有またはブラウザのメニューから追加します。</span
-						>
-					</li>
-					<li>
-						<strong>追加したアイコンから起動</strong>
-						<span>ブラウザを閉じても試合情報を確認できます。</span>
-					</li>
-					<li>
-						<strong>通知をオン</strong>
-						<span>許可画面は、内容を説明したあとに一度だけ表示します。</span>
-					</li>
-				</ol>
-				<p class="install-assurance">
-					通知対象は日本人選手の試合開始です。試合ごとに後から解除できます。
-				</p>
-				<div class="install-actions">
-					<button id="install-action" class="primary-action" type="button" hidden>
-						ホーム画面に追加
-					</button>
-					<button id="install-overlay-dismiss" type="button">
-						今はブラウザで見る
-					</button>
-				</div>
-			</section>
-		</div>
-		<div id="permission-overlay" class="install-overlay" hidden>
-			<section
-				class="install-sheet permission-sheet"
-				role="dialog"
-				aria-modal="true"
-				aria-labelledby="permission-heading"
-			>
-				<p class="overlay-step-count">通知許可の前に</p>
-				<h2 id="permission-heading">試合開始を通知します</h2>
-				<div class="permission-summary">
-					<p><strong>通知する</strong> 日本人選手の対象試合が始まったとき</p>
-					<p><strong>通知しない</strong> 得点更新、広告、ニュース</p>
-				</div>
-				<p class="permission-note">
-					次にブラウザの許可画面が表示されます。拒否しても試合情報はそのまま利用できます。
-				</p>
-				<div class="permission-actions">
-					<button id="permission-cancel" type="button">キャンセル</button>
-					<button id="permission-confirm" class="primary-action" type="button">
-						通知を許可する
-					</button>
-				</div>
-			</section>
-		</div>
-		<script type="module" src="/src/frontend/app.js"></script>
+		<div id="app"></div>
+		<script type="module" src="/src/frontend/main.tsx"></script>
 	</body>
 </html>
