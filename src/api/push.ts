@@ -35,7 +35,13 @@ export async function saveSubscription(
 	const key = await subscriptionKey(subscription.endpoint);
 	const existing = await kv.get<StoredSubscription>(key, "json");
 	const record = mergeSubscriptionRecord(subscription, existing, userAgent);
-	await kv.put(key, JSON.stringify(record));
+	const recordJson = JSON.stringify(record);
+
+	if (existing && JSON.stringify(existing) === recordJson) {
+		return record;
+	}
+
+	await kv.put(key, recordJson, { metadata: metadataRecord(record) });
 	return record;
 }
 
@@ -63,9 +69,23 @@ export async function updateSubscriptionExclusions(
 		return null;
 	}
 
+	const sortedExisting = [...(existing.excludedMatchIds || [])].sort();
+	const sortedUpdated = [...excludedMatchIds].sort();
+	if (JSON.stringify(sortedExisting) === JSON.stringify(sortedUpdated)) {
+		return existing;
+	}
+
 	const updated = { ...existing, excludedMatchIds };
-	await kv.put(key, JSON.stringify(updated));
+	const recordJson = JSON.stringify(updated);
+	await kv.put(key, recordJson, { metadata: metadataRecord(updated) });
 	return updated;
+}
+
+function metadataRecord(
+	record: StoredSubscription,
+): Omit<StoredSubscription, "userAgent"> {
+	const { userAgent, ...metadata } = record;
+	return metadata;
 }
 
 export async function deleteSubscription(
@@ -191,11 +211,21 @@ async function listSubscriptions(
 	let cursor: string | undefined;
 
 	do {
-		const page = await kv.list({ prefix: SUBSCRIPTION_PREFIX, cursor });
+		const page = await kv.list<Omit<StoredSubscription, "userAgent">>({
+			prefix: SUBSCRIPTION_PREFIX,
+			cursor,
+		});
 		for (const key of page.keys) {
-			const value = await kv.get<StoredSubscription>(key.name, "json");
-			if (value) {
-				subscriptions.push(value);
+			if (key.metadata) {
+				subscriptions.push({
+					userAgent: undefined,
+					...key.metadata,
+				} as StoredSubscription);
+			} else {
+				const value = await kv.get<StoredSubscription>(key.name, "json");
+				if (value) {
+					subscriptions.push(value);
+				}
 			}
 		}
 		cursor = page.list_complete ? undefined : page.cursor;

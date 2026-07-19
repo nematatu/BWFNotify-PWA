@@ -187,7 +187,13 @@ async function initialize() {
 		showInstallOverlay();
 	}
 	await Promise.all([initializeNotifications(), loadStatus()]);
-	await loadLiveStatus();
+	resetIdleTimer();
+	const hasLiveMatches = currentMatches.some(
+		(match) => match.eventType === "live",
+	);
+	if (hasLiveMatches) {
+		await loadLiveStatus();
+	}
 	startAutomaticUpdates();
 }
 
@@ -499,22 +505,56 @@ async function loadLiveStatus() {
 
 async function refreshAll() {
 	await loadStatus();
-	await loadLiveStatus();
+	const hasLiveMatches = currentMatches.some(
+		(match) => match.eventType === "live",
+	);
+	if (hasLiveMatches) {
+		await loadLiveStatus();
+	}
+}
+
+let idleTimer = null;
+let isIdle = false;
+const IDLE_TIMEOUT_MS = 5 * 60_000; // 5 minutes
+
+function resetIdleTimer() {
+	if (isIdle) {
+		isIdle = false;
+		startAutomaticUpdates();
+		void refreshAll();
+	}
+	if (idleTimer != null) {
+		window.clearTimeout(idleTimer);
+	}
+	idleTimer = window.setTimeout(goIdle, IDLE_TIMEOUT_MS);
+}
+
+function goIdle() {
+	isIdle = true;
+	stopAutomaticUpdates();
+}
+
+// Register user activity listeners
+for (const eventName of [
+	"mousemove",
+	"keydown",
+	"click",
+	"scroll",
+	"touchstart",
+]) {
+	window.addEventListener(eventName, resetIdleTimer, { passive: true });
 }
 
 function startAutomaticUpdates() {
 	stopAutomaticUpdates();
-	if (document.visibilityState !== "visible") {
+	if (document.visibilityState !== "visible" || isIdle) {
 		return;
 	}
-	liveRefreshTimer = window.setInterval(
-		() => void loadLiveStatus(),
-		LIVE_REFRESH_INTERVAL_MS,
-	);
 	fullRefreshTimer = window.setInterval(
 		() => void refreshAll(),
 		FULL_REFRESH_INTERVAL_MS,
 	);
+	scheduleLiveUpdates();
 }
 
 function stopAutomaticUpdates() {
@@ -525,6 +565,33 @@ function stopAutomaticUpdates() {
 	if (fullRefreshTimer != null) {
 		window.clearInterval(fullRefreshTimer);
 		fullRefreshTimer = null;
+	}
+}
+
+function scheduleLiveUpdates() {
+	if (document.visibilityState !== "visible" || isIdle) {
+		if (liveRefreshTimer != null) {
+			window.clearInterval(liveRefreshTimer);
+			liveRefreshTimer = null;
+		}
+		return;
+	}
+
+	const hasLiveMatches = currentMatches.some(
+		(match) => match.eventType === "live",
+	);
+	if (hasLiveMatches) {
+		if (liveRefreshTimer == null) {
+			liveRefreshTimer = window.setInterval(
+				() => void loadLiveStatus(),
+				LIVE_REFRESH_INTERVAL_MS,
+			);
+		}
+	} else {
+		if (liveRefreshTimer != null) {
+			window.clearInterval(liveRefreshTimer);
+			liveRefreshTimer = null;
+		}
 	}
 }
 
@@ -562,6 +629,7 @@ function renderCurrentMatches() {
 			? "現在、ライブ中の日本人選手の試合はありません"
 			: "現在、表示できる試合予定はありません",
 	);
+	scheduleLiveUpdates();
 }
 
 function renderMatches(matches, emptyMessage) {
