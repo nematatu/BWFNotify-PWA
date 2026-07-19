@@ -1,4 +1,4 @@
-import { onMount, Show } from "solid-js";
+import { Match, onMount, Show, Switch } from "solid-js";
 import { AppFooter, AppHeader, PwaBanner } from "./components/Layout";
 import { MatchList, MatchToolbar } from "./components/Matches";
 import {
@@ -8,7 +8,7 @@ import {
 	PermissionOverlay,
 } from "./components/Notifications";
 import { RecentResults, UpcomingSchedule } from "./components/Schedule";
-import { initMatchesState } from "./lib/matchesState";
+import { currentView, initMatchesState } from "./lib/matchesState";
 import {
 	initNotifications,
 	permissionBlockedOpen,
@@ -41,10 +41,18 @@ export default function App() {
 						試合
 					</h2>
 					<MatchToolbar />
-					<MatchList />
+					<Switch>
+						<Match when={currentView() === "results"}>
+							<RecentResults />
+						</Match>
+						<Match when={currentView() === "upcoming"}>
+							<UpcomingSchedule />
+						</Match>
+						<Match when={true}>
+							<MatchList />
+						</Match>
+					</Switch>
 				</section>
-				<RecentResults />
-				<UpcomingSchedule />
 				<AppFooter />
 			</main>
 

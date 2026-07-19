@@ -148,13 +148,12 @@ export const base64UrlToBytes = (v: string) => {
 };
 
 // ==========================================
-// 5. Media & YouTube Utilities
+// 5. Media Utilities
 // ==========================================
 export const safeHttpsUrl = (v: unknown) =>
 	String(v || "").replace(/^http:\/\//, "https://");
 export const proxiedImageUrl = (v: unknown) =>
 	v ? `/api/media?url=${encodeURIComponent(safeHttpsUrl(v))}` : "";
-export const youtubeLink = (v?: string | null) => v || "";
 
 // ==========================================
 // 6. Match Grouping and Merging
@@ -223,13 +222,6 @@ export function mergeLiveMatches(
 		};
 		merged.scoreChangedTeam = changedScoreTeam(curr, fresh);
 		if (curr?.h2h && !fresh.h2h) merged.h2h = curr.h2h;
-		if (
-			!fresh.youtubeUrl &&
-			curr?.youtubeUrl &&
-			isDirectYoutubeUrl(curr.youtubeUrl)
-		) {
-			merged.youtubeUrl = curr.youtubeUrl;
-		}
 		return merged;
 	});
 
@@ -260,21 +252,4 @@ const changedScoreTeam = (
 	if (next.team1 > prev.team1 && next.team2 === prev.team2) return 1;
 	if (next.team2 > prev.team2 && next.team1 === prev.team1) return 2;
 	return undefined;
-};
-
-const isDirectYoutubeUrl = (v?: string): boolean => {
-	if (!v) return false;
-	try {
-		const u = new URL(v);
-		return (
-			(u.hostname === "youtu.be" && /^\/[\w-]{11}$/.test(u.pathname)) ||
-			(["youtube.com", "www.youtube.com", "m.youtube.com"].includes(
-				u.hostname,
-			) &&
-				u.pathname === "/watch" &&
-				/^[\w-]{11}$/.test(u.searchParams.get("v") || ""))
-		);
-	} catch {
-		return false;
-	}
 };

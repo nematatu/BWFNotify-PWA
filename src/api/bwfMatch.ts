@@ -45,7 +45,6 @@ export function extractJapaneseMatches(matches: BwfMatch[]): MatchSummary[] {
 			tournamentHeaderImageUrl: match.tournamentHeaderImageUrl,
 			tournamentHeaderImageMobileUrl: match.tournamentHeaderImageMobileUrl,
 			tournamentCategory: match.tournamentCategory,
-			youtubeUrl: "",
 			players: teams.map(teamName).filter(Boolean),
 			teams,
 			scores: matchScores(match.score, teamsWithSource[0]?.sourceIndex === 1),

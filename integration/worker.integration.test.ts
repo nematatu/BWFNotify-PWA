@@ -9,13 +9,11 @@ import calendarSnapshot from "../config/upcoming-tournaments.json";
 import worker from "../src";
 import { runNotificationCheck } from "../src/api/app";
 import { parseTournamentPage } from "../src/api/baj";
-import { resolveYoutubeStreamUrls } from "../src/api/youtube";
 import type { MatchSummary } from "../src/type";
 
 const liveMatch: MatchSummary = {
 	id: "live-1",
 	tournament: "Japan Open",
-	youtubeUrl: "https://www.youtube.com/results?search_query=Japan+Open",
 	players: ["日本選手", "Opponent"],
 	teams: [],
 	scores: [{ game: 1, team1: 10, team2: 8 }],
@@ -31,7 +29,7 @@ afterEach(async () => {
 });
 
 describe("Worker integration", () => {
-	test("parses a BAJ tournament card with official participant sources", async () => {
+	test("parses a BAJ tournament card", async () => {
 		const tournaments = await parseTournamentPage(
 			new Response(`
 				<ul><li class="v-tournament__item">
@@ -48,16 +46,12 @@ describe("Worker integration", () => {
 
 		expect(tournaments).toEqual([
 			{
+				id: "2026-07-21:中国オープン2026",
 				name: "中国オープン2026",
 				category: "HSBC BWF World Tour Super 1000",
 				startDate: "2026-07-21",
 				endDate: "2026-07-26",
-				place: "中国 常州市",
 				officialUrl: "https://bwfbadminton.com/tournament/1",
-				participantSourceUrls: [
-					"https://www.badminton.or.jp/storage/contestant.pdf",
-					"https://www.badminton.or.jp/storage/send_out.pdf",
-				],
 			},
 		]);
 	});
@@ -381,37 +375,5 @@ describe("Worker integration", () => {
 		const result = await runNotificationCheck(env, dependencies);
 		expect(result.newMatches).toBe(1);
 		expect(notificationCalls).toBe(1);
-	});
-
-	test("caches a missing official stream without using KV", async () => {
-		let youtubeRequests = 0;
-		const match: MatchSummary = {
-			...liveMatch,
-			id: `missing-stream-${crypto.randomUUID()}`,
-			youtubeUrl: "",
-			tournament: "DAIHATSU Japan Open 2026",
-			tournamentCategory: "HSBC BWF World Tour Super 750",
-			tournamentDate: "2026-07-18",
-			court: "Court 1",
-			eventType: "scheduled",
-		};
-		const fetcher = async (input: RequestInfo | URL) => {
-			youtubeRequests += 1;
-			return String(input).includes("oembed")
-				? Response.json({
-						title: "DAIHATSU Japan Open 2026 - 17 July - Court 2",
-						author_url: "https://www.youtube.com/@BWF",
-					})
-				: new Response('"videoId":"wrong123456"');
-		};
-
-		const first = await resolveYoutubeStreamUrls([match], fetcher);
-		const afterFirst = youtubeRequests;
-		const second = await resolveYoutubeStreamUrls([match], fetcher);
-
-		expect(first[0]?.youtubeUrl).toBe("");
-		expect(second[0]?.youtubeUrl).toBe("");
-		expect(afterFirst).toBeGreaterThan(0);
-		expect(youtubeRequests).toBe(afterFirst);
 	});
 });

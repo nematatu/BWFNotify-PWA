@@ -277,7 +277,7 @@ export function notificationPayload(match: MatchSummary) {
 	return {
 		title: `${card} が始まりました`,
 		body: details || "日本人選手の試合が始まりました",
-		url: match.youtubeUrl || "/",
+		url: "/",
 		icon: img,
 		image: img,
 		tag: `bwf-live:${match.id}`,

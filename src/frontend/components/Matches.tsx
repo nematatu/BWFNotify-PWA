@@ -1,9 +1,4 @@
-import {
-	ArrowDownWideNarrow,
-	ChevronDown,
-	ExternalLink,
-	RefreshCw,
-} from "lucide-solid";
+import { ArrowDownWideNarrow, ChevronDown, RefreshCw } from "lucide-solid";
 import { createMemo, For, Show } from "solid-js";
 import type {
 	MatchPlayerSummary,
@@ -14,9 +9,11 @@ import {
 	currentView,
 	loadStatus,
 	matches,
+	recentResults,
 	setCurrentView,
 	setSortOrder,
 	sortOrder,
+	upcomingTournaments,
 } from "../lib/matchesState";
 import {
 	excludedIds,
@@ -35,7 +32,6 @@ import {
 	sortedMatches,
 	teamLabel,
 	tournamentGroups,
-	youtubeLink,
 } from "../lib/utils";
 
 // ==========================================
@@ -110,6 +106,8 @@ export function MatchToolbar() {
 		matches().filter((m) => m.eventType === "live").length;
 	const scheduledCount = () =>
 		matches().filter((m) => m.eventType === "scheduled").length;
+	const matchView = () =>
+		currentView() === "live" || currentView() === "scheduled";
 
 	return (
 		<div class="match-toolbar">
@@ -134,33 +132,55 @@ export function MatchToolbar() {
 				>
 					このあと <span id="scheduled-count">{scheduledCount()}</span>
 				</button>
+				<button
+					id="results-tab"
+					class="match-tab"
+					type="button"
+					role="tab"
+					aria-selected={currentView() === "results" ? "true" : "false"}
+					onClick={() => setCurrentView("results")}
+				>
+					結果 <span>{recentResults().length}</span>
+				</button>
+				<button
+					id="upcoming-tab"
+					class="match-tab"
+					type="button"
+					role="tab"
+					aria-selected={currentView() === "upcoming" ? "true" : "false"}
+					onClick={() => setCurrentView("upcoming")}
+				>
+					大会 <span>{upcomingTournaments().length}</span>
+				</button>
 			</div>
 			<div class="match-controls">
-				<div class="sort-select">
-					<ArrowDownWideNarrow
-						class="sort-select-leading"
-						size={17}
-						aria-hidden="true"
-					/>
-					<label class="visually-hidden" for="sort-order">
-						ソート順
-					</label>
-					<select
-						id="sort-order"
-						aria-label="ソート順"
-						value={sortOrder()}
-						onChange={(e) => setSortOrder(e.target.value as SortOrder)}
-					>
-						<option value="time-asc">時間が早い順</option>
-						<option value="time-desc">時間が遅い順</option>
-						<option value="tournament">大会名順</option>
-					</select>
-					<ChevronDown
-						class="sort-select-chevron"
-						size={16}
-						aria-hidden="true"
-					/>
-				</div>
+				<Show when={matchView()}>
+					<div class="sort-select">
+						<ArrowDownWideNarrow
+							class="sort-select-leading"
+							size={17}
+							aria-hidden="true"
+						/>
+						<label class="visually-hidden" for="sort-order">
+							ソート順
+						</label>
+						<select
+							id="sort-order"
+							aria-label="ソート順"
+							value={sortOrder()}
+							onChange={(e) => setSortOrder(e.target.value as SortOrder)}
+						>
+							<option value="time-asc">時間が早い順</option>
+							<option value="time-desc">時間が遅い順</option>
+							<option value="tournament">大会名順</option>
+						</select>
+						<ChevronDown
+							class="sort-select-chevron"
+							size={16}
+							aria-hidden="true"
+						/>
+					</div>
+				</Show>
 				<button
 					id="refresh-button"
 					type="button"
@@ -224,17 +244,6 @@ export function MatchCard(props: {
 					</Show>
 				</div>
 				<div class="match-actions">
-					<Show when={props.match.youtubeUrl}>
-						<a
-							class="youtube-link"
-							href={youtubeLink(props.match.youtubeUrl)}
-							target="_blank"
-							rel="noopener noreferrer"
-						>
-							<span>配信を見る</span>
-							<ExternalLink size={16} aria-hidden="true" />
-						</a>
-					</Show>
 					<Show when={props.match.eventType === "scheduled"}>
 						<div class="match-notification-control">
 							<span>開始通知</span>

@@ -14,7 +14,6 @@ import {
 	sortedMatches,
 	teamLabel,
 	tournamentGroups,
-	youtubeLink,
 } from "../src/frontend/lib/utils.ts";
 
 describe("notification toggle policy", () => {
@@ -148,7 +147,6 @@ describe("live score updates", () => {
 			{
 				id: "live",
 				eventType: "live",
-				youtubeUrl: "https://www.youtube.com/watch?v=abcdefghijk",
 				scores: [{ game: 1, team1: 10, team2: 8 }],
 				h2h: { team1Wins: 2, team2Wins: 1 },
 			},
@@ -165,9 +163,6 @@ describe("live score updates", () => {
 		expect(merged.map((match) => match.id)).toEqual(["live", "scheduled"]);
 		expect(merged[0].scores[0].team1).toBe(11);
 		expect(merged[0].h2h).toEqual({ team1Wins: 2, team2Wins: 1 });
-		expect(merged[0].youtubeUrl).toBe(
-			"https://www.youtube.com/watch?v=abcdefghijk",
-		);
 		expect(merged[0].scoreChangedTeam).toBe(1);
 	});
 
@@ -205,20 +200,6 @@ describe("live score updates", () => {
 		};
 		const [merged] = mergeLiveMatches([match], [match]);
 		expect(merged.scoreChangedTeam).toBeUndefined();
-	});
-
-	test("does not preserve an obsolete YouTube search URL", () => {
-		const [merged] = mergeLiveMatches(
-			[
-				{
-					id: "live",
-					eventType: "live",
-					youtubeUrl: "https://www.youtube.com/results?search_query=match",
-				},
-			],
-			[{ id: "live", eventType: "live", youtubeUrl: "" }],
-		);
-		expect(merged.youtubeUrl).toBe("");
 	});
 });
 
@@ -292,12 +273,6 @@ describe("media utilities", () => {
 			"https://example.com/img.png",
 		);
 		expect(safeHttpsUrl(null)).toBe("");
-	});
-
-	test("youtubeLink returns value as-is or empty string", () => {
-		expect(youtubeLink("https://youtu.be/abc")).toBe("https://youtu.be/abc");
-		expect(youtubeLink(null)).toBe("");
-		expect(youtubeLink(undefined)).toBe("");
 	});
 });
 

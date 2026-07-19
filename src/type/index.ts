@@ -88,7 +88,6 @@ export type MatchSummary = {
 	tournamentHeaderImageUrl?: string;
 	tournamentHeaderImageMobileUrl?: string;
 	tournamentCategory?: string;
-	youtubeUrl: string;
 	players: string[];
 	teams: MatchTeamSummary[];
 	scores: MatchGameScore[];
@@ -104,15 +103,8 @@ export type MatchSummary = {
 export type UpcomingTournament = {
 	id: string;
 	name: string;
-	category?: string;
 	startDate: string;
 	endDate: string;
-	place?: string;
-	officialUrl?: string;
-	participantSourceUrls: string[];
-	japanesePlayers: string[];
-	matchDataAvailable: boolean;
-	timetableAvailable: boolean;
 };
 
 export type PublicState = {

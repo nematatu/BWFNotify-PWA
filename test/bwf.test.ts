@@ -192,7 +192,7 @@ describe("extractJapaneseMatches", () => {
 		]);
 	});
 
-	test("builds a YouTube link and preserves BWF media", () => {
+	test("preserves BWF media", () => {
 		const result = extractJapaneseMatches([
 			{
 				id: "media",
@@ -222,7 +222,6 @@ describe("extractJapaneseMatches", () => {
 		expect(result?.tournamentLogoUrl).toBe(
 			"https://img.bwfbadminton.com/logo.png",
 		);
-		expect(result?.youtubeUrl).toBe("");
 		expect(result?.tournamentHeaderImageUrl).toBe(
 			"https://img.bwfbadminton.com/header.jpg",
 		);
@@ -250,7 +249,7 @@ describe("Japanese player dictionary", () => {
 		expect(japanesePlayerName(source)).toBe(expected);
 	});
 
-	test("keeps romanized aliases for YouTube title matching", () => {
+	test("keeps romanized aliases for upstream matching", () => {
 		expect(japanesePlayerRomanizedNames("奈良岡功大")).toContain(
 			"KODAI NARAOKA",
 		);

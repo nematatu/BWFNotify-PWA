@@ -8,7 +8,6 @@ import {
 } from "../utils";
 import { enrichWithHeadToHead } from "./bwfH2h";
 import { extractJapaneseMatches } from "./bwfMatch";
-import { resolveYoutubeMatchUrl, resolveYoutubeStreamUrls } from "./youtube";
 
 export { parseHeadToHead } from "./bwfH2h";
 export { eventType, extractJapaneseMatches } from "./bwfMatch";
@@ -41,7 +40,6 @@ type Tournament = {
 
 type FetchJapaneseMatchesOptions = {
 	upstreamCacheTtlSeconds?: number;
-	resolveYoutubeStreams?: boolean;
 	enrichHeadToHead?: boolean;
 	dates?: string[];
 };
@@ -87,24 +85,15 @@ export async function fetchJapaneseMatches(
 		throw new Error("BWF day matches are unavailable");
 	}
 
-	const knownById = new Map(knownMatches.map((match) => [match.id, match]));
-	const extracted = extractJapaneseMatches(matches).map((match) => ({
-		...match,
-		youtubeUrl:
-			resolveYoutubeMatchUrl(match, knownById.get(match.id)?.youtubeUrl) || "",
-	}));
+	const extracted = extractJapaneseMatches(matches);
 	const completed = extracted.filter(
 		(match) => match.eventType === "completed",
 	);
 	const current = extracted.filter((match) => match.eventType !== "completed");
-	const summaries =
-		options.resolveYoutubeStreams === false
-			? current
-			: await resolveYoutubeStreamUrls(current);
 	const enriched =
 		cache && options.enrichHeadToHead !== false
-			? await enrichWithHeadToHead(summaries, cache, knownMatches, fetchBwfJson)
-			: summaries;
+			? await enrichWithHeadToHead(current, cache, knownMatches, fetchBwfJson)
+			: current;
 	return [...enriched, ...completed];
 }
 

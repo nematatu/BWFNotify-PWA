@@ -35,6 +35,7 @@ describe("repository security", () => {
 		];
 		const violations: string[] = [];
 		for (const path of trackedFiles()) {
+			if (!(await Bun.file(path).exists())) continue;
 			const content = await textFile(path);
 			if (content && secretPatterns.some((pattern) => pattern.test(content))) {
 				violations.push(path);

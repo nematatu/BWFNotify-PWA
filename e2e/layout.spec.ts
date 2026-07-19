@@ -16,7 +16,6 @@ const doublesMatch = {
 	startTime: "2026-07-18T09:00:00.000Z",
 	tournament: "DAIHATSU Japan Open 2026",
 	tournamentCategory: "HSBC BWF World Tour Super 750",
-	youtubeUrl: "https://www.youtube.com/watch?v=7k7A0Wqfsr0",
 	round: "SF",
 	court: "Court 1",
 	players: ["福島由紀 / 松本麻佑", "JIA Yi Fan / ZHANG Shu Xian"],
@@ -149,25 +148,8 @@ const completedMatch = {
 const upcomingTournament = {
 	id: "2026-07-21:中国オープン2026",
 	name: "中国オープン2026",
-	category: "HSBC BWF World Tour Super 1000",
 	startDate: "2026-07-21",
 	endDate: "2026-07-26",
-	place: "中国 常州市",
-	officialUrl: "https://bwfbadminton.com/tournament/5622",
-	participantSourceUrls: [
-		"https://www.badminton.or.jp/storage/dispatch.pdf",
-		"https://www.badminton.or.jp/storage/contestant.pdf",
-	],
-	japanesePlayers: [
-		"奈良岡功大",
-		"山口茜",
-		"宮崎友花",
-		"福島由紀",
-		"松本麻佑",
-		"奥原希望",
-	],
-	matchDataAvailable: true,
-	timetableAvailable: false,
 };
 
 async function preparePage(page: Page) {
@@ -360,16 +342,6 @@ for (const viewport of [
 		);
 		await expect(page.locator(".score-updated")).toHaveCount(1);
 		await expect(page.locator(".score-updated strong")).toHaveText("12");
-		await expect(page.locator(".result-row")).toHaveCount(1);
-		await expect(page.locator(".result-winner")).toHaveText("山口茜");
-		await expect(page.locator(".upcoming-row")).toHaveCount(1);
-		await expect(page.locator(".availability-list")).toContainText(
-			"「このあと」に表示中",
-		);
-		await expect(page.locator(".participant-list summary")).toHaveText(
-			"出場日本選手 6名",
-		);
-		await expect(page.locator(".official-links a")).toHaveCount(3);
 		await expect(page.locator(".h2h-scoreline strong")).toHaveText("3勝 - 1勝");
 		await page.locator(".h2h-scoreline").click();
 		await expect(page.locator(".previous-winner")).toHaveText(
@@ -381,9 +353,25 @@ for (const viewport of [
 		await expect(
 			page.locator(".live-match .match-notification-control"),
 		).toHaveCount(0);
+		await expect(page.getByRole("link", { name: "配信を見る" })).toHaveCount(0);
+		await page.getByRole("tab", { name: /結果/ }).click();
+		await expect(page.locator(".result-row")).toHaveCount(1);
+		await expect(page.locator(".result-team-japan")).toContainText("山口茜");
+		await expect(page.locator(".result-outcome")).toHaveText("WIN");
+		if (process.env.CAPTURE_LAYOUT === "1") {
+			await page.screenshot({
+				path: `/tmp/bwfnotify-results-${viewport.name}.png`,
+				fullPage: true,
+			});
+		}
+		await page.getByRole("tab", { name: /大会/ }).click();
+		await expect(page.locator(".upcoming-row")).toHaveCount(1);
+		await expect(page.locator(".upcoming-row")).toContainText(
+			"中国オープン2026",
+		);
 		await expect(
-			page.locator(".live-match .match-primary-row .youtube-link"),
-		).toBeVisible();
+			page.locator(".upcoming-row a, .upcoming-row details"),
+		).toHaveCount(0);
 		if (process.env.CAPTURE_LAYOUT === "1") {
 			await page.screenshot({
 				path: `/tmp/bwfnotify-layout-${viewport.name}.png`,
@@ -483,7 +471,7 @@ test("match information hierarchy prioritizes actions and matchup", async ({
 	expect(layout.header.top).toBeLessThan(layout.matchup.top);
 	expect(layout.tournament.height).toBeLessThan(layout.matchup.height / 2);
 	await expect(card.locator(".match-primary-row .match-time")).toBeVisible();
-	await expect(card.locator(".match-primary-row .youtube-link")).toBeVisible();
+	await expect(card.locator(".match-notification-control")).toBeVisible();
 });
 
 test("normal polling switches to live score polling after a match starts", async ({

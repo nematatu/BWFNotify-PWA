@@ -9,7 +9,6 @@ import type { MatchSummary, PublicState } from "../src/type";
 const match = (score = 10): MatchSummary => ({
 	id: "match-1",
 	tournament: "Japan Open",
-	youtubeUrl: "https://www.youtube.com/results?search_query=Japan+Open",
 	players: ["日本選手", "Opponent"],
 	teams: [],
 	scores: [{ game: 1, team1: score, team2: 8 }],
@@ -81,13 +80,6 @@ describe("KV state persistence", () => {
 
 	test("limits unchanged KV heartbeat writes to 48 per day", () => {
 		expect((24 * 60 * 60 * 1000) / STATE_MAX_AGE_MS).toBe(48);
-	});
-});
-
-describe("YouTube discovery load", () => {
-	test("keeps per-user live polling free of YouTube discovery", async () => {
-		const source = await Bun.file("src/api/app.ts").text();
-		expect(source).toContain("resolveYoutubeStreams: false");
 	});
 });
 

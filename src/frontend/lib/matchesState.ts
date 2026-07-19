@@ -30,9 +30,8 @@ export const [calendarCheckedAt, setCalendarCheckedAt] = createSignal<
 export const [upcomingTournaments, setUpcomingTournaments] = createSignal<
 	UpcomingTournament[]
 >([]);
-export const [currentView, setCurrentView] = createSignal<"live" | "scheduled">(
-	"live",
-);
+export type MainView = "live" | "scheduled" | "results" | "upcoming";
+export const [currentView, setCurrentView] = createSignal<MainView>("live");
 export const [sortOrder, setSortOrderSignal] = createSignal<SortOrder>(
 	readSavedSort() || DEFAULT_SORT_ORDER,
 );

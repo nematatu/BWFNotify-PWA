@@ -10,7 +10,6 @@ import type {
 	UpdateSubscriptionPreferencesRequest,
 } from "../type";
 import { errorMessage, object, optionalString, todayJst } from "../utils";
-import { updateTournamentAvailability } from "./baj";
 import { fetchJapaneseMatches } from "./bwf";
 import { fetchBwfImage } from "./media";
 import {
@@ -104,7 +103,6 @@ app.get("/api/live", (c) =>
 		matches: (
 			await fetchJapaneseMatches(undefined, [], {
 				upstreamCacheTtlSeconds: LIVE_CACHE_TTL_SECONDS,
-				resolveYoutubeStreams: false,
 			})
 		).filter((match) => match.eventType === "live"),
 	})),
@@ -234,7 +232,6 @@ export async function runNotificationCheck(
 		fetchHistory: (cache, knownMatches, now) =>
 			fetchJapaneseMatches(cache, knownMatches, {
 				upstreamCacheTtlSeconds: 12 * 60 * 60,
-				resolveYoutubeStreams: false,
 				enrichHeadToHead: false,
 				dates: recentDates(todayJst(now)),
 			}),
@@ -282,10 +279,8 @@ export async function runNotificationCheck(
 		}
 	}
 	const calendarCheckedAt = calendarSnapshot.generatedAt;
-	const upcomingTournaments = updateTournamentAvailability(
-		calendarSnapshot.tournaments as UpcomingTournament[],
-		matches,
-	);
+	const upcomingTournaments =
+		calendarSnapshot.tournaments as UpcomingTournament[];
 	const recentResults = mergeRecentResults(
 		previous?.recentResults || [],
 		completed,
