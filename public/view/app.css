@@ -1306,3 +1306,44 @@ main {
 		min-height: 120px;
 	}
 }
+
+.app-footer {
+	margin-top: 48px;
+	padding: 24px 16px;
+	border-top: 1px solid #e0e0e0;
+	text-align: center;
+	font-family: inherit;
+}
+
+.footer-links {
+	display: flex;
+	justify-content: center;
+	align-items: center;
+	gap: 12px;
+	margin: 0 0 10px;
+	font-size: 13px;
+	font-weight: 700;
+}
+
+.footer-links a {
+	color: #d71920;
+	text-decoration: none;
+	transition: color 150ms ease;
+}
+
+.footer-links a:hover {
+	color: #b51218;
+	text-decoration: underline;
+}
+
+.footer-links .divider {
+	color: #bcbcbc;
+}
+
+.footer-message {
+	max-width: 600px;
+	margin: 0 auto;
+	color: #555555;
+	font-size: 11px;
+	line-height: 1.6;
+}
