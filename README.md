@@ -94,7 +94,9 @@ bunx wrangler secret put VAPID_SUBJECT
 bun run dev
 ```
 
-既定では `http://localhost:8787` で起動します。Cronを手動実行する場合は、開発サーバーの起動中に次を実行します。
+画面は `http://localhost:5173`、Worker APIは `http://127.0.0.1:8787` で起動します。どちらか一方が終了すると、もう一方も停止します。Workerの起動後、試合データを取得するscheduled処理を1回だけ自動実行します。
+
+追加でscheduled処理を確認する場合は、開発サーバーの起動中に次を実行します。
 
 ```sh
 curl http://localhost:8787/__scheduled

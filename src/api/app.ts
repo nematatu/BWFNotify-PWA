@@ -84,18 +84,6 @@ app.get("/api/status", (c) =>
 			STATE_KEY,
 			"json",
 		);
-
-		const host = c.req.header("host") || "";
-		const isLocalDev = host.includes("localhost") || host.includes("127.0.0.1");
-
-		if (isLocalDev) {
-			c.executionCtx.waitUntil(
-				runNotificationCheck(c.env).catch((err) => {
-					console.error("Local dev auto-sync failed:", err);
-				}),
-			);
-		}
-
 		return publicState(stored);
 	}),
 );

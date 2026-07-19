@@ -4,8 +4,12 @@ import { defineConfig } from "vite";
 import solidPlugin from "vite-plugin-solid";
 
 function pwaPlugin() {
+	let isBuild = false;
 	return {
 		name: "pwa-plugin",
+		configResolved(config) {
+			isBuild = config.command === "build";
+		},
 		configureServer(server) {
 			server.middlewares.use((req, res, next) => {
 				if (req.url === "/pwa/sw.js") {
@@ -94,6 +98,7 @@ function notificationMediaUrl(value) {
 			});
 		},
 		closeBundle() {
+			if (!isBuild) return;
 			const distDir = path.resolve(__dirname, "dist");
 			const assetsDir = path.join(distDir, "assets");
 

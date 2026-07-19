@@ -25,7 +25,7 @@
 	},
 	"type": "module",
 	"scripts": {
-		"dev": "vite & WRANGLER_LOG_PATH=.wrangler/logs wrangler dev --test-scheduled",
+		"dev": "bun scripts/dev.mjs",
 		"build": "vite build",
 		"deploy": "bun run build && wrangler deploy",
 		"dry-run": "bun run build && WRANGLER_LOG_PATH=.wrangler/logs wrangler deploy --dry-run",
