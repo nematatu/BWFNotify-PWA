@@ -4,7 +4,7 @@ import {
 	previousGameScoreline,
 	sortedMatches,
 	tournamentGroups,
-} from "./match-groups.js?v=40";
+} from "./match-groups.js?v=41";
 
 const LIVE_REFRESH_INTERVAL_MS = 15_000;
 const FULL_REFRESH_INTERVAL_MS = 2 * 60_000;
@@ -44,6 +44,9 @@ const sortOrderSelect = document.querySelector("#sort-order");
 const matchTabs = [...document.querySelectorAll("[data-match-view]")];
 const liveCount = document.querySelector("#live-count");
 const scheduledCount = document.querySelector("#scheduled-count");
+const pwaGuideBanner = document.querySelector("#pwa-guide-banner");
+const pwaGuideButton = document.querySelector("#pwa-guide-button");
+const notificationSettings = document.querySelector(".notification-settings");
 
 let registration;
 let vapidPublicKey;
@@ -63,9 +66,6 @@ window.addEventListener("beforeinstallprompt", (event) => {
 	event.preventDefault();
 	deferredInstallPrompt = event;
 	configureInstallGuidance();
-	if (isMobileBrowserDisplay()) {
-		showInstallOverlay();
-	}
 });
 
 window.addEventListener("appinstalled", () => {
@@ -183,9 +183,6 @@ async function initialize() {
 	)
 		? savedSortOrder
 		: DEFAULT_SORT_ORDER;
-	if (isMobileBrowserDisplay()) {
-		showInstallOverlay();
-	}
 	await Promise.all([initializeNotifications(), loadStatus()]);
 	resetIdleTimer();
 	const hasLiveMatches = currentMatches.some(
@@ -231,6 +228,9 @@ async function initializeNotifications() {
 		setNotificationStatus("通知にはHTTPS接続が必要です", true);
 		return;
 	}
+	if (!isStandaloneDisplay()) {
+		showPwaGuideBanner();
+	}
 	if (!("serviceWorker" in navigator)) {
 		showInstallRequired();
 		return;
@@ -268,7 +268,31 @@ function showInstallRequired() {
 	setNotificationStatus("ホーム画面版で通知を利用できます");
 	toggle.disabled = true;
 	testNotificationButton.disabled = true;
-	showInstallOverlay();
+}
+
+function showPwaGuideBanner() {
+	if (isMobileBrowserDisplay()) {
+		pwaGuideBanner.hidden = false;
+		if (isInAppBrowser()) {
+			pwaGuideBanner.classList.add("in-app");
+			pwaGuideBanner.querySelector(".pwa-guide-icon").textContent = "⚠️";
+			pwaGuideBanner.querySelector(".pwa-guide-text").innerHTML =
+				"現在、アプリ内ブラウザ（XやYouTube等）で開いています。<strong>プッシュ通知を設定するには、SafariやChromeなどの標準ブラウザで開き直してください。</strong>";
+			pwaGuideButton.hidden = true;
+		} else {
+			pwaGuideButton.addEventListener("click", () => showInstallOverlay());
+			if (notificationSettings) {
+				notificationSettings.addEventListener("click", () => {
+					showInstallOverlay();
+				});
+			}
+		}
+	}
+}
+
+function isInAppBrowser() {
+	const ua = navigator.userAgent || "";
+	return /\b(Twitter|FBAV|Instagram|Line|IAB|FB_IAB|FBAN)\b/i.test(ua);
 }
 
 function showInstallOverlay() {

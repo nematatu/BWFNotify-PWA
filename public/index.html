@@ -44,9 +44,9 @@
 			rel="stylesheet"
 			href="https://fonts.googleapis.com/css2?family=LINE+Seed+JP:wght@400;700;800&display=swap"
 		/>
-		<link rel="stylesheet" href="/view/app.css?v=40" />
-		<link rel="modulepreload" href="/view/app.js?v=40" />
-		<link rel="modulepreload" href="/view/match-groups.js?v=40" />
+		<link rel="stylesheet" href="/view/app.css?v=41" />
+		<link rel="modulepreload" href="/view/app.js?v=41" />
+		<link rel="modulepreload" href="/view/match-groups.js?v=41" />
 		<title>BWF 日本人選手通知</title>
 	</head>
 	<body>
@@ -61,6 +61,16 @@
 				</div>
 				<p id="last-updated">未取得</p>
 			</header>
+
+			<div id="pwa-guide-banner" class="pwa-guide-banner" hidden>
+				<div class="pwa-guide-content">
+					<span class="pwa-guide-icon">💡</span>
+					<p class="pwa-guide-text">
+						ホーム画面に追加すると、<strong>日本人選手の試合開始をプッシュ通知で受信</strong>できるようになります！
+					</p>
+				</div>
+				<button id="pwa-guide-button" class="pwa-guide-button" type="button">追加方法を見る</button>
+			</div>
 
 			<section class="notification-settings" aria-labelledby="notification-heading">
 				<div>
@@ -205,6 +215,6 @@
 				</div>
 			</section>
 		</div>
-		<script type="module" src="/view/app.js?v=40"></script>
+		<script type="module" src="/view/app.js?v=41"></script>
 	</body>
 </html>
