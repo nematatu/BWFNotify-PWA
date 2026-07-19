@@ -1,4 +1,4 @@
-import type { MatchSummary, MatchGameScore } from "../type";
+import type { MatchSummary } from "../type";
 
 export const DEFAULT_SORT_ORDER = "time-asc";
 
@@ -74,7 +74,7 @@ export function mergeLiveMatches(
 		}
 		if (!fresh.youtubeUrl) {
 			merged.youtubeUrl = isDirectYoutubeUrl(current?.youtubeUrl)
-				? (current?.youtubeUrl || "")
+				? current?.youtubeUrl || ""
 				: "";
 		}
 		return merged;

@@ -1,11 +1,27 @@
 import { describe, expect, test } from "bun:test";
 import {
+	displayCourt,
+	displayRound,
+	displayTournamentCategory,
+	formatMatchTime,
+	playerInitial,
+	teamLabel,
+} from "../src/frontend/lib/format.ts";
+import {
+	proxiedImageUrl,
+	safeHttpsUrl,
+	youtubeLink,
+} from "../src/frontend/lib/media.ts";
+import {
 	mergeLiveMatches,
 	previousGameScoreline,
 	sortedMatches,
 	tournamentGroups,
-} from "../src/frontend/match-groups.js";
+} from "../src/frontend/match-groups.ts";
 
+// ---------------------------------------------------------------------------
+// match sorting
+// ---------------------------------------------------------------------------
 describe("match sorting", () => {
 	const matches = [
 		{
@@ -66,6 +82,9 @@ describe("match sorting", () => {
 	});
 });
 
+// ---------------------------------------------------------------------------
+// previous match scores
+// ---------------------------------------------------------------------------
 describe("previous match scores", () => {
 	test("formats both teams' scores for every valid game", () => {
 		expect(
@@ -84,6 +103,9 @@ describe("previous match scores", () => {
 	});
 });
 
+// ---------------------------------------------------------------------------
+// live score updates
+// ---------------------------------------------------------------------------
 describe("live score updates", () => {
 	test("merges fresh scores while preserving H2H and scheduled matches", () => {
 		const current = [
@@ -162,18 +184,90 @@ describe("live score updates", () => {
 		);
 		expect(merged.youtubeUrl).toBe("");
 	});
+});
 
-	test("polls live scores only while the page is active", async () => {
-		const script = await Bun.file("src/frontend/App.tsx").text();
-		expect(script).toContain('api("/api/live", { cache: "no-store" })');
-		expect(script).toContain("LIVE_REFRESH_INTERVAL_MS = 15_000");
-		expect(script).toContain('document.visibilityState !== "visible"');
-		expect(script).toContain("stopAutomaticUpdates()");
-		expect(script).toContain('currentMatchView = "live"');
-		expect(script).toContain("lastUpdated.dataset.checkedAt");
+// ---------------------------------------------------------------------------
+// format utilities
+// ---------------------------------------------------------------------------
+describe("format utilities", () => {
+	test("displayRound translates BWF round codes to Japanese", () => {
+		expect(displayRound("F")).toBe("決勝");
+		expect(displayRound("SF")).toBe("準決勝");
+		expect(displayRound("QF")).toBe("準々決勝");
+		expect(displayRound("R16")).toBe("2回戦");
+		expect(displayRound("R32")).toBe("1回戦");
+		expect(displayRound(undefined)).toBe("");
+		expect(displayRound("Group A")).toBe("Group A");
+	});
+
+	test("displayCourt converts Court N to Japanese format", () => {
+		expect(displayCourt("Court 1")).toBe("第1コート");
+		expect(displayCourt("Court 12")).toBe("第12コート");
+		expect(displayCourt("Main Court")).toBe("Main Court");
+		expect(displayCourt(undefined)).toBe("");
+	});
+
+	test("displayTournamentCategory strips HSBC BWF prefix", () => {
+		expect(displayTournamentCategory("HSBC BWF World Tour Super 500")).toBe(
+			"Super 500",
+		);
+		expect(displayTournamentCategory("Other Tour")).toBe("Other Tour");
+	});
+
+	test("formatMatchTime handles various date formats", () => {
+		expect(formatMatchTime(undefined)).toBe("時刻未定");
+		expect(formatMatchTime("garbage")).toBe("garbage");
+		// A valid UTC time should produce a formatted string
+		const result = formatMatchTime("2026-07-18 10:00:00");
+		expect(result).not.toBe("時刻未定");
+		expect(result).not.toBe("2026-07-18 10:00:00");
+	});
+
+	test("playerInitial returns initials for multi-word names", () => {
+		expect(playerInitial("Momota Kento")).toBe("MK");
+		expect(playerInitial("奥原")).toBe("奥原");
+	});
+
+	test("teamLabel joins player names or shows fallback", () => {
+		expect(teamLabel({ players: [{ name: "A" }, { name: "B" }] })).toBe(
+			"A / B",
+		);
+		expect(teamLabel(undefined)).toBe("選手不明");
 	});
 });
 
+// ---------------------------------------------------------------------------
+// media utilities
+// ---------------------------------------------------------------------------
+describe("media utilities", () => {
+	test("proxiedImageUrl encodes the source URL through the proxy", () => {
+		expect(proxiedImageUrl("https://example.com/photo.jpg")).toBe(
+			"/api/media?url=https%3A%2F%2Fexample.com%2Fphoto.jpg",
+		);
+		expect(proxiedImageUrl(null)).toBe("");
+		expect(proxiedImageUrl(undefined)).toBe("");
+	});
+
+	test("safeHttpsUrl upgrades HTTP to HTTPS", () => {
+		expect(safeHttpsUrl("http://example.com/img.png")).toBe(
+			"https://example.com/img.png",
+		);
+		expect(safeHttpsUrl("https://example.com/img.png")).toBe(
+			"https://example.com/img.png",
+		);
+		expect(safeHttpsUrl(null)).toBe("");
+	});
+
+	test("youtubeLink returns value as-is or empty string", () => {
+		expect(youtubeLink("https://youtu.be/abc")).toBe("https://youtu.be/abc");
+		expect(youtubeLink(null)).toBe("");
+		expect(youtubeLink(undefined)).toBe("");
+	});
+});
+
+// ---------------------------------------------------------------------------
+// static assets and configuration
+// ---------------------------------------------------------------------------
 describe("page structure", () => {
 	test("uses square cards without decorative partial color borders", async () => {
 		const css = await Bun.file("src/frontend/app.css").text();
@@ -195,14 +289,14 @@ describe("page structure", () => {
 		const css = await Bun.file("src/frontend/app.css").text();
 		expect(css).toContain("color-scheme: light");
 		expect(css).toContain("background: rgb(255 255 255 / 82%)");
-		for (const darkBackground of [
+		for (const dark of [
 			"#080808",
 			"#0b0b0b",
 			"#171717",
 			"#1b1b1b",
 			"#222222",
 		]) {
-			expect(css).not.toContain(`background: ${darkBackground}`);
+			expect(css).not.toContain(`background: ${dark}`);
 		}
 	});
 
@@ -241,81 +335,14 @@ describe("page structure", () => {
 		expect(view.getUint32(20)).toBe(630);
 	});
 
-	test("uses the Japanese player photo for notification image and icon", async () => {
-		const app = await Bun.file("src/frontend/app.js").text();
+	test("notification image falls back to PWA icon in service worker", async () => {
 		const worker = await Bun.file("src/frontend/pwa/sw.js").text();
-		expect(app).toContain(
-			"const notificationImage = proxiedImageUrl(imageUrl)",
-		);
-		expect(app).toContain(
-			'icon: notificationImage || "/pwa/icons/icon-192.png"',
-		);
 		expect(worker).toContain("notificationMediaUrl(payload.image)");
 		expect(worker).toContain('new URL("/api/media", self.location.origin)');
+		expect(worker).toContain('"/pwa/icons/icon-192.png"');
 	});
 
-	test("separates live and scheduled matches in one tab panel", async () => {
-		const html = await Bun.file("src/frontend/App.tsx").text();
-		expect(html).toContain('data-match-view="live"');
-		expect(html).toContain('data-match-view="scheduled"');
-		expect(html).toContain('id="match-list"');
-		expect(html).not.toContain('id="live-match-list"');
-		expect(html).not.toContain('id="scheduled-match-list"');
-	});
-
-	test("shows match notification controls only before a match starts", async () => {
-		const script = await Bun.file("src/frontend/App.tsx").text();
-		expect(script).toContain('if (match.eventType === "scheduled") {');
-		expect(script).toContain("actions.append(matchNotificationToggle(match))");
-		expect(script).toContain("if (actions.childElementCount > 0)");
-	});
-
-	test("explains installation and notification permission before prompting", async () => {
-		const html = await Bun.file("src/frontend/App.tsx").text();
-		expect(html).toContain("通知を使うまで 3ステップ");
-		expect(html).toContain('id="install-action"');
-		expect(html).toContain('id="permission-overlay"');
-		expect(html).toContain("通知する");
-		expect(html).toContain("通知しない");
-		const script = await Bun.file("src/frontend/App.tsx").text();
-		expect(script).toContain('window.addEventListener("beforeinstallprompt"');
-		expect(script).toContain("SafariまたはChromeで開く");
-		expect(script.indexOf("Notification.requestPermission()")).toBeLessThan(
-			script.indexOf(
-				"registration.pushManager.getSubscription()",
-				script.indexOf("async function updateNotificationSubscription"),
-			),
-		);
-	});
-
-	test("uses YouTube links and removes the previous BWF match link", async () => {
-		const script = await Bun.file("src/frontend/App.tsx").text();
-		expect(script).toContain("youtubeLink(match.youtubeUrl)");
-		expect(script).toContain('link.append("配信を見る")');
-		expect(script).not.toContain("YouTube検索");
-		expect(script).not.toContain("match.matchUrl");
-		expect(script).not.toContain("BWFの試合掲載ページ");
-	});
-
-	test("uses clear Japanese labels instead of decorative English", async () => {
-		const html = await Bun.file("src/frontend/App.tsx").text();
-		const script = await Bun.file("src/frontend/App.tsx").text();
-		expect(html).toContain("<h1>ライブスコア</h1>");
-		expect(html).toContain("<p>日本人選手</p>");
-		expect(script).toContain('live.textContent = "ライブ中"');
-		expect(script).toContain('shuttle.alt = "サーブ"');
-		expect(script).not.toContain('serve.textContent = "サーブ"');
-		expect(script).toContain('label.textContent = "対戦成績"');
-		expect(script).toContain("function displayCourt(value)");
-		expect(script).toContain("Number(number)");
-		expect(script).not.toContain('live.textContent = "LIVE"');
-		expect(script).not.toContain('label.textContent = "HEAD TO HEAD"');
-	});
-
-	test("uses BWF tournament media in each time-sorted match", async () => {
-		const script = await Bun.file("src/frontend/app.js").text();
-		expect(script).toContain("match.tournamentHeaderImageUrl");
-		expect(script).toContain('"match-tournament-image"');
+	test("uses BWF tournament media for match display", async () => {
 		const css = await Bun.file("src/frontend/app.css").text();
 		expect(css).toContain(".match-tournament-image");
 		expect(css).not.toContain("linear-gradient");

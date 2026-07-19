@@ -5,6 +5,12 @@ import {
 } from "../config/youtube-stream-sources";
 import type { MatchSummary } from "../type";
 
+// Worker cache interface for Cloudflare caches.default usage
+interface WorkerCache {
+	match(req: Request): Promise<Response | undefined>;
+	put(req: Request, res: Response): Promise<void>;
+}
+
 const YOUTUBE_HOSTS = new Set([
 	"youtube.com",
 	"www.youtube.com",
@@ -133,10 +139,14 @@ async function cachedResolution(
 	if (typeof caches === "undefined") {
 		return null;
 	}
+	interface WorkerCache {
+		match(req: Request): Promise<Response | undefined>;
+		put(req: Request, res: Response): Promise<void>;
+	}
 	try {
-		const response = await (caches as any).default.match(
-			resolutionCacheRequest(match, source),
-		);
+		const response = await (
+			caches as unknown as { default: WorkerCache }
+		).default.match(resolutionCacheRequest(match, source));
 		if (!response) {
 			return null;
 		}
@@ -160,7 +170,7 @@ async function cacheResolution(
 			? LIVE_CACHE_TTL_SECONDS
 			: PAGE_CACHE_TTL_SECONDS;
 	try {
-		await (caches as any).default.put(
+		await (caches as unknown as { default: WorkerCache }).default.put(
 			resolutionCacheRequest(match, source),
 			Response.json(
 				{ url },
