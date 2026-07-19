@@ -39,7 +39,8 @@
 		"check": "bun run types:check && bun run typecheck && bun run lint && bun run test",
 		"precommit": "bun run check && bun run test:layout && bun run dry-run",
 		"format": "biome check --write .",
-		"generate:vapid": "web-push generate-vapid-keys --json"
+		"generate:vapid": "web-push generate-vapid-keys --json",
+		"prepare": "husky"
 	},
 	"dependencies": {
 		"hono": "^4.12.30",
@@ -51,6 +52,7 @@
 		"@playwright/test": "^1.61.1",
 		"@types/node": "^26.1.1",
 		"@types/web-push": "^3.6.4",
+		"husky": "^9.1.7",
 		"typescript": "^7.0.2",
 		"vitest": "^4.1.0",
 		"wrangler": "^4.112.0"
