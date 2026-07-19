@@ -16,6 +16,7 @@ const doublesMatch = {
 	startTime: "2026-07-18T09:00:00.000Z",
 	tournament: "DAIHATSU Japan Open 2026",
 	tournamentCategory: "HSBC BWF World Tour Super 750",
+	youtubeUrl: "https://www.youtube.com/watch?v=7k7A0Wqfsr0",
 	round: "SF",
 	court: "Court 1",
 	players: ["福島由紀 / 松本麻佑", "JIA Yi Fan / ZHANG Shu Xian"],
@@ -304,6 +305,7 @@ for (const viewport of [
 		await expect(page.locator(".score-updated")).toHaveCount(1);
 		await expect(page.locator(".score-updated strong")).toHaveText("12");
 		await expect(page.locator(".h2h-scoreline strong")).toHaveText("3勝 - 1勝");
+		await page.locator(".h2h-scoreline").click();
 		await expect(page.locator(".previous-winner")).toHaveText(
 			"JIA Yi Fan / ZHANG Shu Xian 勝利",
 		);
@@ -313,6 +315,9 @@ for (const viewport of [
 		await expect(
 			page.locator(".live-match .match-notification-control"),
 		).toHaveCount(0);
+		await expect(
+			page.locator(".live-match .match-primary-row .youtube-link"),
+		).toBeVisible();
 		if (process.env.CAPTURE_LAYOUT === "1") {
 			await page.screenshot({
 				path: `/tmp/bwfnotify-layout-${viewport.name}.png`,
@@ -385,4 +390,32 @@ test("wide: match cards use multiple columns in both sort modes", async ({
 			fullPage: true,
 		});
 	}
+});
+
+test("match information hierarchy prioritizes actions and matchup", async ({
+	page,
+}) => {
+	await page.setViewportSize({ width: 1280, height: 900 });
+	await preparePage(page);
+	await page.getByRole("tab", { name: /このあと/ }).click();
+	const card = page.locator(".scheduled-match").first();
+	const layout = await card.evaluate((element) => {
+		const rect = (selector: string) => {
+			const value = element.querySelector<HTMLElement>(selector);
+			if (!value) throw new Error(`Missing ${selector}`);
+			const box = value.getBoundingClientRect();
+			return { top: box.top, bottom: box.bottom, height: box.height };
+		};
+		return {
+			primary: rect(".match-primary-row"),
+			header: rect(".match-header"),
+			tournament: rect(".match-tournament"),
+			matchup: rect(".matchup"),
+		};
+	});
+	expect(layout.primary.top).toBeLessThan(layout.matchup.top);
+	expect(layout.header.top).toBeLessThan(layout.matchup.top);
+	expect(layout.tournament.height).toBeLessThan(layout.matchup.height / 2);
+	await expect(card.locator(".match-primary-row .match-time")).toBeVisible();
+	await expect(card.locator(".match-primary-row .youtube-link")).toBeVisible();
 });

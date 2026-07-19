@@ -1,3 +1,4 @@
+import { ExternalLink, RefreshCw } from "lucide-solid";
 import { createMemo, For, Show } from "solid-js";
 import type {
 	MatchPlayerSummary,
@@ -20,7 +21,6 @@ import {
 import {
 	displayCourt,
 	displayRound,
-	displayTournamentCategory,
 	formatMatchTime,
 	formatTournamentDate,
 	playerInitial,
@@ -144,8 +144,14 @@ export function MatchToolbar() {
 					<option value="time-desc">時間が遅い順</option>
 					<option value="tournament">大会名順</option>
 				</select>
-				<button id="refresh-button" type="button" onClick={loadStatus}>
-					再読み込み
+				<button
+					id="refresh-button"
+					type="button"
+					aria-label="再読み込み"
+					title="再読み込み"
+					onClick={loadStatus}
+				>
+					<RefreshCw size={17} aria-hidden="true" />
 				</button>
 			</div>
 		</div>
@@ -187,7 +193,67 @@ export function MatchCard(props: {
 
 	return (
 		<div class={`match ${isLive() ? "live-match" : "scheduled-match"}`}>
+			<div class="match-primary-row">
+				<div class="match-state">
+					<Show
+						when={isLive()}
+						fallback={
+							<time class="match-time" dateTime={props.match.startTime}>
+								{formatMatchTime(props.match.startTime)}
+							</time>
+						}
+					>
+						<span class="live-badge">ライブ中</span>
+					</Show>
+				</div>
+				<div class="match-actions">
+					<Show when={props.match.youtubeUrl}>
+						<a
+							class="youtube-link"
+							href={youtubeLink(props.match.youtubeUrl)}
+							target="_blank"
+							rel="noopener noreferrer"
+						>
+							<span>配信を見る</span>
+							<ExternalLink size={16} aria-hidden="true" />
+						</a>
+					</Show>
+					<Show when={props.match.eventType === "scheduled"}>
+						<div class="match-notification-control">
+							<span>開始通知</span>
+							<label class="switch">
+								<span class="visually-hidden">通知設定</span>
+								<input
+									type="checkbox"
+									checked={!excludedIds().has(props.match.id)}
+									disabled={notificationDisabled()}
+									onChange={(e) =>
+										updateMatchNotif(props.match.id, e.target.checked)
+									}
+								/>
+								<span class="switch-track" aria-hidden="true" />
+							</label>
+						</div>
+					</Show>
+				</div>
+			</div>
+
 			<div class="match-header">
+				<Show when={props.showTournament}>
+					<div class="match-tournament">
+						<Show
+							when={props.match.tournamentLogoUrl}
+							fallback={<div class="match-tournament-logo-fallback">BWF</div>}
+						>
+							<img
+								class="match-tournament-logo"
+								src={proxiedImageUrl(props.match.tournamentLogoUrl)}
+								alt=""
+							/>
+						</Show>
+						<h3>{props.match.tournament}</h3>
+					</div>
+				</Show>
 				<div class="match-meta">
 					<Show when={props.match.round}>
 						<span class="match-round">{displayRound(props.match.round)}</span>
@@ -196,51 +262,14 @@ export function MatchCard(props: {
 						<span class="match-court">{displayCourt(props.match.court)}</span>
 					</Show>
 				</div>
-				<Show when={isLive()}>
-					<span class="live-badge">ライブ中</span>
-				</Show>
 			</div>
-
-			<Show when={props.showTournament}>
-				<div class="match-tournament">
-					<Show
-						when={props.match.tournamentLogoUrl}
-						fallback={
-							<div class="match-tournament-logo-fallback">
-								{props.match.tournament}
-							</div>
-						}
-					>
-						<img
-							class="match-tournament-logo"
-							src={proxiedImageUrl(props.match.tournamentLogoUrl)}
-							alt={props.match.tournament}
-						/>
-					</Show>
-					<div class="match-tournament-meta">
-						<h3>{props.match.tournament}</h3>
-						<Show when={props.match.tournamentCategory}>
-							<p class="tournament-category">
-								{displayTournamentCategory(props.match.tournamentCategory)}
-							</p>
-						</Show>
-					</div>
-				</div>
-			</Show>
 
 			<div class="matchup">
 				<TeamBlock team={props.match.teams[0]} side="left" />
 				<div class="match-centre">
 					<Show
 						when={isLive() && scores()?.length > 0}
-						fallback={
-							<>
-								<span class="versus">vs</span>
-								<span class="match-time">
-									{formatMatchTime(props.match.startTime)}
-								</span>
-							</>
-						}
+						fallback={<span class="versus">vs</span>}
 					>
 						<span class="current-game">GAME {scores().length}</span>
 						<div class="current-score">
@@ -269,14 +298,14 @@ export function MatchCard(props: {
 			</Show>
 
 			<Show when={props.match.h2h}>
-				<div class="h2h">
-					<div class="h2h-scoreline">
+				<details class="h2h">
+					<summary class="h2h-scoreline">
 						<span>対戦成績</span>
-						<strong style="white-space: nowrap;">
+						<strong>
 							{props.match.h2h?.team1Wins ?? 0}勝 -{" "}
 							{props.match.h2h?.team2Wins ?? 0}勝
 						</strong>
-					</div>
+					</summary>
 					<Show when={props.match.h2h?.previous}>
 						<div class="previous-meeting">
 							<div class="previous-detail">
@@ -295,41 +324,8 @@ export function MatchCard(props: {
 							</div>
 						</div>
 					</Show>
-				</div>
+				</details>
 			</Show>
-
-			<div class="match-actions">
-				<Show when={props.match.youtubeUrl}>
-					<a
-						class="youtube-link"
-						href={youtubeLink(props.match.youtubeUrl)}
-						target="_blank"
-						rel="noopener noreferrer"
-					>
-						配信を見る
-						<span class="external-mark" aria-hidden="true">
-							↗
-						</span>
-					</a>
-				</Show>
-				<Show when={props.match.eventType === "scheduled"}>
-					<div class="match-notification-control">
-						<span>試合開始を通知</span>
-						<label class="switch">
-							<span class="visually-hidden">通知設定</span>
-							<input
-								type="checkbox"
-								checked={!excludedIds().has(props.match.id)}
-								disabled={notificationDisabled()}
-								onChange={(e) =>
-									updateMatchNotif(props.match.id, e.target.checked)
-								}
-							/>
-							<span class="switch-track" aria-hidden="true" />
-						</label>
-					</div>
-				</Show>
-			</div>
 		</div>
 	);
 }
@@ -368,22 +364,18 @@ export function MatchList() {
 					<For each={grouped()}>
 						{(g) => (
 							<div class="tournament-group">
-								<div class="tournament-hero">
+								<div class="tournament-heading">
 									<Show
-										when={g.matches[0]?.tournamentHeaderImageUrl}
-										fallback={
-											<div class="tournament-hero-fallback">{g.name}</div>
-										}
+										when={g.matches[0]?.tournamentLogoUrl}
+										fallback={<div class="tournament-logo-fallback">BWF</div>}
 									>
 										<img
-											class="tournament-hero-image"
-											src={proxiedImageUrl(
-												g.matches[0].tournamentHeaderImageUrl,
-											)}
+											class="tournament-logo"
+											src={proxiedImageUrl(g.matches[0].tournamentLogoUrl)}
 											alt={g.name}
 										/>
 									</Show>
-									<div class="tournament-hero-overlay">
+									<div class="tournament-heading-text">
 										<h2>{g.name}</h2>
 										<Show when={g.matches[0]?.tournamentCategory}>
 											<p class="tournament-category">

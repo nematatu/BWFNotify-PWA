@@ -308,7 +308,8 @@ describe("page structure", () => {
 	test("uses a light interface without permanent dark surfaces", async () => {
 		const css = await Bun.file("src/frontend/app.css").text();
 		expect(css).toContain("color-scheme: light");
-		expect(css).toContain("background: rgb(255 255 255 / 82%)");
+		expect(css).toContain("main {");
+		expect(css).toContain("background: #ffffff");
 		for (const dark of [
 			"#080808",
 			"#0b0b0b",
@@ -363,8 +364,23 @@ describe("page structure", () => {
 	});
 
 	test("uses BWF tournament media for match display", async () => {
-		const css = await Bun.file("src/frontend/app.css").text();
-		expect(css).toContain(".match-tournament-image");
-		expect(css).not.toContain("linear-gradient");
+		const component = await Bun.file(
+			"src/frontend/components/Matches.tsx",
+		).text();
+		expect(component).toContain('class="tournament-logo"');
+		expect(component).toContain('class="match-tournament-logo"');
+		expect(component).not.toContain("tournamentHeaderImageUrl");
+	});
+
+	test("places match actions and players before secondary details", async () => {
+		const component = await Bun.file(
+			"src/frontend/components/Matches.tsx",
+		).text();
+		const primary = component.indexOf('class="match-primary-row"');
+		const matchup = component.indexOf('class="matchup"');
+		const h2h = component.indexOf('class="h2h"');
+		expect(primary).toBeGreaterThan(0);
+		expect(matchup).toBeGreaterThan(primary);
+		expect(h2h).toBeGreaterThan(matchup);
 	});
 });
