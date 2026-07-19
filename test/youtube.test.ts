@@ -4,6 +4,11 @@ import {
 	resolveYoutubeStreamUrls,
 	validYoutubeUrl,
 } from "../src/api/youtube";
+import {
+	metadataMatchesSource,
+	titleMatchesMatch,
+} from "../src/api/youtubeMatch";
+import { youtubeStreamSourcesFor } from "../src/config/youtube-stream-sources";
 import type { MatchSummary } from "../src/type";
 
 const liveMatch: MatchSummary = {
@@ -28,6 +33,32 @@ const liveMatch: MatchSummary = {
 	round: "SF",
 	court: "Court 1",
 };
+
+describe("YouTube matching domain", () => {
+	test("matches title and official source without network access", () => {
+		const source = youtubeStreamSourcesFor(
+			liveMatch.tournament,
+			liveMatch.tournamentCategory,
+		)[0];
+		expect(source).toBeDefined();
+		if (!source) throw new Error("Japan Open stream source is missing");
+		expect(
+			titleMatchesMatch(
+				"DAIHATSU Japan Open 2026 | Christo Popov vs Kodai Naraoka | SF",
+				liveMatch,
+			),
+		).toBe(true);
+		expect(
+			metadataMatchesSource(
+				{
+					title: "DAIHATSU Japan Open 2026",
+					author_url: "https://www.youtube.com/@BWF",
+				},
+				source,
+			),
+		).toBe(true);
+	});
+});
 
 describe("resolveYoutubeMatchUrl", () => {
 	test("uses a verified direct YouTube URL when available", () => {
