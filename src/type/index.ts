@@ -105,6 +105,10 @@ export type UpcomingTournament = {
 	name: string;
 	startDate: string;
 	endDate: string;
+	grade?: string;
+	imageUrl?: string;
+	bwfUrl?: string;
+	bajUrl?: string;
 };
 
 export type PublicState = {

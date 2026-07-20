@@ -7,7 +7,7 @@
 	},
 	"files": {
 		"ignoreUnknown": false,
-		"includes": ["**", "!worker-configuration.d.ts"]
+		"includes": ["**", "!worker-configuration.d.ts", "!public/view/sources"]
 	},
 	"formatter": {
 		"enabled": true,

@@ -82,6 +82,18 @@ export const formatTournamentDate = (v: string | undefined) => {
 	return Number.isNaN(d.getTime()) ? v : FMT_DATE_MEDIUM.format(d);
 };
 
+export function japanDateKey(date = new Date()) {
+	const parts = new Intl.DateTimeFormat("en", {
+		timeZone: "Asia/Tokyo",
+		year: "numeric",
+		month: "2-digit",
+		day: "2-digit",
+	}).formatToParts(date);
+	const value = (type: Intl.DateTimeFormatPartTypes) =>
+		parts.find((part) => part.type === type)?.value || "";
+	return `${value("year")}-${value("month")}-${value("day")}`;
+}
+
 export const playerInitial = (v: string) => {
 	const pts = v.trim().split(/\s+/);
 	return pts.length > 1
@@ -94,11 +106,19 @@ export const teamLabel = (t: { players?: { name: string }[] } | undefined) =>
 
 const ROUND_LABELS: Record<string, string> = {
 	F: "決勝",
+	Final: "決勝",
 	SF: "準決勝",
+	"Semi-finals": "準決勝",
+	Semifinals: "準決勝",
 	QF: "準々決勝",
-	R16: "2回戦",
-	R32: "1回戦",
-	R64: "1回戦",
+	"Quarter-finals": "準々決勝",
+	Quarterfinals: "準々決勝",
+	R16: "ベスト16",
+	"Round of 16": "ベスト16",
+	R32: "ベスト32",
+	"Round of 32": "ベスト32",
+	R64: "ベスト64",
+	"Round of 64": "ベスト64",
 };
 export const displayRound = (v?: string) => (v ? ROUND_LABELS[v] || v : "");
 export const displayCourt = (v?: string) =>

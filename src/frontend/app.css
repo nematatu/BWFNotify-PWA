@@ -1,5 +1,6 @@
 :root {
 	color-scheme: light;
+	scrollbar-gutter: stable;
 	font-family:
 		"LINE Seed JP", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
 	font-synthesis: none;
@@ -233,7 +234,7 @@ main {
 	color: #666666;
 	background: transparent;
 	font-size: 14px;
-	font-weight: 750;
+	font-weight: 400;
 }
 
 .match-tab:hover {
@@ -243,6 +244,7 @@ main {
 .match-tab[aria-selected="true"] {
 	border-bottom-color: #d71920;
 	color: #151515;
+	font-weight: 700;
 }
 
 .match-tab span {
@@ -417,7 +419,7 @@ main {
 .match-tournament h3 {
 	min-width: 0;
 	font-size: 11px;
-	font-weight: 700;
+	font-weight: 400;
 	line-height: 1.3;
 	overflow: hidden;
 	text-overflow: ellipsis;
@@ -463,7 +465,7 @@ main {
 .live-state {
 	color: #d71920;
 	font-size: 12px;
-	font-weight: 800;
+	font-weight: 700;
 }
 
 .match-time {
@@ -484,7 +486,7 @@ main {
 	align-items: center;
 	gap: 6px;
 	font-size: 11px;
-	font-weight: 700;
+	font-weight: 400;
 	cursor: pointer;
 }
 
@@ -587,7 +589,7 @@ main {
 	color: #555555;
 	background: #e7e7e7;
 	font-size: 22px;
-	font-weight: 800;
+	font-weight: 700;
 }
 
 .player-names {
@@ -599,7 +601,7 @@ main {
 	gap: 0 4px;
 	margin-top: 8px;
 	font-size: 15px;
-	font-weight: 700;
+	font-weight: 400;
 	line-height: 1.45;
 }
 
@@ -614,7 +616,7 @@ main {
 
 .japanese-team .player-names {
 	font-size: 19px;
-	font-weight: 850;
+	font-weight: 700;
 	overflow-wrap: anywhere;
 }
 
@@ -652,7 +654,7 @@ main {
 .current-game {
 	color: #6a6a6a;
 	font-size: 9px;
-	font-weight: 800;
+	font-weight: 400;
 }
 
 .current-score {
@@ -681,7 +683,7 @@ main {
 
 .score-side strong {
 	font-size: 30px;
-	font-weight: 850;
+	font-weight: 700;
 }
 
 .score-separator {
@@ -763,7 +765,7 @@ main {
 .game-score span {
 	color: #6a6a6a;
 	font-size: 9px;
-	font-weight: 800;
+	font-weight: 400;
 }
 
 .game-score strong {
@@ -788,7 +790,7 @@ main {
 	padding: 7px 14px;
 	cursor: pointer;
 	font-size: 10px;
-	font-weight: 800;
+	font-weight: 400;
 	list-style-position: inside;
 }
 
@@ -812,7 +814,7 @@ main {
 	margin-top: 3px;
 	color: #12643a;
 	font-size: 11px;
-	font-weight: 800;
+	font-weight: 700;
 }
 
 .previous-scoreline {
@@ -852,7 +854,7 @@ main {
 
 .data-section-heading h2 {
 	font-size: 20px;
-	font-weight: 850;
+	font-weight: 700;
 }
 
 .data-section-heading p,
@@ -913,20 +915,50 @@ main {
 	grid-column: 1 / -1;
 }
 
-.result-summary {
+.result-header {
 	display: flex;
-	align-items: center;
+	align-items: flex-start;
 	justify-content: space-between;
-	gap: 12px;
+	gap: 16px;
+}
+
+.result-meta {
+	display: flex;
+	min-width: 0;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 4px 12px;
+	color: #555555;
+	font-size: 12px;
+}
+
+.result-meta time {
 	color: #666666;
-	font-size: 10px;
+}
+
+.result-meta span:first-of-type {
+	color: #333333;
 }
 
 .result-outcome {
-	color: rgba(21, 21, 21, 0.5);
-	font-size: 12px;
-	font-weight: 900;
-	letter-spacing: 0;
+	flex: 0 0 auto;
+	font-size: 17px;
+	font-weight: 700;
+}
+
+.result-win .result-outcome {
+	color: #b51218;
+}
+
+.result-loss .result-outcome {
+	color: #155b91;
+}
+
+.result-japanese-match .result-outcome,
+.result-unknown .result-outcome {
+	color: #555555;
+	font-size: 14px;
+	font-weight: 700;
 }
 
 .result-matchup {
@@ -941,102 +973,514 @@ main {
 	min-width: 0;
 }
 
-.result-team-head {
+.result-player-photos {
 	display: flex;
-	height: 28px;
+	min-height: 58px;
 	align-items: center;
 	gap: 8px;
+	margin-bottom: 8px;
+}
+
+.result-player-photo {
+	width: 58px;
+	height: 58px;
+	flex: 0 0 58px;
+	border: 0;
+	border-radius: 50%;
+	background: #eeeeee;
+	object-fit: cover;
+}
+
+.result-team-japan .result-player-photo {
+	width: 66px;
+	height: 66px;
+	flex-basis: 66px;
+}
+
+.result-team-head {
+	display: flex;
+	min-height: 30px;
+	align-items: center;
+	gap: 10px;
 }
 
 .result-flag {
-	width: 34px;
-	height: 23px;
+	width: 40px;
+	height: 27px;
 	object-fit: contain;
 }
 
-.team-result-winner,
-.team-result-loser {
-	color: #555555;
-	font-size: 10px;
-	font-weight: 750;
-}
-
-.team-result-loser {
-	opacity: 0.58;
+.team-result {
+	color: #333333;
+	font-size: 13px;
+	font-weight: 700;
 }
 
 .result-player-names {
-	margin-top: 7px;
-	font-size: 15px;
-	font-weight: 650;
-	line-height: 1.4;
+	margin-top: 8px;
+	font-size: 17px;
+	font-weight: 500;
+	line-height: 1.35;
 	overflow-wrap: anywhere;
 }
 
 .result-team-japan .result-player-names {
-	font-size: 19px;
-	font-weight: 850;
+	font-size: 21px;
+	font-weight: 700;
 }
 
 .result-name-separator {
 	display: inline-block;
 	margin-right: 5px;
 	color: #777777;
-	font-weight: 600;
+	font-weight: 400;
 }
 
 .result-score {
 	display: grid;
 	gap: 2px;
-	padding-top: 34px;
+	padding-top: 104px;
 	text-align: center;
-	font-size: 13px;
-	font-weight: 800;
+	font-size: 16px;
+	font-weight: 700;
 	font-variant-numeric: tabular-nums;
 }
 
-.result-details {
-	margin-top: 10px;
+.upcoming-row {
+	position: relative;
+	display: grid;
+	grid-template-columns: minmax(0, 1fr) auto;
+	align-items: center;
+	gap: 16px;
+	padding: 18px 4px;
+	overflow: hidden;
+}
+
+.tournament-watermark {
+	position: absolute;
+	inset: 0 0 0 auto;
+	width: 52%;
+	height: 100%;
+	opacity: 0.09;
+	object-fit: cover;
+	object-position: center;
+	pointer-events: none;
+}
+
+.upcoming-row > :not(.tournament-watermark) {
+	position: relative;
+	z-index: 1;
+}
+
+.upcoming-month-group {
+	display: grid;
+	grid-template-columns: 108px minmax(0, 1fr);
+	min-width: 0;
+	border-bottom: 2px solid #151515;
+}
+
+.upcoming-month-group > header {
+	display: flex;
+	align-items: baseline;
+	gap: 5px;
+	padding: 20px 10px 0 4px;
+}
+
+.upcoming-month-group > header strong {
+	font-size: 24px;
+	font-weight: 700;
+	line-height: 1;
+}
+
+.upcoming-month-group > header span {
+	color: #666666;
 	font-size: 11px;
 }
 
-.result-details summary {
-	display: inline-flex;
-	align-items: center;
-	gap: 3px;
+.upcoming-month-events {
+	display: grid;
+	grid-template-columns: repeat(2, minmax(0, 1fr));
+	column-gap: 24px;
+}
+
+.upcoming-main h4 {
+	font-size: 18px;
+	font-weight: 700;
+	line-height: 1.4;
+}
+
+button.upcoming-main {
+	min-width: 0;
+	padding: 8px;
+	border: 0;
+	color: inherit;
+	background: transparent;
+	font: inherit;
+	text-align: left;
 	cursor: pointer;
-	color: #555555;
-	font-weight: 750;
 }
 
-.result-details[open] summary svg {
-	transform: rotate(180deg);
+button.upcoming-main:hover,
+button.upcoming-main:focus-visible {
+	background: #eeeeee;
+	outline: 0;
 }
 
-.result-details > div {
+.upcoming-meta {
 	display: flex;
 	flex-wrap: wrap;
-	gap: 5px 14px;
-	margin-top: 7px;
+	gap: 3px 14px;
+	margin-top: 6px;
 	color: #555555;
+	font-size: 13px;
 }
 
-.upcoming-row {
+.schedule-heading {
+	align-items: center;
+}
+
+.schedule-view-switch {
+	display: flex;
+	min-width: 0;
+	margin: 0;
+	padding: 0;
+	border: 0;
+	border-bottom: 1px solid #bcbcbc;
+}
+
+.schedule-view-switch button {
+	display: inline-flex;
+	min-height: 40px;
+	align-items: center;
+	gap: 6px;
+	padding: 0 12px;
+	border: 0;
+	border-bottom: 3px solid transparent;
+	color: #555555;
+	background: transparent;
+	font: inherit;
+	font-size: 13px;
+	cursor: pointer;
+}
+
+.schedule-view-switch button[aria-pressed="true"] {
+	border-bottom-color: #d71920;
+	color: #151515;
+	font-weight: 700;
+}
+
+.schedule-view-switch button:focus-visible {
+	outline: 0;
+	background: #eeeeee;
+}
+
+.tournament-links {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+}
+
+.tournament-links a {
+	position: relative;
 	display: grid;
-	grid-template-columns: minmax(0, 1fr);
+	width: 48px;
+	height: 48px;
+	place-items: center;
+	text-decoration: none;
 }
 
-.upcoming-date {
-	color: #d71920;
+.tournament-links img {
+	width: 36px;
+	height: 36px;
+	object-fit: contain;
+}
+
+.external-link-mark {
+	position: absolute;
+	top: 1px;
+	right: 0;
+	width: 15px;
+	height: 15px;
+	padding: 1px;
+	color: #151515;
+	background: #ffffff;
+}
+
+.tournament-links.compact {
+	flex: 0 0 auto;
+	gap: 2px;
+}
+
+.tournament-links.compact a {
+	width: 38px;
+	height: 32px;
+}
+
+.tournament-links.compact img {
+	width: 30px;
+	height: 30px;
+}
+
+.tournament-links.compact .external-link-mark {
+	top: -1px;
+	right: -1px;
+	width: 11px;
+	height: 11px;
+}
+
+.calendar-list {
+	display: grid;
+	min-width: 0;
+	gap: 28px;
+	padding-top: 18px;
+}
+
+.calendar-month {
+	min-width: 0;
+}
+
+.calendar-month-header {
+	display: grid;
+	grid-template-columns: 40px minmax(0, 1fr) 40px;
+	align-items: center;
+	margin-bottom: 10px;
+}
+
+.calendar-month-header h3 {
+	font-size: 18px;
+	font-weight: 700;
+	text-align: center;
+}
+
+.calendar-month-header button {
+	display: grid;
+	width: 40px;
+	height: 40px;
+	padding: 0;
+	place-items: center;
+	border: 0;
+	background: transparent;
+}
+
+.calendar-month-header button:last-child {
+	justify-self: end;
+}
+
+.calendar-month-header button svg {
+	width: 21px;
+	height: 21px;
+}
+
+.month-calendar {
+	border-top: 1px solid #d5d5d5;
+	border-left: 1px solid #d5d5d5;
+}
+
+.calendar-weekdays {
+	display: grid;
+	grid-template-columns: repeat(7, minmax(0, 1fr));
+}
+
+.calendar-weekdays span {
+	padding: 7px 0;
+	border-right: 1px solid #d5d5d5;
+	border-bottom: 1px solid #d5d5d5;
+	color: #555555;
 	font-size: 11px;
-	font-weight: 800;
+	text-align: center;
 }
 
-.upcoming-main h3 {
-	margin-top: 3px;
-	font-size: 17px;
-	font-weight: 850;
+.calendar-weekdays span:first-child {
+	color: #b51218;
+}
+
+.calendar-weekdays span:last-child {
+	color: #155b91;
+}
+
+.calendar-week {
+	display: grid;
+	grid-template-columns: repeat(7, minmax(0, 1fr));
+	grid-template-rows: 34px repeat(var(--calendar-event-rows), 38px);
+	min-height: 76px;
+}
+
+.calendar-day {
+	position: relative;
+	min-width: 0;
+	border-right: 1px solid #d5d5d5;
+	border-bottom: 1px solid #d5d5d5;
+	background: #ffffff;
+}
+
+.calendar-day.outside-month {
+	color: #999999;
+	background: #f5f5f5;
+}
+
+.calendar-day time {
+	position: relative;
+	z-index: 1;
+	display: grid;
+	width: 26px;
+	height: 26px;
+	margin: 2px 0 2px 3px;
+	place-items: center;
+	font-size: 11px;
+}
+
+.calendar-day.today time {
+	border-radius: 50%;
+	color: #ffffff;
+	background: #d71920;
+	font-weight: 700;
+}
+
+.calendar-day:nth-of-type(1) time {
+	color: #b51218;
+}
+
+.calendar-day:nth-of-type(7) time {
+	color: #155b91;
+}
+
+.calendar-event {
+	position: relative;
+	z-index: 2;
+	display: flex;
+	min-width: 0;
+	height: 36px;
+	align-items: center;
+	gap: 3px;
+	margin: 2px;
+	padding: 0 3px;
+	color: #ffffff;
+	font-size: 14px;
+	line-height: 1.2;
+	overflow: hidden;
+}
+
+.calendar-event-watermark {
+	position: absolute;
+	inset: 0;
+	width: 100%;
+	height: 100%;
+	opacity: 0.16;
+	object-fit: cover;
+	pointer-events: none;
+}
+
+.calendar-event-button {
+	position: relative;
+	z-index: 1;
+	display: block;
+	min-width: 0;
+	min-height: 0;
+	height: 100%;
+	flex: 1;
+	padding: 0 2px;
+	border: 0;
+	color: inherit;
+	background: transparent;
+	font-size: inherit;
+	text-align: left;
+}
+
+.calendar-event-button:hover,
+.calendar-event-button:focus-visible {
+	background: rgb(255 255 255 / 16%);
+}
+
+.calendar-event-name {
+	display: block;
+	width: 100%;
+	min-width: 0;
+	flex: 1;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.calendar-event .tournament-links {
+	position: relative;
+	z-index: 2;
+}
+
+.calendar-color-0 {
+	background: #d71920;
+}
+
+.calendar-color-1 {
+	background: #2367a5;
+}
+
+.calendar-color-2 {
+	background: #147a46;
+}
+
+.calendar-color-3 {
+	background: #705a22;
+}
+
+.tournament-overlay {
+	position: fixed;
+	inset: 50% auto auto 50%;
+	display: grid;
+	width: min(calc(100% - 32px), 640px);
+	gap: 12px;
+	margin: 0;
+	padding: 28px;
+	transform: translate(-50%, -50%);
+	border: 2px solid #151515;
+	color: #151515;
+	background: #ffffff;
+}
+
+.tournament-overlay::backdrop {
+	background: rgb(0 0 0 / 48%);
+}
+
+.tournament-overlay:not(:popover-open) {
+	display: none;
+}
+
+.tournament-overlay h3 {
+	margin: 0;
+	padding-right: 42px;
+	font-size: 26px;
+	font-weight: 700;
 	line-height: 1.4;
+}
+
+.tournament-overlay-grade {
+	margin: 0;
+	color: #b51218;
+	font-size: 16px;
+	font-weight: 700;
+}
+
+.tournament-overlay-date {
+	margin: 0;
+	color: #555555;
+	font-size: 18px;
+}
+
+.tournament-overlay .tournament-links {
+	margin-top: 10px;
+}
+
+.tournament-overlay-close {
+	position: absolute;
+	top: 14px;
+	right: 14px;
+	display: grid;
+	width: 44px;
+	height: 44px;
+	padding: 0;
+	place-items: center;
+	border: 0;
+	background: transparent;
+	cursor: pointer;
 }
 
 #notification-status.error {
@@ -1194,7 +1638,7 @@ main {
 	border-color: #147a46;
 	color: #ffffff;
 	background: #147a46;
-	font-weight: 800;
+	font-weight: 700;
 }
 
 .primary-action:hover {
@@ -1243,6 +1687,19 @@ main {
 
 	.matches {
 		padding: 22px 12px 0;
+	}
+
+	.upcoming-month-group {
+		grid-template-columns: minmax(0, 1fr);
+	}
+
+	.upcoming-month-group > header {
+		padding: 18px 4px 8px;
+		border-bottom: 1px solid #bcbcbc;
+	}
+
+	.upcoming-month-events {
+		grid-template-columns: minmax(0, 1fr);
 	}
 
 	.match-toolbar {
@@ -1322,16 +1779,64 @@ main {
 	}
 
 	.result-score {
-		padding-top: 32px;
-		font-size: 11px;
-	}
-
-	.result-player-names {
+		padding-top: 98px;
 		font-size: 13px;
 	}
 
+	.result-player-names {
+		font-size: 15px;
+	}
+
 	.result-team-japan .result-player-names {
-		font-size: 17px;
+		font-size: 19px;
+	}
+
+	.result-outcome {
+		font-size: 15px;
+	}
+
+	.result-meta {
+		font-size: 11px;
+	}
+
+	.schedule-heading {
+		align-items: center;
+	}
+
+	.schedule-view-switch button {
+		padding: 0 8px;
+		font-size: 12px;
+	}
+
+	.upcoming-row {
+		gap: 8px;
+	}
+
+	.calendar-week {
+		grid-template-rows: 30px repeat(var(--calendar-event-rows), 34px);
+		min-height: 68px;
+	}
+
+	.calendar-day time {
+		width: 24px;
+		height: 24px;
+		margin: 2px 0 2px 2px;
+		font-size: 10px;
+	}
+
+	.calendar-event {
+		height: 32px;
+		padding: 0 2px 0 3px;
+		font-size: 12px;
+		line-height: 1.2;
+	}
+
+	.tournament-overlay {
+		padding: 22px 18px;
+	}
+
+	.tournament-overlay h3 {
+		font-size: 22px;
 	}
 
 	.app-header {
@@ -1480,8 +1985,7 @@ main {
 }
 
 @media (min-width: 900px) {
-	.result-list,
-	.upcoming-list {
+	.result-list {
 		grid-template-columns: repeat(2, minmax(0, 1fr));
 		column-gap: 28px;
 	}

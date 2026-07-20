@@ -1,0 +1,322 @@
+{
+	"generatedAt": "2026-07-20T00:00:00.000Z",
+	"source": "https://corporate.bwfbadminton.com/events/calendar/2026/all/0/-1/",
+	"tournaments": [
+		{
+			"id": "2026-01-06:マレーシアオープン2026",
+			"name": "マレーシアオープン2026",
+			"startDate": "2026-01-06",
+			"endDate": "2026-01-11",
+			"grade": "Super 1000",
+			"bwfUrl": "https://bwfworldtour.bwfbadminton.com/tournament/5227/petronas-malaysia-open-2026/results/2026-01-06"
+		},
+		{
+			"id": "2026-01-13:インドオープン2026",
+			"name": "インドオープン2026",
+			"startDate": "2026-01-13",
+			"endDate": "2026-01-18",
+			"grade": "Super 750",
+			"bwfUrl": "https://bwfworldtour.bwfbadminton.com/tournament/5269/yonex-sunrise-india-open-2026/"
+		},
+		{
+			"id": "2026-01-20:インドネシアマスターズ2026",
+			"name": "インドネシアマスターズ2026",
+			"startDate": "2026-01-20",
+			"endDate": "2026-01-25",
+			"grade": "Super 500",
+			"bwfUrl": "https://bwfworldtour.bwfbadminton.com/tournament/5529/daihatsu-indonesia-masters-2026/overview/"
+		},
+		{
+			"id": "2026-01-27:タイマスターズ2026",
+			"name": "タイマスターズ2026",
+			"startDate": "2026-01-27",
+			"endDate": "2026-02-01",
+			"grade": "Super 300",
+			"bwfUrl": "https://bwfworldtour.bwfbadminton.com/tournament/5226/princess-sirivannavari-thailand-masters-2026/results/"
+		},
+		{
+			"id": "2026-02-24:ドイツオープン2026",
+			"name": "ドイツオープン2026",
+			"startDate": "2026-02-24",
+			"endDate": "2026-03-01",
+			"grade": "Super 300",
+			"bwfUrl": "https://bwfworldtour.bwfbadminton.com/tournament/5246/yonex-german-open-2026/"
+		},
+		{
+			"id": "2026-03-03:全英オープン2026",
+			"name": "全英オープン2026",
+			"startDate": "2026-03-03",
+			"endDate": "2026-03-08",
+			"grade": "Super 1000",
+			"bwfUrl": "https://bwfworldtour.bwfbadminton.com/tournament/5515/yonex-all-england-open-badminton-championships-2026/overview"
+		},
+		{
+			"id": "2026-03-10:スイスオープン2026",
+			"name": "スイスオープン2026",
+			"startDate": "2026-03-10",
+			"endDate": "2026-03-15",
+			"grade": "Super 300",
+			"bwfUrl": "https://bwfworldtour.bwfbadminton.com/tournament/5209/yonex-swiss-open-2026"
+		},
+		{
+			"id": "2026-03-10:瑞昌チャイナマスターズ2026",
+			"name": "瑞昌チャイナマスターズ2026",
+			"startDate": "2026-03-10",
+			"endDate": "2026-03-15",
+			"grade": "Super 100",
+			"bwfUrl": "https://bwfbadminton.com/tournament/5623/ruichang-china-masters-2026"
+		},
+		{
+			"id": "2026-03-17:オルレアンマスターズ2026",
+			"name": "オルレアンマスターズ2026",
+			"startDate": "2026-03-17",
+			"endDate": "2026-03-22",
+			"grade": "Super 300",
+			"bwfUrl": "https://bwfworldtour.bwfbadminton.com/tournament/5270/orleans-masters-badminton-2026-presented-by-victor/results/"
+		},
+		{
+			"id": "2026-04-24:トマス杯・ユーバー杯2026",
+			"name": "トマス杯・ユーバー杯2026",
+			"startDate": "2026-04-24",
+			"endDate": "2026-05-03",
+			"grade": "Grade 1",
+			"bwfUrl": "https://bwfbadminton.com/tournament/5600/bwf-thomas-uber-cup-finals-2026/results/"
+		},
+		{
+			"id": "2026-05-12:タイオープン2026",
+			"name": "タイオープン2026",
+			"startDate": "2026-05-12",
+			"endDate": "2026-05-17",
+			"grade": "Super 500",
+			"bwfUrl": "https://bwfworldtour.bwfbadminton.com/tournament/5230/toyota-thailand-open-2026/results/"
+		},
+		{
+			"id": "2026-05-12:宝鶏チャイナマスターズ2026",
+			"name": "宝鶏チャイナマスターズ2026",
+			"startDate": "2026-05-12",
+			"endDate": "2026-05-17",
+			"grade": "Super 100",
+			"bwfUrl": "https://bwfbadminton.com/tournament/5670/baoji-china-masters-2026"
+		},
+		{
+			"id": "2026-05-19:マレーシアマスターズ2026",
+			"name": "マレーシアマスターズ2026",
+			"startDate": "2026-05-19",
+			"endDate": "2026-05-24",
+			"grade": "Super 500",
+			"bwfUrl": "https://bwfworldtour.bwfbadminton.com/tournament/5229/perodua-malaysia-masters-2026/results/2026-05-24"
+		},
+		{
+			"id": "2026-05-26:シンガポールオープン2026",
+			"name": "シンガポールオープン2026",
+			"startDate": "2026-05-26",
+			"endDate": "2026-05-31",
+			"grade": "Super 750",
+			"bwfUrl": "https://bwfworldtour.bwfbadminton.com/tournament/5649/kff-singapore-badminton-open-2026"
+		},
+		{
+			"id": "2026-06-02:インドネシアオープン2026",
+			"name": "インドネシアオープン2026",
+			"startDate": "2026-06-02",
+			"endDate": "2026-06-07",
+			"grade": "Super 1000",
+			"bwfUrl": "https://bwfworldtour.bwfbadminton.com/tournament/5528/polytron-indonesia-open-2026"
+		},
+		{
+			"id": "2026-06-09:オーストラリアオープン2026",
+			"name": "オーストラリアオープン2026",
+			"startDate": "2026-06-09",
+			"endDate": "2026-06-14",
+			"grade": "Super 500",
+			"bwfUrl": "https://bwfworldtour.bwfbadminton.com/tournament/5215/sathio-group-australian-badminton-open-2026"
+		},
+		{
+			"id": "2026-06-16:マカオオープン2026",
+			"name": "マカオオープン2026",
+			"startDate": "2026-06-16",
+			"endDate": "2026-06-21",
+			"grade": "Super 300",
+			"bwfUrl": "https://bwfworldtour.bwfbadminton.com/tournament/5214/sands-china-ltd-macau-open-2026/overview/"
+		},
+		{
+			"id": "2026-06-23:USオープン2026",
+			"name": "USオープン2026",
+			"startDate": "2026-06-23",
+			"endDate": "2026-06-28",
+			"grade": "Super 300",
+			"bwfUrl": "https://bwfworldtour.bwfbadminton.com/tournament/5701/yonex-us-open-2026"
+		},
+		{
+			"id": "2026-06-30:カナダオープン2026",
+			"name": "カナダオープン2026",
+			"startDate": "2026-06-30",
+			"endDate": "2026-07-05",
+			"grade": "Super 300",
+			"bwfUrl": "https://bwfworldtour.bwfbadminton.com/tournament/5271/yonex-canada-open-2026/results/2026-06-30"
+		},
+		{
+			"id": "2026-07-14:ジャパンオープン2026",
+			"name": "ジャパンオープン2026",
+			"startDate": "2026-07-14",
+			"endDate": "2026-07-19",
+			"grade": "Super 750",
+			"imageUrl": "/view/tournaments/daihatsu-japan-open-2026.jpg",
+			"bwfUrl": "https://bwfworldtour.bwfbadminton.com/tournament/5213/daihatsu-japan-open-2026/results/"
+		},
+		{
+			"id": "2026-07-21:中国オープン2026",
+			"name": "中国オープン2026",
+			"startDate": "2026-07-21",
+			"endDate": "2026-07-26",
+			"grade": "Super 1000"
+		},
+		{
+			"id": "2026-07-28:タイペイオープン2026",
+			"name": "タイペイオープン2026",
+			"startDate": "2026-07-28",
+			"endDate": "2026-08-02",
+			"grade": "Super 300"
+		},
+		{
+			"id": "2026-08-04:韓国マスターズ2026",
+			"name": "韓国マスターズ2026",
+			"startDate": "2026-08-04",
+			"endDate": "2026-08-09",
+			"grade": "Super 300"
+		},
+		{
+			"id": "2026-08-17:世界バドミントン選手権大会2026",
+			"name": "世界バドミントン選手権大会2026",
+			"startDate": "2026-08-17",
+			"endDate": "2026-08-23",
+			"grade": "Grade 1"
+		},
+		{
+			"id": "2026-09-01:ポンティアナック・インドネシアマスターズ2026",
+			"name": "ポンティアナック・インドネシアマスターズ2026",
+			"startDate": "2026-09-01",
+			"endDate": "2026-09-06",
+			"grade": "Super 100"
+		},
+		{
+			"id": "2026-09-01:中国マスターズ2026",
+			"name": "中国マスターズ2026",
+			"startDate": "2026-09-01",
+			"endDate": "2026-09-06",
+			"grade": "Super 750"
+		},
+		{
+			"id": "2026-09-08:ベトナムオープン2026",
+			"name": "ベトナムオープン2026",
+			"startDate": "2026-09-08",
+			"endDate": "2026-09-13",
+			"grade": "Super 100"
+		},
+		{
+			"id": "2026-09-29:アブダビマスターズ2026",
+			"name": "アブダビマスターズ2026",
+			"startDate": "2026-09-29",
+			"endDate": "2026-10-04",
+			"grade": "Super 100"
+		},
+		{
+			"id": "2026-10-06:アークティックオープン2026",
+			"name": "アークティックオープン2026",
+			"startDate": "2026-10-06",
+			"endDate": "2026-10-11",
+			"grade": "Super 500"
+		},
+		{
+			"id": "2026-10-13:デンマークオープン2026",
+			"name": "デンマークオープン2026",
+			"startDate": "2026-10-13",
+			"endDate": "2026-10-18",
+			"grade": "Super 750"
+		},
+		{
+			"id": "2026-10-13:マレーシアスーパー100 2026",
+			"name": "マレーシアスーパー100 2026",
+			"startDate": "2026-10-13",
+			"endDate": "2026-10-18",
+			"grade": "Super 100"
+		},
+		{
+			"id": "2026-10-20:フランスオープン2026",
+			"name": "フランスオープン2026",
+			"startDate": "2026-10-20",
+			"endDate": "2026-10-25",
+			"grade": "Super 750",
+			"bwfUrl": "https://bwfworldtour.bwfbadminton.com/tournament/5272/yonex-french-open-2026/draws"
+		},
+		{
+			"id": "2026-10-20:クドゥス・インドネシアマスターズ2026",
+			"name": "クドゥス・インドネシアマスターズ2026",
+			"startDate": "2026-10-20",
+			"endDate": "2026-10-25",
+			"grade": "Super 100"
+		},
+		{
+			"id": "2026-10-27:ハイロオープン2026",
+			"name": "ハイロオープン2026",
+			"startDate": "2026-10-27",
+			"endDate": "2026-11-01",
+			"grade": "Super 500"
+		},
+		{
+			"id": "2026-11-03:韓国オープン2026",
+			"name": "韓国オープン2026",
+			"startDate": "2026-11-03",
+			"endDate": "2026-11-08",
+			"grade": "Super 500"
+		},
+		{
+			"id": "2026-11-10:熊本マスターズジャパン2026",
+			"name": "熊本マスターズジャパン2026",
+			"startDate": "2026-11-10",
+			"endDate": "2026-11-15",
+			"grade": "Super 500"
+		},
+		{
+			"id": "2026-11-10:高雄マスターズ2026",
+			"name": "高雄マスターズ2026",
+			"startDate": "2026-11-10",
+			"endDate": "2026-11-15",
+			"grade": "Super 100"
+		},
+		{
+			"id": "2026-11-17:香港オープン2026",
+			"name": "香港オープン2026",
+			"startDate": "2026-11-17",
+			"endDate": "2026-11-22",
+			"grade": "Super 500"
+		},
+		{
+			"id": "2026-11-24:シド・モディ・インド国際2026",
+			"name": "シド・モディ・インド国際2026",
+			"startDate": "2026-11-24",
+			"endDate": "2026-11-29",
+			"grade": "Super 300"
+		},
+		{
+			"id": "2026-12-01:グワハティマスターズ2026",
+			"name": "グワハティマスターズ2026",
+			"startDate": "2026-12-01",
+			"endDate": "2026-12-06",
+			"grade": "Super 100"
+		},
+		{
+			"id": "2026-12-08:オディシャマスターズ2026",
+			"name": "オディシャマスターズ2026",
+			"startDate": "2026-12-08",
+			"endDate": "2026-12-13",
+			"grade": "Super 100"
+		},
+		{
+			"id": "2026-12-09:BWFワールドツアーファイナルズ2026",
+			"name": "BWFワールドツアーファイナルズ2026",
+			"startDate": "2026-12-09",
+			"endDate": "2026-12-13",
+			"grade": "World Tour Finals"
+		}
+	]
+}

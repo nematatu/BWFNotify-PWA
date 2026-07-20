@@ -1,10 +1,15 @@
 import { describe, expect, test } from "bun:test";
 import { pollingMode } from "../src/frontend/lib/pollingPolicy.ts";
 import {
+	orderedResultScores,
+	resultView,
+} from "../src/frontend/lib/resultView.ts";
+import {
 	displayCourt,
 	displayRound,
 	displayTournamentCategory,
 	formatMatchTime,
+	japanDateKey,
 	mergeLiveMatches,
 	notificationToggleAction,
 	playerInitial,
@@ -69,6 +74,71 @@ describe("initial view policy", () => {
 
 	test("opens upcoming tournaments when no results exist", () => {
 		expect(preferredInitialView([], 0, 8)).toBe("upcoming");
+	});
+});
+
+describe("Japan calendar date", () => {
+	test("uses Japan time across the UTC date boundary", () => {
+		expect(japanDateKey(new Date("2026-07-19T15:00:00Z"))).toBe("2026-07-20");
+	});
+});
+
+describe("completed match perspective", () => {
+	const player = (name, isJapanese) => ({ name, isJapanese });
+	const match = (teams, scores) => ({ teams, scores });
+
+	test("reports the result from the only Japanese team's perspective", () => {
+		const view = resultView(
+			match(
+				[
+					{ players: [player("Opponent", false)] },
+					{ players: [player("山口茜", true)] },
+				],
+				[
+					{ team1: 21, team2: 18 },
+					{ team1: 21, team2: 16 },
+				],
+			),
+		);
+		expect(view).toMatchObject({
+			kind: "international",
+			leftIndex: 2,
+			rightIndex: 1,
+			outcome: "loss",
+		});
+		expect(
+			orderedResultScores(
+				match(
+					[],
+					[
+						{ team1: 21, team2: 18 },
+						{ team1: 21, team2: 16 },
+					],
+				),
+				view.leftIndex,
+			),
+		).toEqual(["18 - 21", "16 - 21"]);
+	});
+
+	test("does not assign one overall Japanese result to a Japanese matchup", () => {
+		expect(
+			resultView(
+				match(
+					[
+						{ players: [player("山口茜", true)] },
+						{ players: [player("宮崎友花", true)] },
+					],
+					[
+						{ team1: 21, team2: 18 },
+						{ team1: 21, team2: 16 },
+					],
+				),
+			),
+		).toMatchObject({
+			kind: "japanese-match",
+			winner: 1,
+			outcome: "japanese-match",
+		});
 	});
 });
 
@@ -227,10 +297,12 @@ describe("live score updates", () => {
 describe("format utilities", () => {
 	test("displayRound translates BWF round codes to Japanese", () => {
 		expect(displayRound("F")).toBe("決勝");
+		expect(displayRound("Final")).toBe("決勝");
 		expect(displayRound("SF")).toBe("準決勝");
 		expect(displayRound("QF")).toBe("準々決勝");
-		expect(displayRound("R16")).toBe("2回戦");
-		expect(displayRound("R32")).toBe("1回戦");
+		expect(displayRound("R16")).toBe("ベスト16");
+		expect(displayRound("Round of 16")).toBe("ベスト16");
+		expect(displayRound("R32")).toBe("ベスト32");
 		expect(displayRound(undefined)).toBe("");
 		expect(displayRound("Group A")).toBe("Group A");
 	});
@@ -305,7 +377,6 @@ describe("page structure", () => {
 		);
 		expect(css).not.toContain(".live-match {");
 		expect(css).not.toContain("border-top: 4px solid #d71920");
-		expect(css).not.toContain("border-bottom: 3px solid #d71920");
 	});
 
 	test("avoids decorative shadows and badge styling", async () => {

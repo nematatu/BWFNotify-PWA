@@ -10,55 +10,77 @@ const MAX_UPCOMING_TOURNAMENTS = 8;
 
 type TournamentDraft = UpcomingTournament & {
 	category?: string;
-	officialUrl?: string;
 };
 
 export async function fetchUpcomingTournaments(
 	now: Date,
 	fetcher: typeof fetch = fetch,
 ): Promise<UpcomingTournament[]> {
-	const responses = await Promise.all(
-		monthQueries(now).flatMap(({ year, month }) =>
-			[1, 2].map((page) =>
-				fetcher(
-					`${BAJ_TOURNAMENT_URL}?year=${year}&month=${month}&page=${page}`,
-					{
-						headers: {
-							Accept: "text/html,application/xhtml+xml",
-							"User-Agent": BAJ_USER_AGENT,
-						},
-					},
-				).catch(() => new Response(null, { status: 502 })),
-			),
+	const sourceUrls = monthQueries(now).flatMap(({ year, month }) =>
+		[1, 2].map(
+			(page) =>
+				`${BAJ_TOURNAMENT_URL}?year=${year}&month=${month}&page=${page}`,
 		),
 	);
-	if (responses.every((response) => !response.ok)) {
+	const responses = await Promise.all(
+		sourceUrls.map(async (sourceUrl) => ({
+			sourceUrl,
+			response: await fetcher(sourceUrl, {
+				headers: {
+					Accept: "text/html,application/xhtml+xml",
+					"User-Agent": BAJ_USER_AGENT,
+				},
+			}).catch(() => new Response(null, { status: 502 })),
+		})),
+	);
+	if (responses.every(({ response }) => !response.ok)) {
 		throw new Error(
-			`BAJ tournament pages are unavailable (${responses.map((response) => response.status).join(",")})`,
+			`BAJ tournament pages are unavailable (${responses.map(({ response }) => response.status).join(",")})`,
 		);
 	}
 
 	const tournaments = (
 		await Promise.all(
-			responses.filter((response) => response.ok).map(parseTournamentPage),
+			responses
+				.filter(({ response }) => response.ok)
+				.map(({ response, sourceUrl }) =>
+					parseTournamentPage(response, sourceUrl),
+				),
 		)
 	)
 		.flat()
 		.filter((tournament) => isRelevantTournament(tournament, now));
 
-	return [...new Map(tournaments.map((item) => [item.id, item])).values()]
+	const unique = new Map<string, TournamentDraft>();
+	for (const tournament of tournaments) {
+		if (!unique.has(tournament.id)) unique.set(tournament.id, tournament);
+	}
+
+	return [...unique.values()]
 		.sort((left, right) => left.startDate.localeCompare(right.startDate))
 		.slice(0, MAX_UPCOMING_TOURNAMENTS)
-		.map(({ id, name, startDate, endDate }) => ({
+		.map(({ id, name, startDate, endDate, category, bwfUrl, bajUrl }) => ({
 			id,
 			name,
 			startDate,
 			endDate,
+			grade: tournamentGrade(category),
+			bwfUrl,
+			bajUrl,
 		}));
+}
+
+function tournamentGrade(category?: string) {
+	return category
+		?.replace(/^HSBC BWF World Tour\s*/i, "")
+		.replace(/^BWF Tour\s*/i, "")
+		.replace(/^BWF\s*/i, "")
+		.trim();
 }
 
 export async function parseTournamentPage(
 	response: Response,
+	sourceUrl = BAJ_TOURNAMENT_URL,
 ): Promise<TournamentDraft[]> {
 	const { document } = parseHTML(await response.text());
 	return [...document.querySelectorAll("li.v-tournament__item")].flatMap(
@@ -72,6 +94,9 @@ export async function parseTournamentPage(
 			);
 			if (!name || !dates) return [];
 			const links = [...item.querySelectorAll(".v-tournament__links-link")];
+			const bajDocumentUrl = links
+				.map((link) => link.getAttribute("href"))
+				.find((href) => href && isBajDocument(href));
 			return [
 				{
 					id: `${normalizeDate(dates[1])}:${name}`,
@@ -79,7 +104,7 @@ export async function parseTournamentPage(
 					startDate: normalizeDate(dates[1]),
 					endDate: normalizeDate(dates[2]),
 					category: item.querySelector(".c-tag")?.textContent.trim(),
-					officialUrl:
+					bwfUrl:
 						links
 							.find((link) =>
 								/BWF|大会サイト/i.test(
@@ -87,9 +112,20 @@ export async function parseTournamentPage(
 								),
 							)
 							?.getAttribute("href") || undefined,
+					bajUrl: bajDocumentUrl
+						? new URL(bajDocumentUrl, sourceUrl).toString()
+						: undefined,
 				},
 			];
 		},
+	);
+}
+
+function isBajDocument(href: string) {
+	const url = new URL(href, BAJ_TOURNAMENT_URL);
+	return (
+		["badminton.or.jp", "www.badminton.or.jp"].includes(url.hostname) &&
+		(url.pathname.startsWith("/storage/") || url.pathname.startsWith("/games/"))
 	);
 }
 
@@ -99,9 +135,7 @@ function isRelevantTournament(tournament: TournamentDraft, now: Date) {
 	return (
 		end >= now.getTime() &&
 		Date.parse(`${tournament.startDate}T00:00:00+09:00`) <= horizon &&
-		/BWF|bwfbadminton\.com/i.test(
-			`${tournament.category} ${tournament.officialUrl}`,
-		)
+		/BWF|bwfbadminton\.com/i.test(`${tournament.category} ${tournament.bwfUrl}`)
 	);
 }
 

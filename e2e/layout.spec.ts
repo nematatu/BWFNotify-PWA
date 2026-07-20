@@ -158,11 +158,44 @@ const completedDoublesLoss = {
 	],
 };
 
+const completedJapaneseMatch = {
+	...singlesMatch,
+	id: "layout-completed-japanese-match",
+	eventType: "completed",
+	tournamentDate: "2026-07-15",
+	round: "SF",
+	teams: [
+		singlesMatch.teams[0],
+		{
+			countryCode: "JPN",
+			flagUrl: "https://img.bwfbadminton.com/image/upload/JPN.png",
+			players: [{ name: "宮崎友花", isJapanese: true }],
+		},
+	],
+	scores: [
+		{ game: 1, team1: 21, team2: 18 },
+		{ game: 2, team1: 21, team2: 16 },
+	],
+};
+
 const upcomingTournament = {
 	id: "2026-07-21:中国オープン2026",
 	name: "中国オープン2026",
 	startDate: "2026-07-21",
 	endDate: "2026-07-26",
+	bwfUrl:
+		"https://bwfworldtour.bwfbadminton.com/tournament/5622/victor-china-open-2026/overview/",
+	bajUrl:
+		"https://www.badminton.or.jp/storage/conventions/pdf/1252/send_out_20260626150028.pdf",
+};
+
+const augustTournament = {
+	id: "2026-08-04:韓国マスターズ2026",
+	name: "韓国マスターズ2026",
+	startDate: "2026-08-04",
+	endDate: "2026-08-09",
+	bwfUrl:
+		"https://bwfworldtour.bwfbadminton.com/tournament/5596/victor-korea-masters-2026/overview/",
 };
 
 async function preparePage(page: Page) {
@@ -204,9 +237,13 @@ async function preparePage(page: Page) {
 					secondSinglesMatch,
 					thirdSinglesMatch,
 				],
-				recentResults: [completedMatch, completedDoublesLoss],
+				recentResults: [
+					completedMatch,
+					completedDoublesLoss,
+					completedJapaneseMatch,
+				],
 				calendarCheckedAt: "2026-07-18T08:00:00.000Z",
-				upcomingTournaments: [upcomingTournament],
+				upcomingTournaments: [upcomingTournament, augustTournament],
 			},
 		}),
 	);
@@ -373,14 +410,14 @@ for (const viewport of [
 		await expect(page.getByRole("link", { name: "配信を見る" })).toHaveCount(0);
 		await page.getByRole("tab", { name: /結果/ }).click();
 		const resultRows = page.locator(".result-row");
-		await expect(resultRows).toHaveCount(2);
+		await expect(resultRows).toHaveCount(3);
 		await expect(resultRows.nth(0)).toHaveClass(/result-win/);
 		await expect(resultRows.nth(0)).toHaveCSS(
 			"background-image",
 			/rgba\(215, 25, 32, 0\.14\)/,
 		);
 		await expect(resultRows.nth(0).locator(".result-outcome")).toHaveText(
-			"WIN",
+			"日本選手の勝利",
 		);
 		await expect(resultRows.nth(1)).toHaveClass(/result-loss/);
 		await expect(resultRows.nth(1)).toHaveCSS(
@@ -388,7 +425,18 @@ for (const viewport of [
 			/rgba\(25, 103, 173, 0\.14\)/,
 		);
 		await expect(resultRows.nth(1).locator(".result-outcome")).toHaveText(
-			"LOSE",
+			"日本選手の敗戦",
+		);
+		await expect(resultRows.nth(2)).toHaveClass(/result-japanese-match/);
+		await expect(resultRows.nth(2).locator(".result-outcome")).toHaveText(
+			"日本人対決",
+		);
+		await expect(resultRows.nth(2).locator(".team-result")).toHaveText([
+			"勝利",
+			"敗戦",
+		]);
+		await expect(resultRows.nth(2).locator(".result-team-japan")).toHaveCount(
+			2,
 		);
 		for (const row of await resultRows.all()) {
 			await expect(
@@ -396,6 +444,16 @@ for (const viewport of [
 			).toHaveClass(/result-team-japan/);
 			await expect(row.locator(".result-flag")).toHaveCount(2);
 		}
+		await expect(resultRows.nth(0).locator(".team-result")).toHaveCount(0);
+		await expect(resultRows.nth(0).locator(".result-meta")).toContainText(
+			"DAIHATSU Japan Open 2026",
+		);
+		await expect(resultRows.nth(0).locator(".result-meta")).toContainText(
+			"準々決勝",
+		);
+		await expect(resultRows.nth(1).locator(".result-meta")).toContainText(
+			"ベスト16",
+		);
 		await expect(resultRows.nth(0).locator(".result-team-japan")).toContainText(
 			"山口茜",
 		);
@@ -408,6 +466,9 @@ for (const viewport of [
 			"/",
 		);
 		await expect(doublesNames).toHaveCSS("white-space", "normal");
+		await expect(resultRows.nth(1).locator(".result-player-photo")).toHaveCount(
+			4,
+		);
 		const [japaneseNameSize, opponentNameSize] = await Promise.all([
 			doublesNames.evaluate((element) =>
 				Number.parseFloat(getComputedStyle(element).fontSize),
@@ -420,11 +481,7 @@ for (const viewport of [
 				),
 		]);
 		expect(japaneseNameSize).toBeGreaterThan(opponentNameSize);
-		await resultRows.nth(1).locator(".result-details summary").click();
-		await expect(resultRows.nth(1).locator(".result-details")).toHaveAttribute(
-			"open",
-			"",
-		);
+		await expect(page.locator(".result-details")).toHaveCount(0);
 		if (process.env.CAPTURE_LAYOUT === "1") {
 			await page.screenshot({
 				path: `/tmp/bwfnotify-results-${viewport.name}.png`,
@@ -432,16 +489,84 @@ for (const viewport of [
 			});
 		}
 		await page.getByRole("tab", { name: /大会/ }).click();
-		await expect(page.locator(".upcoming-row")).toHaveCount(1);
-		await expect(page.locator(".upcoming-row")).toContainText(
+		await expect(page.locator(".upcoming-row")).toHaveCount(2);
+		await expect(page.locator(".upcoming-row").first()).toContainText(
 			"中国オープン2026",
 		);
-		await expect(page.locator(".upcoming-row")).not.toContainText(
+		await expect(page.locator(".upcoming-row").first()).not.toContainText(
 			/選手|所属|時刻|コート|Court/,
 		);
 		await expect(
-			page.locator(".upcoming-row a, .upcoming-row details"),
-		).toHaveCount(0);
+			page.getByRole("link", { name: /中国オープン2026をBWFで開く/ }),
+		).toHaveCount(1);
+		await expect(
+			page.getByRole("link", {
+				name: /中国オープン2026を日本バドミントン協会で確認する/,
+			}),
+		).toHaveCount(1);
+		await page
+			.getByRole("button", { name: "中国オープン2026の詳細を表示" })
+			.click();
+		await expect(page.locator(".tournament-overlay")).toBeVisible();
+		await expect(page.locator(".tournament-overlay")).toContainText(
+			"中国オープン2026",
+		);
+		await page.getByRole("button", { name: "大会詳細を閉じる" }).click();
+		await page.getByRole("button", { name: "カレンダー" }).click();
+		await expect(page.locator(".month-calendar")).toHaveCount(1);
+		await expect(page.locator(".calendar-weekdays span")).toHaveText([
+			"日",
+			"月",
+			"火",
+			"水",
+			"木",
+			"金",
+			"土",
+		]);
+		await expect(page.locator(".calendar-day")).toHaveCount(35);
+		await expect(page.locator(".calendar-day.active")).toHaveCount(6);
+		await expect(page.locator(".calendar-event")).toHaveCount(2);
+		await expect(page.getByRole("button", { name: "前の月" })).toBeDisabled();
+		await expect(page.getByRole("button", { name: "次の月" })).toBeEnabled();
+		await expect(page.locator(".calendar-sources")).toHaveCount(0);
+		await expect(
+			page.locator(".calendar-event .external-link-mark"),
+		).toHaveCount(2);
+		const linkedEvent = page.locator(".calendar-event.has-links").first();
+		const [eventNameBox, eventLinksBox] = await Promise.all([
+			linkedEvent.locator(".calendar-event-name").boundingBox(),
+			linkedEvent.locator(".tournament-links").boundingBox(),
+		]);
+		expect(eventNameBox).not.toBeNull();
+		expect(eventLinksBox).not.toBeNull();
+		expect(
+			(eventNameBox?.x || 0) + (eventNameBox?.width || 0),
+		).toBeLessThanOrEqual((eventLinksBox?.x || 0) + 0.5);
+		await page.locator(".calendar-event-button").first().click();
+		await expect(page.locator(".tournament-overlay")).toContainText(
+			"中国オープン2026",
+		);
+		await expect(
+			page.locator(".tournament-overlay .external-link-mark"),
+		).toHaveCount(2);
+		await page.getByRole("button", { name: "大会詳細を閉じる" }).click();
+		await page.getByRole("button", { name: "次の月" }).click();
+		await expect(page.locator(".calendar-month h3")).toHaveText("2026年8月");
+		await expect(page.locator(".calendar-event")).toContainText([
+			"韓国マスターズ2026",
+			"韓国マスターズ2026",
+		]);
+		await expect(page.locator(".tournament-calendar")).toHaveCount(0);
+		expect(
+			await page.evaluate(
+				() => getComputedStyle(document.documentElement).scrollbarGutter,
+			),
+		).toContain("stable");
+		expect(
+			await page.evaluate(
+				() => document.documentElement.scrollWidth <= window.innerWidth,
+			),
+		).toBe(true);
 		if (process.env.CAPTURE_LAYOUT === "1") {
 			await page.screenshot({
 				path: `/tmp/bwfnotify-layout-${viewport.name}.png`,

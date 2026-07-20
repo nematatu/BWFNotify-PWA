@@ -7,7 +7,7 @@ import { env } from "cloudflare:workers";
 import { afterEach, describe, expect, test } from "vitest";
 import calendarSnapshot from "../config/upcoming-tournaments.json";
 import worker from "../src";
-import { runNotificationCheck } from "../src/api/app";
+import { runNotificationCheck, staticTournamentCalendar } from "../src/api/app";
 import { parseTournamentPage } from "../src/api/baj";
 import type { MatchSummary } from "../src/type";
 
@@ -29,6 +29,43 @@ afterEach(async () => {
 });
 
 describe("Worker integration", () => {
+	test("serves the complete static 2026 BWF calendar", () => {
+		const tournaments = staticTournamentCalendar();
+		expect(tournaments.length).toBeGreaterThanOrEqual(42);
+		expect(
+			new Set(tournaments.map((tournament) => tournament.startDate.slice(0, 7)))
+				.size,
+		).toBe(12);
+		expect(
+			tournaments.some(
+				(tournament) =>
+					tournament.bwfUrl ===
+					"https://corporate.bwfbadminton.com/events/calendar/2026/all/0/-1/",
+			),
+		).toBe(false);
+		for (const tournament of tournaments) {
+			if (tournament.bwfUrl) {
+				expect(tournament.bwfUrl).toMatch(
+					/^https:\/\/(?:bwfworldtour\.)?bwfbadminton\.com\/tournament\/\d+\//,
+				);
+			}
+			if (tournament.bajUrl) {
+				expect(tournament.bajUrl).toMatch(
+					/^https:\/\/(?:www\.)?badminton\.or\.jp\/(?:storage|games)\//,
+				);
+			}
+		}
+		expect(
+			tournaments.find((tournament) =>
+				tournament.name.includes("ジャパンオープン2026"),
+			),
+		).toMatchObject({
+			imageUrl: "/view/tournaments/daihatsu-japan-open-2026.jpg",
+			bwfUrl:
+				"https://bwfworldtour.bwfbadminton.com/tournament/5213/daihatsu-japan-open-2026/results/",
+		});
+	});
+
 	test("parses a BAJ tournament card", async () => {
 		const tournaments = await parseTournamentPage(
 			new Response(`
@@ -51,7 +88,8 @@ describe("Worker integration", () => {
 				category: "HSBC BWF World Tour Super 1000",
 				startDate: "2026-07-21",
 				endDate: "2026-07-26",
-				officialUrl: "https://bwfbadminton.com/tournament/1",
+				bwfUrl: "https://bwfbadminton.com/tournament/1",
+				bajUrl: "https://www.badminton.or.jp/storage/send_out.pdf",
 			},
 		]);
 	});
@@ -146,7 +184,7 @@ describe("Worker integration", () => {
 			matches: [liveMatch],
 			recentResults: [],
 			calendarCheckedAt: null,
-			upcomingTournaments: [],
+			upcomingTournaments: staticTournamentCalendar(),
 		});
 
 		const secondContext = createExecutionContext();
@@ -265,7 +303,7 @@ describe("Worker integration", () => {
 		]);
 		expect(stored?.calendarCheckedAt).toBe(calendarSnapshot.generatedAt);
 		expect(stored?.upcomingTournaments).toHaveLength(
-			calendarSnapshot.tournaments.length,
+			staticTournamentCalendar().length,
 		);
 	});
 

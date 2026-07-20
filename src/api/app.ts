@@ -1,4 +1,5 @@
 import { type Context, Hono } from "hono";
+import bwfCalendar from "../../config/bwf-calendar-2026.json";
 import calendarSnapshot from "../../config/upcoming-tournaments.json";
 import type {
 	DeliveryResult,
@@ -279,8 +280,7 @@ export async function runNotificationCheck(
 		}
 	}
 	const calendarCheckedAt = calendarSnapshot.generatedAt;
-	const upcomingTournaments =
-		calendarSnapshot.tournaments as UpcomingTournament[];
+	const upcomingTournaments = staticTournamentCalendar();
 	const recentResults = mergeRecentResults(
 		previous?.recentResults || [],
 		completed,
@@ -340,6 +340,22 @@ export async function runNotificationCheck(
 		}),
 	);
 	return result;
+}
+
+export function staticTournamentCalendar(): UpcomingTournament[] {
+	const tournaments = new Map<string, UpcomingTournament>();
+	for (const tournament of bwfCalendar.tournaments) {
+		tournaments.set(tournament.id, tournament);
+	}
+	for (const tournament of calendarSnapshot.tournaments) {
+		tournaments.set(tournament.id, {
+			...tournaments.get(tournament.id),
+			...tournament,
+		});
+	}
+	return [...tournaments.values()].sort((left, right) =>
+		left.startDate.localeCompare(right.startDate),
+	);
 }
 
 export function shouldPersistState(
@@ -481,9 +497,7 @@ function publicState(state: StoredState | null): PublicState {
 			? state.recentResults
 			: [],
 		calendarCheckedAt: state?.calendarCheckedAt || null,
-		upcomingTournaments: Array.isArray(state?.upcomingTournaments)
-			? state.upcomingTournaments
-			: [],
+		upcomingTournaments: staticTournamentCalendar(),
 	};
 }
 
