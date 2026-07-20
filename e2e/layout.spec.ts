@@ -631,19 +631,40 @@ for (const viewport of [
 			page.locator(".calendar-event .external-link-mark"),
 		).toHaveCount(2);
 		const linkedEvent = page.locator(".calendar-event.has-links").first();
-		const [eventNameBox, eventLinksBox] = await Promise.all([
+		const [eventNameBox, eventLinksBox, otherEventBox] = await Promise.all([
 			linkedEvent.locator(".calendar-event-name").boundingBox(),
 			linkedEvent.locator(".tournament-links").boundingBox(),
+			page.locator(".calendar-event").nth(1).boundingBox(),
 		]);
 		expect(eventNameBox).not.toBeNull();
 		expect(eventLinksBox).not.toBeNull();
+		expect(otherEventBox).not.toBeNull();
 		expect(
 			(eventNameBox?.x || 0) + (eventNameBox?.width || 0),
 		).toBeLessThanOrEqual((eventLinksBox?.x || 0) + 0.5);
+		await linkedEvent.hover();
+		expect(
+			await linkedEvent.evaluate(
+				(element) => getComputedStyle(element, "::after").backgroundColor,
+			),
+		).toBe("rgba(255, 255, 255, 0.16)");
+		await expect(linkedEvent.locator(".calendar-event-button")).toHaveCSS(
+			"background-color",
+			"rgba(0, 0, 0, 0)",
+		);
 		await page.locator(".calendar-event-button").first().click();
 		await expect(page.locator(".tournament-overlay")).toContainText(
 			"中国オープン2026",
 		);
+		await page.mouse.click(4, 4);
+		await expect(page.locator(".tournament-overlay")).toBeHidden();
+		await page.locator(".calendar-event-button").first().click();
+		await page.mouse.click(
+			(otherEventBox?.x || 0) + (otherEventBox?.width || 0) / 2,
+			(otherEventBox?.y || 0) + (otherEventBox?.height || 0) / 2,
+		);
+		await expect(page.locator(".tournament-overlay")).toBeHidden();
+		await page.locator(".calendar-event-button").first().click();
 		await expect(
 			page.locator(".tournament-overlay .external-link-mark"),
 		).toHaveCount(2);

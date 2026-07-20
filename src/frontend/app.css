@@ -1419,6 +1419,20 @@ button.upcoming-main:focus-visible {
 	overflow: hidden;
 }
 
+.calendar-event::after {
+	position: absolute;
+	z-index: 0;
+	inset: 0;
+	background: transparent;
+	content: "";
+	pointer-events: none;
+}
+
+.calendar-event:hover::after,
+.calendar-event:focus-within::after {
+	background: rgb(255 255 255 / 16%);
+}
+
 .calendar-event-watermark {
 	position: absolute;
 	inset: 0;
@@ -1447,7 +1461,7 @@ button.upcoming-main:focus-visible {
 
 .calendar-event-button:hover,
 .calendar-event-button:focus-visible {
-	background: rgb(255 255 255 / 16%);
+	background: transparent;
 }
 
 .calendar-event-name {
@@ -1483,27 +1497,39 @@ button.upcoming-main:focus-visible {
 
 .tournament-overlay {
 	position: fixed;
-	inset: 50% auto auto 50%;
+	inset: 0;
 	display: grid;
-	width: min(calc(100% - 32px), 640px);
-	gap: 12px;
+	width: 100%;
+	height: 100%;
+	max-width: none;
+	max-height: none;
 	margin: 0;
-	padding: 28px;
-	transform: translate(-50%, -50%);
-	border: 1px solid #c7cfd4;
+	padding: 16px;
+	place-items: center;
+	border: 0;
 	color: #151515;
-	background: #ffffff;
+	background: rgb(0 0 0 / 48%);
 }
 
 .tournament-overlay::backdrop {
-	background: rgb(0 0 0 / 48%);
+	background: transparent;
 }
 
 .tournament-overlay:not(:popover-open) {
 	display: none;
 }
 
-.tournament-overlay h3 {
+.tournament-overlay-panel {
+	position: relative;
+	display: grid;
+	width: min(100%, 640px);
+	gap: 12px;
+	padding: 28px;
+	border: 1px solid #c7cfd4;
+	background: #ffffff;
+}
+
+.tournament-overlay-panel h3 {
 	margin: 0;
 	padding-right: 42px;
 	font-size: 26px;
@@ -1906,10 +1932,14 @@ button.upcoming-main:focus-visible {
 	}
 
 	.tournament-overlay {
+		padding: 12px;
+	}
+
+	.tournament-overlay-panel {
 		padding: 22px 18px;
 	}
 
-	.tournament-overlay h3 {
+	.tournament-overlay-panel h3 {
 		font-size: 22px;
 	}
 

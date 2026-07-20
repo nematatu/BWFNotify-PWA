@@ -341,13 +341,20 @@ function TournamentOverlay(props: {
 			class="tournament-overlay"
 			role="dialog"
 			aria-label="大会詳細"
+			aria-modal="true"
+			onClick={(event) => {
+				if (event.target === event.currentTarget) props.onClose();
+			}}
+			onKeyDown={(event) => {
+				if (event.key === "Escape") props.onClose();
+			}}
 			onToggle={(event) => {
 				if (event.newState === "closed") props.onClose();
 			}}
 		>
 			<Show when={props.tournament}>
 				{(tournament) => (
-					<>
+					<div class="tournament-overlay-panel">
 						<button
 							type="button"
 							class="tournament-overlay-close"
@@ -366,7 +373,7 @@ function TournamentOverlay(props: {
 							{formatTournamentDate(tournament().endDate)}
 						</p>
 						<TournamentLinks tournament={tournament()} />
-					</>
+					</div>
 				)}
 			</Show>
 		</div>
