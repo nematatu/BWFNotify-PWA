@@ -46,7 +46,7 @@
 		"prepare": "husky"
 	},
 	"dependencies": {
-		"hono": "^4.12.30",
+		"hono": "^4.12.31",
 		"lucide-solid": "^1.25.0",
 		"solid-js": "^1.9.14",
 		"web-push": "^3.6.7"
