@@ -230,6 +230,7 @@ main {
 	display: grid;
 	grid-template-columns: repeat(4, minmax(0, 1fr));
 	width: min(100%, 620px);
+	flex: 1;
 	align-items: flex-end;
 	gap: 8px;
 }
@@ -284,6 +285,12 @@ main {
 	align-items: center;
 	gap: 8px;
 	padding: 5px 8px 5px 0;
+}
+
+.match-sort-toolbar {
+	display: flex;
+	justify-content: flex-end;
+	padding: 10px 16px 0;
 }
 
 .sort-select {
@@ -1144,6 +1151,11 @@ main {
 	column-gap: 24px;
 }
 
+.upcoming-row:last-child,
+.upcoming-row:nth-last-child(2):nth-child(odd) {
+	border-bottom: 0;
+}
+
 .upcoming-main h4 {
 	font-size: 18px;
 	font-weight: 700;
@@ -1788,18 +1800,18 @@ button.upcoming-main:focus-visible {
 		grid-template-columns: minmax(0, 1fr);
 	}
 
+	.upcoming-row:nth-last-child(2):nth-child(odd) {
+		border-bottom: 1px solid #c7c7c7;
+	}
+
 	.match-toolbar {
 		align-items: stretch;
 		gap: 0;
 		padding: 12px 12px 0;
 	}
 
-	.match-toolbar.has-sort {
-		flex-direction: column;
-	}
-
 	.match-tabs {
-		width: 100%;
+		width: auto;
 	}
 
 	.match-tab {
@@ -1818,6 +1830,10 @@ button.upcoming-main:focus-visible {
 		flex: 0 0 auto;
 		justify-content: flex-end;
 		padding: 5px 8px;
+	}
+
+	.match-sort-toolbar {
+		padding: 10px 0 0;
 	}
 
 	.matchup {

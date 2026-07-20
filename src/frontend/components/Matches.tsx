@@ -110,51 +110,64 @@ export function MatchToolbar() {
 		currentView() === "live" || currentView() === "scheduled";
 
 	return (
-		<div class={`match-toolbar ${matchView() ? "has-sort" : ""}`}>
-			<div class="match-tabs" role="tablist" aria-label="試合状態">
-				<button
-					id="live-tab"
-					class="match-tab"
-					type="button"
-					role="tab"
-					aria-selected={currentView() === "live" ? "true" : "false"}
-					onClick={() => setCurrentView("live")}
-				>
-					ライブ <span id="live-count">{liveCount()}</span>
-				</button>
-				<button
-					id="scheduled-tab"
-					class="match-tab"
-					type="button"
-					role="tab"
-					aria-selected={currentView() === "scheduled" ? "true" : "false"}
-					onClick={() => setCurrentView("scheduled")}
-				>
-					このあと <span id="scheduled-count">{scheduledCount()}</span>
-				</button>
-				<button
-					id="results-tab"
-					class="match-tab"
-					type="button"
-					role="tab"
-					aria-selected={currentView() === "results" ? "true" : "false"}
-					onClick={() => setCurrentView("results")}
-				>
-					結果 <span>{recentResults().length}</span>
-				</button>
-				<button
-					id="upcoming-tab"
-					class="match-tab"
-					type="button"
-					role="tab"
-					aria-selected={currentView() === "upcoming" ? "true" : "false"}
-					onClick={() => setCurrentView("upcoming")}
-				>
-					大会 <span>{upcomingTournaments().length}</span>
-				</button>
+		<>
+			<div class="match-toolbar">
+				<div class="match-tabs" role="tablist" aria-label="試合状態">
+					<button
+						id="live-tab"
+						class="match-tab"
+						type="button"
+						role="tab"
+						aria-selected={currentView() === "live" ? "true" : "false"}
+						onClick={() => setCurrentView("live")}
+					>
+						ライブ <span id="live-count">{liveCount()}</span>
+					</button>
+					<button
+						id="scheduled-tab"
+						class="match-tab"
+						type="button"
+						role="tab"
+						aria-selected={currentView() === "scheduled" ? "true" : "false"}
+						onClick={() => setCurrentView("scheduled")}
+					>
+						このあと <span id="scheduled-count">{scheduledCount()}</span>
+					</button>
+					<button
+						id="results-tab"
+						class="match-tab"
+						type="button"
+						role="tab"
+						aria-selected={currentView() === "results" ? "true" : "false"}
+						onClick={() => setCurrentView("results")}
+					>
+						結果 <span>{recentResults().length}</span>
+					</button>
+					<button
+						id="upcoming-tab"
+						class="match-tab"
+						type="button"
+						role="tab"
+						aria-selected={currentView() === "upcoming" ? "true" : "false"}
+						onClick={() => setCurrentView("upcoming")}
+					>
+						大会 <span>{upcomingTournaments().length}</span>
+					</button>
+				</div>
+				<div class="match-controls">
+					<button
+						id="refresh-button"
+						type="button"
+						aria-label="再読み込み"
+						title="再読み込み"
+						onClick={loadStatus}
+					>
+						<RefreshCw size={17} aria-hidden="true" />
+					</button>
+				</div>
 			</div>
-			<div class="match-controls">
-				<Show when={matchView()}>
+			<Show when={matchView()}>
+				<div class="match-sort-toolbar">
 					<div class="sort-select">
 						<ArrowDownWideNarrow
 							class="sort-select-leading"
@@ -180,18 +193,9 @@ export function MatchToolbar() {
 							aria-hidden="true"
 						/>
 					</div>
-				</Show>
-				<button
-					id="refresh-button"
-					type="button"
-					aria-label="再読み込み"
-					title="再読み込み"
-					onClick={loadStatus}
-				>
-					<RefreshCw size={17} aria-hidden="true" />
-				</button>
-			</div>
-		</div>
+				</div>
+			</Show>
+		</>
 	);
 }
 

@@ -332,6 +332,33 @@ for (const viewport of [
 			"rgba(0, 0, 0, 0)",
 		);
 		await expect(page.locator("#sort-order")).toHaveCSS("appearance", "none");
+		const toolbarLayout = () =>
+			page.locator(".match-toolbar").evaluate((toolbar) => {
+				const tabs = toolbar
+					.querySelector(".match-tabs")
+					?.getBoundingClientRect();
+				const refresh = toolbar
+					.querySelector("#refresh-button")
+					?.getBoundingClientRect();
+				const bounds = toolbar.getBoundingClientRect();
+				return {
+					top: bounds.top,
+					height: bounds.height,
+					tabsLeft: tabs?.left,
+					tabsTop: tabs?.top,
+					refreshLeft: refresh?.left,
+					refreshTop: refresh?.top,
+				};
+			});
+		await page.getByRole("tab", { name: /ライブ/ }).click();
+		const liveToolbarLayout = await toolbarLayout();
+		await expect(page.locator(".match-sort-toolbar")).toBeVisible();
+		await page.getByRole("tab", { name: /結果/ }).click();
+		await expect(page.locator(".match-sort-toolbar")).toHaveCount(0);
+		expect(await toolbarLayout()).toEqual(liveToolbarLayout);
+		await page.getByRole("tab", { name: /大会/ }).click();
+		expect(await toolbarLayout()).toEqual(liveToolbarLayout);
+		await page.getByRole("tab", { name: /ライブ/ }).click();
 		await expect(
 			page.getByRole("navigation", { name: "関連リンク" }),
 		).toBeVisible();
@@ -591,6 +618,32 @@ for (const viewport of [
 			"background-color",
 			"rgba(0, 0, 0, 0)",
 		);
+		const monthBorders = await page.evaluate(() => {
+			const group = document.createElement("section");
+			group.className = "upcoming-month-group";
+			const header = document.createElement("header");
+			const events = document.createElement("div");
+			events.className = "upcoming-month-events";
+			for (let index = 0; index < 4; index += 1) {
+				const row = document.createElement("article");
+				row.className = "upcoming-row";
+				events.append(row);
+			}
+			group.append(header, events);
+			document.body.append(group);
+			const borders = [...events.children].map(
+				(row) => getComputedStyle(row).borderBottomWidth,
+			);
+			const groupBorder = getComputedStyle(group).borderBottomWidth;
+			group.remove();
+			return { borders, groupBorder };
+		});
+		expect(monthBorders.borders).toEqual(
+			viewport.width <= 720
+				? ["1px", "1px", "1px", "0px"]
+				: ["1px", "1px", "0px", "0px"],
+		);
+		expect(monthBorders.groupBorder).toBe("1px");
 		await expect(page.locator(".upcoming-row").first()).not.toContainText(
 			/選手|所属|時刻|コート|Court/,
 		);
