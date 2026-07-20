@@ -313,16 +313,15 @@ function TournamentRow(props: {
 				onClick={() => props.onSelect(props.tournament)}
 				aria-label={`${props.tournament.name}の詳細を表示`}
 			>
+				<Show when={props.tournament.grade}>
+					<p class="upcoming-grade">{props.tournament.grade}</p>
+				</Show>
 				<h4>{props.tournament.name}</h4>
-				<p class="upcoming-meta">
-					<span>
-						{formatTournamentDate(props.tournament.startDate)} -{" "}
-						{formatTournamentDate(props.tournament.endDate)}
-					</span>
-					<Show when={props.tournament.grade}>
-						<span>{props.tournament.grade}</span>
-					</Show>
-				</p>
+				<TournamentPeriod
+					class="upcoming-period"
+					startDate={props.tournament.startDate}
+					endDate={props.tournament.endDate}
+				/>
 			</button>
 			<TournamentLinks tournament={props.tournament} />
 		</article>
@@ -368,15 +367,40 @@ function TournamentOverlay(props: {
 							{tournament().grade || "大会"}
 						</p>
 						<h3>{tournament().name}</h3>
-						<p class="tournament-overlay-date">
-							{formatTournamentDate(tournament().startDate)} -{" "}
-							{formatTournamentDate(tournament().endDate)}
-						</p>
+						<TournamentPeriod
+							class="tournament-overlay-date"
+							startDate={tournament().startDate}
+							endDate={tournament().endDate}
+						/>
 						<TournamentLinks tournament={tournament()} />
 					</div>
 				)}
 			</Show>
 		</div>
+	);
+}
+
+function TournamentPeriod(props: {
+	class: string;
+	startDate: string;
+	endDate: string;
+}) {
+	return (
+		<p class={props.class}>
+			<CalendarDays aria-hidden="true" />
+			<span class="tournament-period-content">
+				<span class="tournament-period-label">開催期間</span>
+				<span class="tournament-period-dates">
+					<time datetime={props.startDate}>
+						{formatScheduleDate(props.startDate)}
+					</time>
+					<span aria-hidden="true">〜</span>
+					<time datetime={props.endDate}>
+						{formatScheduleDate(props.endDate)}
+					</time>
+				</span>
+			</span>
+		</p>
 	);
 }
 
@@ -741,4 +765,11 @@ function teamResult(winner: 1 | 2 | undefined, team: 1 | 2) {
 
 function matchDate(match: MatchSummary) {
 	return match.tournamentDate || match.startTime?.slice(0, 10);
+}
+
+function formatScheduleDate(value: string) {
+	const [year, month, day] = value.split("-").map(Number);
+	const weekday = ["日", "月", "火", "水", "木", "金", "土"];
+	const weekdayIndex = new Date(Date.UTC(year, month - 1, day)).getUTCDay();
+	return `${month}月${day}日（${weekday[weekdayIndex]}）`;
 }

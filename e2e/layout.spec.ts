@@ -601,6 +601,20 @@ for (const viewport of [
 		await expect(page.locator(".upcoming-row").first()).toContainText(
 			"中国オープン2026",
 		);
+		const firstTournamentMain = page.locator(".upcoming-main").first();
+		await expect(firstTournamentMain.locator(".upcoming-grade")).toHaveText(
+			"Super 1000",
+		);
+		await expect(firstTournamentMain.locator(".upcoming-period")).toContainText(
+			"開催期間7月21日（火）〜7月26日（日）",
+		);
+		expect(
+			await firstTournamentMain.evaluate((element) =>
+				[...element.children].map(
+					(child) => child.className || child.tagName.toLowerCase(),
+				),
+			),
+		).toEqual(["upcoming-grade", "h4", "upcoming-period"]);
 		await expect(
 			page.locator(".upcoming-row").first().locator(".tournament-watermark"),
 		).toHaveAttribute("src", "/view/tournaments/victor-china-open-2026.jpg");
@@ -618,6 +632,12 @@ for (const viewport of [
 			"background-color",
 			"rgba(0, 0, 0, 0)",
 		);
+		if (process.env.CAPTURE_LAYOUT === "1") {
+			await page.screenshot({
+				path: `/tmp/bwfnotify-upcoming-${viewport.name}.png`,
+				fullPage: true,
+			});
+		}
 		const monthBorders = await page.evaluate(() => {
 			const group = document.createElement("section");
 			group.className = "upcoming-month-group";

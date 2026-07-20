@@ -1163,6 +1163,14 @@ main {
 	line-height: 1.4;
 }
 
+.upcoming-grade {
+	margin-bottom: 5px;
+	color: #0e78c4;
+	font-size: 14px;
+	font-weight: 700;
+	line-height: 1.2;
+}
+
 button.upcoming-main {
 	min-width: 0;
 	padding: 8px;
@@ -1182,13 +1190,46 @@ button.upcoming-main:focus-visible {
 	background: transparent;
 }
 
-.upcoming-meta {
+.upcoming-period,
+.tournament-overlay-date {
 	display: flex;
-	flex-wrap: wrap;
-	gap: 3px 14px;
-	margin-top: 6px;
+	align-items: flex-start;
+	gap: 7px;
 	color: #555555;
 	font-size: 13px;
+}
+
+.upcoming-period {
+	margin-top: 10px;
+}
+
+.upcoming-period > svg,
+.tournament-overlay-date > svg {
+	flex: 0 0 auto;
+	width: 17px;
+	height: 17px;
+	color: #0e78c4;
+}
+
+.tournament-period-content {
+	display: grid;
+	gap: 2px;
+}
+
+.tournament-period-label {
+	color: #555555;
+	font-size: 11px;
+}
+
+.tournament-period-dates {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 0 5px;
+	font-variant-numeric: tabular-nums;
+}
+
+.tournament-period-dates time {
+	white-space: nowrap;
 }
 
 .schedule-heading {
@@ -1561,6 +1602,10 @@ button.upcoming-main:focus-visible {
 	margin: 0;
 	color: #555555;
 	font-size: 18px;
+}
+
+.tournament-overlay-date .tournament-period-label {
+	font-size: 13px;
 }
 
 .tournament-overlay .tournament-links {
