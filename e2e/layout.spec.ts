@@ -300,15 +300,30 @@ for (const viewport of [
 		);
 		await expect(page.locator(".notification-settings")).toHaveCSS(
 			"background-color",
-			"rgb(247, 247, 247)",
+			"rgb(240, 242, 244)",
 		);
+		await expect(page.locator(".match-toolbar")).toHaveCSS(
+			"background-color",
+			"rgb(228, 230, 232)",
+		);
+		await expect(page.locator('.match-tab[aria-selected="true"]')).toHaveCSS(
+			"background-color",
+			"rgb(255, 255, 255)",
+		);
+		await expect(page.locator('.match-tab[aria-selected="true"]')).toHaveCSS(
+			"color",
+			"rgb(38, 66, 89)",
+		);
+		await expect(
+			page.locator('.match-tab[aria-selected="false"]').first(),
+		).toHaveCSS("color", "rgb(14, 120, 196)");
 		await expect(page.locator(".notification-controls")).toHaveCSS(
 			"border-top-width",
 			"0px",
 		);
 		await expect(page.locator(".sort-select")).toHaveCSS(
 			"border-radius",
-			"0px",
+			"50px",
 		);
 		await expect(page.locator(".match-tab span").first()).toHaveCSS(
 			"background-color",
@@ -412,17 +427,19 @@ for (const viewport of [
 		const resultRows = page.locator(".result-row");
 		await expect(resultRows).toHaveCount(3);
 		await expect(resultRows.nth(0)).toHaveClass(/result-win/);
+		await expect(resultRows.nth(0)).toHaveCSS("background-image", "none");
 		await expect(resultRows.nth(0)).toHaveCSS(
-			"background-image",
-			/rgba\(215, 25, 32, 0\.14\)/,
+			"background-color",
+			"rgb(255, 255, 255)",
 		);
 		await expect(resultRows.nth(0).locator(".result-outcome")).toHaveText(
 			"日本選手の勝利",
 		);
 		await expect(resultRows.nth(1)).toHaveClass(/result-loss/);
+		await expect(resultRows.nth(1)).toHaveCSS("background-image", "none");
 		await expect(resultRows.nth(1)).toHaveCSS(
-			"background-image",
-			/rgba\(25, 103, 173, 0\.14\)/,
+			"background-color",
+			"rgb(255, 255, 255)",
 		);
 		await expect(resultRows.nth(1).locator(".result-outcome")).toHaveText(
 			"日本選手の敗戦",

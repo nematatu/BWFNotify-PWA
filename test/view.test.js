@@ -382,6 +382,7 @@ describe("page structure", () => {
 	test("avoids decorative shadows and badge styling", async () => {
 		const css = await Bun.file("src/frontend/app.css").text();
 		expect(css).not.toContain("box-shadow");
+		expect(css).not.toContain("linear-gradient");
 		expect(css).not.toContain(".live-badge");
 		expect(css).not.toContain(".live-label");
 		expect(css).toContain(".live-state");

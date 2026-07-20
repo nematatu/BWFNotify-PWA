@@ -47,7 +47,7 @@ button:hover {
 button:focus-visible,
 a:focus-visible,
 select:focus-visible {
-	outline: 2px solid #151515;
+	outline: 2px solid #0e78c4;
 	outline-offset: 2px;
 }
 
@@ -78,8 +78,9 @@ main {
 	justify-content: space-between;
 	gap: 24px;
 	padding: 18px 22px;
-	color: #ffffff;
-	background: #d71920;
+	border-bottom: 1px solid #d4d9dd;
+	color: #20272c;
+	background: #ffffff;
 }
 
 .brand-lockup {
@@ -94,13 +95,14 @@ main {
 	height: 46px;
 	place-items: center;
 	color: #ffffff;
-	background: #b51218;
+	background: #d71920;
 	font-size: 22px;
 	font-weight: 850;
 	line-height: 1;
 }
 
 .brand-lockup h1 {
+	color: #0e78c4;
 	font-size: 22px;
 	font-weight: 800;
 	line-height: 1.1;
@@ -108,13 +110,13 @@ main {
 
 .brand-lockup p {
 	margin-top: 4px;
-	color: #ffffff;
+	color: #65717a;
 	font-size: 10px;
 	font-weight: 700;
 }
 
 #last-updated {
-	color: #ffffff;
+	color: #65717a;
 	font-size: 12px;
 	white-space: nowrap;
 }
@@ -127,7 +129,7 @@ main {
 	padding: 18px 22px;
 	border-bottom: 1px solid #d1d1d1;
 	color: #151515;
-	background: #f7f7f7;
+	background: #f0f2f4;
 }
 
 .notification-settings h2 {
@@ -152,6 +154,10 @@ main {
 }
 
 #test-notification-button {
+	border-color: #d4dadd;
+	border-radius: 50px;
+	color: #0e78c4;
+	background: #ffffff;
 	white-space: nowrap;
 }
 
@@ -193,7 +199,7 @@ main {
 
 .switch input:checked + .switch-track,
 .match-notification-control input:checked + .match-switch-track {
-	background: #147a46;
+	background: #00a87b;
 }
 
 .switch input:checked + .switch-track::after {
@@ -214,8 +220,10 @@ main {
 	display: flex;
 	align-items: flex-end;
 	justify-content: space-between;
-	gap: 20px;
-	border-bottom: 1px solid #c7c7c7;
+	gap: 10px;
+	padding: 16px 16px 0;
+	border-bottom: 0;
+	background: #e4e6e8;
 }
 
 .match-tabs {
@@ -223,27 +231,31 @@ main {
 	grid-template-columns: repeat(4, minmax(0, 1fr));
 	width: min(100%, 620px);
 	align-items: flex-end;
+	gap: 8px;
 }
 
 .match-tab {
 	min-width: 0;
-	height: 48px;
+	height: 56px;
+	padding: 0 4px;
 	border: 0;
-	border-bottom: 4px solid transparent;
-	border-radius: 0;
-	color: #666666;
-	background: transparent;
-	font-size: 14px;
-	font-weight: 400;
+	border-bottom: 3px solid transparent;
+	border-radius: 3px 3px 0 0;
+	color: #0e78c4;
+	background: #f0f2f4;
+	font-size: 16px;
+	font-weight: 700;
 }
 
 .match-tab:hover {
-	background: #f1f1f1;
+	color: #264259;
+	background: #ffffff;
 }
 
 .match-tab[aria-selected="true"] {
-	border-bottom-color: #d71920;
-	color: #151515;
+	border-bottom-color: #0e78c4;
+	color: #264259;
+	background: #ffffff;
 	font-weight: 700;
 }
 
@@ -252,26 +264,26 @@ main {
 	margin-left: 5px;
 	padding: 0;
 	border-radius: 0;
-	color: #666666;
+	color: #607989;
 	background: transparent;
 	font-size: 11px;
 	font-variant-numeric: tabular-nums;
 }
 
 .match-tab[aria-selected="true"] span {
-	color: #d71920;
+	color: #0e78c4;
 }
 
 .match-tab:focus-visible {
 	outline: 0;
-	background: #eeeeee;
+	background: #ffffff;
 }
 
 .match-controls {
 	display: flex;
 	align-items: center;
 	gap: 8px;
-	padding-bottom: 8px;
+	padding: 5px 8px 5px 0;
 }
 
 .sort-select {
@@ -280,16 +292,16 @@ main {
 	width: 178px;
 	min-width: 0;
 	align-items: center;
-	border-radius: 0;
-	background: #f0f0f0;
+	border-radius: 50px;
+	background: #0e78c4;
 }
 
 .sort-select:hover {
-	background: #e8e8e8;
+	background: #0a6baa;
 }
 
 .sort-select:focus-within {
-	outline: 2px solid #151515;
+	outline: 2px solid #0e78c4;
 	outline-offset: 2px;
 }
 
@@ -301,12 +313,12 @@ main {
 
 .sort-select-leading {
 	left: 11px;
-	color: #555555;
+	color: #ffffff;
 }
 
 .sort-select-chevron {
 	right: 10px;
-	color: #333333;
+	color: #ffffff;
 }
 
 #sort-order {
@@ -314,9 +326,9 @@ main {
 	min-height: 38px;
 	padding: 0 34px;
 	border: 0;
-	border-radius: 0;
+	border-radius: 50px;
 	appearance: none;
-	color: #151515;
+	color: #ffffff;
 	background: transparent;
 	cursor: pointer;
 	font-size: 13px;
@@ -325,6 +337,17 @@ main {
 
 #sort-order:focus-visible {
 	outline: 0;
+}
+
+#refresh-button {
+	border-color: #b8c1c7;
+	color: #0e78c4;
+	background: #f0f2f4;
+}
+
+#refresh-button:hover {
+	color: #264259;
+	background: #ffffff;
 }
 
 .match-list {
@@ -338,6 +361,10 @@ main {
 	color: #151515;
 	background: #ffffff;
 	overflow: hidden;
+}
+
+.live-match.match {
+	background: #ffffff;
 }
 
 .tournament-matches {
@@ -355,7 +382,7 @@ main {
 	min-height: 64px;
 	margin-bottom: 10px;
 	padding: 7px 4px;
-	border-bottom: 2px solid #151515;
+	border-bottom: 3px solid #0e78c4;
 	color: #151515;
 }
 
@@ -433,7 +460,8 @@ main {
 	justify-content: space-between;
 	gap: 12px;
 	padding: 7px 12px;
-	border-bottom: 1px solid #dedede;
+	border-bottom: 1px solid #d9dfe2;
+	background: #f6f8f9;
 }
 
 .match-state {
@@ -449,7 +477,8 @@ main {
 	gap: 16px;
 	min-height: 38px;
 	padding: 5px 12px;
-	border-bottom: 1px solid #dedede;
+	border-bottom: 1px solid #d9dfe2;
+	background: rgb(255 255 255 / 76%);
 }
 
 .match-meta {
@@ -463,14 +492,21 @@ main {
 }
 
 .live-state {
-	color: #d71920;
+	padding: 5px 10px;
+	border-radius: 50px;
+	color: #ffffff;
+	background: #0e78c4;
 	font-size: 12px;
 	font-weight: 700;
 }
 
 .match-time {
-	color: #151515;
+	display: inline-block;
+	padding: 4px 0;
+	color: #264259;
+	background: transparent;
 	font-size: 14px;
+	font-weight: 700;
 }
 
 .match-actions {
@@ -632,7 +668,7 @@ main {
 
 .japanese-player {
 	text-decoration-line: underline;
-	text-decoration-color: #f1d44d;
+	text-decoration-color: #ffe24a;
 	text-decoration-thickness: 0.34em;
 	text-underline-offset: -0.2em;
 	text-decoration-skip-ink: none;
@@ -744,7 +780,7 @@ main {
 	justify-content: center;
 	border-top: 1px solid #dedede;
 	border-bottom: 1px solid #dedede;
-	background: #f4f4f4;
+	background: #f0f2f4;
 }
 
 .game-score {
@@ -812,7 +848,7 @@ main {
 
 .previous-winner {
 	margin-top: 3px;
-	color: #12643a;
+	color: #0e78c4;
 	font-size: 11px;
 	font-weight: 700;
 }
@@ -849,7 +885,7 @@ main {
 	justify-content: space-between;
 	gap: 20px;
 	padding-bottom: 10px;
-	border-bottom: 2px solid #151515;
+	border-bottom: 3px solid #0e78c4;
 }
 
 .data-section-heading h2 {
@@ -893,21 +929,11 @@ main {
 }
 
 .result-row.result-win {
-	background: linear-gradient(
-		100deg,
-		rgba(215, 25, 32, 0.14),
-		rgba(215, 25, 32, 0.04) 62%,
-		rgba(255, 255, 255, 0) 100%
-	);
+	background: #ffffff;
 }
 
 .result-row.result-loss {
-	background: linear-gradient(
-		100deg,
-		rgba(25, 103, 173, 0.14),
-		rgba(25, 103, 173, 0.04) 62%,
-		rgba(255, 255, 255, 0) 100%
-	);
+	background: #ffffff;
 }
 
 .result-list > :only-child,
@@ -947,11 +973,11 @@ main {
 }
 
 .result-win .result-outcome {
-	color: #b51218;
+	color: #0e78c4;
 }
 
 .result-loss .result-outcome {
-	color: #155b91;
+	color: #607989;
 }
 
 .result-japanese-match .result-outcome,
@@ -1056,6 +1082,10 @@ main {
 	overflow: hidden;
 }
 
+.upcoming-row:hover {
+	background: #f4f8fb;
+}
+
 .tournament-watermark {
 	position: absolute;
 	inset: 0 0 0 auto;
@@ -1076,7 +1106,7 @@ main {
 	display: grid;
 	grid-template-columns: 108px minmax(0, 1fr);
 	min-width: 0;
-	border-bottom: 2px solid #151515;
+	border-bottom: 1px solid #bfcbd2;
 }
 
 .upcoming-month-group > header {
@@ -1087,6 +1117,7 @@ main {
 }
 
 .upcoming-month-group > header strong {
+	color: #0e78c4;
 	font-size: 24px;
 	font-weight: 700;
 	line-height: 1;
@@ -1122,7 +1153,7 @@ button.upcoming-main {
 
 button.upcoming-main:hover,
 button.upcoming-main:focus-visible {
-	background: #eeeeee;
+	background: rgb(231 241 247 / 72%);
 	outline: 0;
 }
 
@@ -1143,35 +1174,47 @@ button.upcoming-main:focus-visible {
 	display: flex;
 	min-width: 0;
 	margin: 0;
-	padding: 0;
+	gap: 8px;
+	padding: 8px 8px 0;
 	border: 0;
-	border-bottom: 1px solid #bcbcbc;
+	background: #e4e6e8;
 }
 
 .schedule-view-switch button {
 	display: inline-flex;
-	min-height: 40px;
+	min-height: 48px;
 	align-items: center;
 	gap: 6px;
 	padding: 0 12px;
 	border: 0;
+	border-right: 0;
 	border-bottom: 3px solid transparent;
-	color: #555555;
-	background: transparent;
+	border-radius: 3px 3px 0 0;
+	color: #0e78c4;
+	background: #f0f2f4;
 	font: inherit;
 	font-size: 13px;
 	cursor: pointer;
 }
 
+.schedule-view-switch button:last-child {
+	border-right: 0;
+}
+
 .schedule-view-switch button[aria-pressed="true"] {
-	border-bottom-color: #d71920;
-	color: #151515;
+	border-bottom-color: #0e78c4;
+	color: #264259;
+	background: #ffffff;
 	font-weight: 700;
 }
 
 .schedule-view-switch button:focus-visible {
 	outline: 0;
 	background: #eeeeee;
+}
+
+.schedule-view-switch button[aria-pressed="true"]:focus-visible {
+	background: #ffffff;
 }
 
 .tournament-links {
@@ -1243,10 +1286,13 @@ button.upcoming-main:focus-visible {
 	display: grid;
 	grid-template-columns: 40px minmax(0, 1fr) 40px;
 	align-items: center;
-	margin-bottom: 10px;
+	margin: 0 8px 14px;
+	border-radius: 40px;
+	background: #264259;
 }
 
 .calendar-month-header h3 {
+	color: #ffffff;
 	font-size: 18px;
 	font-weight: 700;
 	text-align: center;
@@ -1259,6 +1305,7 @@ button.upcoming-main:focus-visible {
 	padding: 0;
 	place-items: center;
 	border: 0;
+	color: #ffffff;
 	background: transparent;
 }
 
@@ -1332,7 +1379,7 @@ button.upcoming-main:focus-visible {
 .calendar-day.today time {
 	border-radius: 50%;
 	color: #ffffff;
-	background: #d71920;
+	background: #264259;
 	font-weight: 700;
 }
 
@@ -1407,19 +1454,19 @@ button.upcoming-main:focus-visible {
 }
 
 .calendar-color-0 {
-	background: #d71920;
+	background: #0e78c4;
 }
 
 .calendar-color-1 {
-	background: #2367a5;
+	background: #264259;
 }
 
 .calendar-color-2 {
-	background: #147a46;
+	background: #4f9fd4;
 }
 
 .calendar-color-3 {
-	background: #705a22;
+	background: #607989;
 }
 
 .tournament-overlay {
@@ -1431,7 +1478,7 @@ button.upcoming-main:focus-visible {
 	margin: 0;
 	padding: 28px;
 	transform: translate(-50%, -50%);
-	border: 2px solid #151515;
+	border: 1px solid #c7cfd4;
 	color: #151515;
 	background: #ffffff;
 }
@@ -1454,7 +1501,7 @@ button.upcoming-main:focus-visible {
 
 .tournament-overlay-grade {
 	margin: 0;
-	color: #b51218;
+	color: #0e78c4;
 	font-size: 16px;
 	font-weight: 700;
 }
@@ -1489,7 +1536,7 @@ button.upcoming-main:focus-visible {
 }
 
 #last-updated.error {
-	color: #ffffff;
+	color: #b51218;
 }
 
 .overlay-open {
@@ -1635,14 +1682,15 @@ button.upcoming-main:focus-visible {
 }
 
 .primary-action {
-	border-color: #147a46;
+	border-color: #0e78c4;
+	border-radius: 50px;
 	color: #ffffff;
-	background: #147a46;
+	background: #0e78c4;
 	font-weight: 700;
 }
 
 .primary-action:hover {
-	background: #0f663a;
+	background: #0a6baa;
 }
 
 .visually-hidden {
@@ -1704,8 +1752,12 @@ button.upcoming-main:focus-visible {
 
 	.match-toolbar {
 		align-items: stretch;
+		gap: 0;
+		padding: 12px 12px 0;
+	}
+
+	.match-toolbar.has-sort {
 		flex-direction: column;
-		gap: 8px;
 	}
 
 	.match-tabs {
@@ -1714,11 +1766,20 @@ button.upcoming-main:focus-visible {
 
 	.match-tab {
 		min-width: 0;
+		height: 48px;
 		flex: 1;
+		font-size: 13px;
+	}
+
+	.match-tab span {
+		display: block;
+		margin: 1px 0 0;
 	}
 
 	.match-controls {
+		flex: 0 0 auto;
 		justify-content: flex-end;
+		padding: 5px 8px;
 	}
 
 	.matchup {
@@ -1849,10 +1910,11 @@ button.upcoming-main:focus-visible {
 
 	.notification-settings {
 		align-items: flex-start;
+		gap: 12px;
 	}
 
 	.notification-controls {
-		flex-wrap: wrap;
+		flex-wrap: nowrap;
 		justify-content: flex-end;
 	}
 
@@ -2046,7 +2108,7 @@ button.upcoming-main:focus-visible {
 }
 
 .footer-links a:hover {
-	color: #d71920;
+	color: #0e78c4;
 	background: #f1f1f1;
 }
 
@@ -2071,8 +2133,8 @@ button.upcoming-main:focus-visible {
 	gap: 16px;
 	margin: 16px;
 	padding: 14px 18px;
-	border: 1px solid #f2e2a2;
-	background: #fffdf0;
+	border: 1px solid #d4dadd;
+	background: #f0f2f4;
 	color: #151515;
 }
 
@@ -2091,7 +2153,7 @@ button.upcoming-main:focus-visible {
 .pwa-guide-icon {
 	display: inline-flex;
 	flex-shrink: 0;
-	color: #d71920;
+	color: #0e78c4;
 }
 
 .pwa-guide-text {

@@ -110,7 +110,7 @@ export function MatchToolbar() {
 		currentView() === "live" || currentView() === "scheduled";
 
 	return (
-		<div class="match-toolbar">
+		<div class={`match-toolbar ${matchView() ? "has-sort" : ""}`}>
 			<div class="match-tabs" role="tablist" aria-label="試合状態">
 				<button
 					id="live-tab"
