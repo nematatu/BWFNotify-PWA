@@ -1,5 +1,17 @@
-import { ArrowDownWideNarrow, ChevronDown, RefreshCw } from "lucide-solid";
-import { createMemo, For, Show } from "solid-js";
+import {
+	ArrowDownWideNarrow,
+	Check,
+	ChevronDown,
+	RefreshCw,
+} from "lucide-solid";
+import {
+	createMemo,
+	createSignal,
+	For,
+	onCleanup,
+	onMount,
+	Show,
+} from "solid-js";
 import type {
 	MatchPlayerSummary,
 	MatchSummary,
@@ -168,34 +180,83 @@ export function MatchToolbar() {
 			</div>
 			<Show when={matchView()}>
 				<div class="match-sort-toolbar">
-					<div class="sort-select">
-						<ArrowDownWideNarrow
-							class="sort-select-leading"
-							size={17}
-							aria-hidden="true"
-						/>
-						<label class="visually-hidden" for="sort-order">
-							ソート順
-						</label>
-						<select
-							id="sort-order"
-							aria-label="ソート順"
-							value={sortOrder()}
-							onChange={(e) => setSortOrder(e.target.value as SortOrder)}
-						>
-							<option value="time-asc">時間が早い順</option>
-							<option value="time-desc">時間が遅い順</option>
-							<option value="tournament">大会名順</option>
-						</select>
-						<ChevronDown
-							class="sort-select-chevron"
-							size={16}
-							aria-hidden="true"
-						/>
-					</div>
+					<SortControl />
 				</div>
 			</Show>
 		</>
+	);
+}
+
+const sortOptions: Array<{ value: SortOrder; label: string }> = [
+	{ value: "time-asc", label: "時間が早い順" },
+	{ value: "time-desc", label: "時間が遅い順" },
+	{ value: "tournament", label: "大会名順" },
+];
+
+function SortControl() {
+	const [open, setOpen] = createSignal(false);
+	let root: HTMLDivElement | undefined;
+	const selectedLabel = () =>
+		sortOptions.find((option) => option.value === sortOrder())?.label || "";
+	onMount(() => {
+		const closeOutside = (event: PointerEvent) => {
+			if (!root?.contains(event.target as Node)) setOpen(false);
+		};
+		document.addEventListener("pointerdown", closeOutside);
+		onCleanup(() => document.removeEventListener("pointerdown", closeOutside));
+	});
+	return (
+		<div ref={root} class="sort-select">
+			<button
+				type="button"
+				class="sort-select-button"
+				aria-label={`ソート順: ${selectedLabel()}`}
+				aria-haspopup="listbox"
+				aria-expanded={open()}
+				onClick={() => setOpen((value) => !value)}
+				onKeyDown={(event) => {
+					if (event.key === "Escape") setOpen(false);
+				}}
+			>
+				<ArrowDownWideNarrow size={17} aria-hidden="true" />
+				<span>{selectedLabel()}</span>
+				<ChevronDown
+					class={open() ? "is-open" : ""}
+					size={16}
+					aria-hidden="true"
+				/>
+			</button>
+			<Show when={open()}>
+				<div
+					class="sort-options"
+					role="listbox"
+					aria-label="ソート順"
+					onKeyDown={(event) => {
+						if (event.key === "Escape") setOpen(false);
+					}}
+				>
+					<For each={sortOptions}>
+						{(option) => (
+							<button
+								type="button"
+								class="sort-option"
+								role="option"
+								aria-selected={sortOrder() === option.value}
+								onClick={() => {
+									setSortOrder(option.value);
+									setOpen(false);
+								}}
+							>
+								<span>{option.label}</span>
+								<Show when={sortOrder() === option.value}>
+									<Check size={16} aria-hidden="true" />
+								</Show>
+							</button>
+						)}
+					</For>
+				</div>
+			</Show>
+		</div>
 	);
 }
 

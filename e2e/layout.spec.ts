@@ -331,7 +331,18 @@ for (const viewport of [
 			"background-color",
 			"rgba(0, 0, 0, 0)",
 		);
-		await expect(page.locator("#sort-order")).toHaveCSS("appearance", "none");
+		const sortButton = page.locator(".sort-select-button");
+		await expect(sortButton).toHaveCSS("background-color", "rgba(0, 0, 0, 0)");
+		await sortButton.click();
+		const openedSortOptions = page.getByRole("listbox", { name: "ソート順" });
+		await expect(openedSortOptions).toHaveCSS(
+			"background-color",
+			"rgb(14, 120, 196)",
+		);
+		await expect(sortButton).toHaveCSS("background-color", "rgba(0, 0, 0, 0)");
+		await openedSortOptions
+			.getByRole("option", { name: "時間が早い順" })
+			.click();
 		const toolbarLayout = () =>
 			page.locator(".match-toolbar").evaluate((toolbar) => {
 				const tabs = toolbar
@@ -816,7 +827,16 @@ test("wide: match cards use multiple columns in both sort modes", async ({
 		});
 	}
 
-	await page.locator("#sort-order").selectOption("tournament");
+	await page.getByRole("button", { name: "ソート順: 時間が早い順" }).click();
+	const sortOptions = page.getByRole("listbox", { name: "ソート順" });
+	await expect(sortOptions).toHaveCSS("background-color", "rgb(14, 120, 196)");
+	if (process.env.CAPTURE_LAYOUT === "1") {
+		await page.screenshot({
+			path: "/tmp/bwfnotify-sort-menu.png",
+			fullPage: true,
+		});
+	}
+	await sortOptions.getByRole("option", { name: "大会名順" }).click();
 	const groupedCards = page.locator(".tournament-matches > .match");
 	await expect(groupedCards).toHaveCount(3);
 	const groupedPositions = await groupedCards.evaluateAll((cards) =>

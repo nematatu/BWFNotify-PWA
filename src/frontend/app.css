@@ -295,10 +295,8 @@ main {
 
 .sort-select {
 	position: relative;
-	display: flex;
 	width: 178px;
 	min-width: 0;
-	align-items: center;
 	border-radius: 50px;
 	background: #0e78c4;
 }
@@ -312,38 +310,72 @@ main {
 	outline-offset: 2px;
 }
 
-.sort-select-leading,
-.sort-select-chevron {
-	position: absolute;
-	pointer-events: none;
-}
-
-.sort-select-leading {
-	left: 11px;
-	color: #ffffff;
-}
-
-.sort-select-chevron {
-	right: 10px;
-	color: #ffffff;
-}
-
-#sort-order {
+.sort-select .sort-select-button {
+	display: grid;
 	width: 100%;
 	min-height: 38px;
-	padding: 0 34px;
+	grid-template-columns: 18px minmax(0, 1fr) 16px;
+	align-items: center;
+	gap: 7px;
+	padding: 0 11px;
 	border: 0;
 	border-radius: 50px;
-	appearance: none;
 	color: #ffffff;
 	background: transparent;
 	cursor: pointer;
 	font-size: 13px;
 	font-weight: 700;
+	outline: 0;
+	text-align: left;
 }
 
-#sort-order:focus-visible {
+.sort-select .sort-select-button:hover,
+.sort-select .sort-select-button:focus-visible {
+	background: transparent;
+}
+.sort-select-button svg:last-child {
+	transition: transform 150ms ease;
+}
+
+.sort-select-button svg.is-open {
+	transform: rotate(180deg);
+}
+
+.sort-options {
+	position: absolute;
+	top: calc(100% + 6px);
+	right: 0;
+	z-index: 30;
+	display: grid;
+	width: 100%;
+	padding: 4px;
+	border: 1px solid #0a6baa;
+	background: #0e78c4;
+}
+
+.sort-option {
+	display: flex;
+	min-height: 38px;
+	align-items: center;
+	justify-content: space-between;
+	gap: 8px;
+	padding: 0 10px;
+	border: 0;
+	color: #ffffff;
+	background: transparent;
+	font: inherit;
+	font-size: 13px;
+	cursor: pointer;
+}
+
+.sort-option:hover,
+.sort-option:focus-visible {
 	outline: 0;
+	background: rgba(255, 255, 255, 0.14);
+}
+
+.sort-option[aria-selected="true"] {
+	background: #264259;
 }
 
 #refresh-button {
