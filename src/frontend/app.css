@@ -1121,7 +1121,7 @@ main {
 
 .upcoming-month-group {
 	display: grid;
-	grid-template-columns: 108px minmax(0, 1fr);
+	grid-template-columns: 120px minmax(0, 1fr);
 	min-width: 0;
 	border-bottom: 1px solid #bfcbd2;
 }
@@ -1131,6 +1131,7 @@ main {
 	align-items: baseline;
 	gap: 5px;
 	padding: 20px 10px 0 4px;
+	white-space: nowrap;
 }
 
 .upcoming-month-group > header strong {

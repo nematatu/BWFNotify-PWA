@@ -622,6 +622,11 @@ for (const viewport of [
 			const group = document.createElement("section");
 			group.className = "upcoming-month-group";
 			const header = document.createElement("header");
+			const month = document.createElement("strong");
+			month.textContent = "12月";
+			const year = document.createElement("span");
+			year.textContent = "2026年";
+			header.append(month, year);
 			const events = document.createElement("div");
 			events.className = "upcoming-month-events";
 			for (let index = 0; index < 4; index += 1) {
@@ -635,8 +640,13 @@ for (const viewport of [
 				(row) => getComputedStyle(row).borderBottomWidth,
 			);
 			const groupBorder = getComputedStyle(group).borderBottomWidth;
+			const monthBox = month.getBoundingClientRect();
+			const yearBox = year.getBoundingClientRect();
+			const monthYearAligned =
+				Math.abs(monthBox.bottom - yearBox.bottom) < 12 &&
+				yearBox.left >= monthBox.right;
 			group.remove();
-			return { borders, groupBorder };
+			return { borders, groupBorder, monthYearAligned };
 		});
 		expect(monthBorders.borders).toEqual(
 			viewport.width <= 720
@@ -644,6 +654,7 @@ for (const viewport of [
 				: ["1px", "1px", "0px", "0px"],
 		);
 		expect(monthBorders.groupBorder).toBe("1px");
+		expect(monthBorders.monthYearAligned).toBe(true);
 		await expect(page.locator(".upcoming-row").first()).not.toContainText(
 			/選手|所属|時刻|コート|Court/,
 		);
