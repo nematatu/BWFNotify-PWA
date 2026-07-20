@@ -65,26 +65,25 @@ function ResultRow(props: { match: MatchSummary }) {
 					: "result-unknown";
 	const outcomeLabel = () =>
 		view().outcome === "win"
-			? "日本選手の勝利"
+			? "WIN"
 			: view().outcome === "loss"
-				? "日本選手の敗戦"
+				? "LOSE"
 				: view().outcome === "japanese-match"
 					? "日本人対決"
 					: "結果未確定";
-
 	return (
 		<article class={`result-row ${resultClass()}`}>
 			<div class="result-header">
+				<span class="result-outcome">{outcomeLabel()}</span>
 				<div class="result-meta">
+					<span class="result-tournament">{props.match.tournament}</span>
+					<Show when={props.match.round}>
+						<span class="result-round">{displayRound(props.match.round)}</span>
+					</Show>
 					<time datetime={matchDate(props.match)}>
 						{formatTournamentDate(matchDate(props.match))}
 					</time>
-					<span>{props.match.tournament}</span>
-					<Show when={props.match.round}>
-						<span>{displayRound(props.match.round)}</span>
-					</Show>
 				</div>
-				<span class="result-outcome">{outcomeLabel()}</span>
 			</div>
 			<div class="result-matchup">
 				<ResultTeam
@@ -119,7 +118,7 @@ function ResultRow(props: { match: MatchSummary }) {
 function ResultTeam(props: {
 	team: MatchTeamSummary | undefined;
 	isJapanese: boolean;
-	teamResult?: "勝利" | "敗戦" | "未確定";
+	teamResult?: "WIN" | "LOSE" | "未確定";
 }) {
 	return (
 		<div class={`result-team ${props.isJapanese ? "result-team-japan" : ""}`}>
@@ -730,7 +729,7 @@ function isTournamentDay(tournament: UpcomingTournament, date: string) {
 }
 
 function teamResult(winner: 1 | 2 | undefined, team: 1 | 2) {
-	return winner ? (winner === team ? "勝利" : "敗戦") : "未確定";
+	return winner ? (winner === team ? "WIN" : "LOSE") : "未確定";
 }
 
 function matchDate(match: MatchSummary) {

@@ -183,6 +183,8 @@ const upcomingTournament = {
 	name: "中国オープン2026",
 	startDate: "2026-07-21",
 	endDate: "2026-07-26",
+	grade: "Super 1000",
+	imageUrl: "/view/tournaments/victor-china-open-2026.jpg",
 	bwfUrl:
 		"https://bwfworldtour.bwfbadminton.com/tournament/5622/victor-china-open-2026/overview/",
 	bajUrl:
@@ -433,7 +435,7 @@ for (const viewport of [
 			"rgb(255, 255, 255)",
 		);
 		await expect(resultRows.nth(0).locator(".result-outcome")).toHaveText(
-			"日本選手の勝利",
+			"WIN",
 		);
 		await expect(resultRows.nth(1)).toHaveClass(/result-loss/);
 		await expect(resultRows.nth(1)).toHaveCSS("background-image", "none");
@@ -442,15 +444,15 @@ for (const viewport of [
 			"rgb(255, 255, 255)",
 		);
 		await expect(resultRows.nth(1).locator(".result-outcome")).toHaveText(
-			"日本選手の敗戦",
+			"LOSE",
 		);
 		await expect(resultRows.nth(2)).toHaveClass(/result-japanese-match/);
 		await expect(resultRows.nth(2).locator(".result-outcome")).toHaveText(
 			"日本人対決",
 		);
 		await expect(resultRows.nth(2).locator(".team-result")).toHaveText([
-			"勝利",
-			"敗戦",
+			"WIN",
+			"LOSE",
 		]);
 		await expect(resultRows.nth(2).locator(".result-team-japan")).toHaveCount(
 			2,
@@ -468,6 +470,11 @@ for (const viewport of [
 		await expect(resultRows.nth(0).locator(".result-meta")).toContainText(
 			"準々決勝",
 		);
+		await expect(resultRows.nth(0).locator(".result-meta > *")).toHaveText([
+			"DAIHATSU Japan Open 2026",
+			"準々決勝",
+			"2026/07/17",
+		]);
 		await expect(resultRows.nth(1).locator(".result-meta")).toContainText(
 			"ベスト16",
 		);
@@ -498,6 +505,63 @@ for (const viewport of [
 				),
 		]);
 		expect(japaneseNameSize).toBeGreaterThan(opponentNameSize);
+		const resultAlignment = await resultRows.nth(0).evaluate((row) => {
+			const matchup = row.querySelector<HTMLElement>(".result-matchup");
+			const teams = row.querySelectorAll<HTMLElement>(".result-team");
+			const score = row.querySelector<HTMLElement>(".result-score");
+			const centers = (elements: NodeListOf<HTMLElement>) =>
+				[...elements].map((element) => {
+					const box = element.getBoundingClientRect();
+					return box.left + box.width / 2;
+				});
+			return {
+				teamCenters: centers(teams),
+				photoCenters: centers(
+					row.querySelectorAll<HTMLElement>(".result-player-photos"),
+				),
+				flagCenters: centers(
+					row.querySelectorAll<HTMLElement>(".result-team-head"),
+				),
+				nameCenters: centers(
+					row.querySelectorAll<HTMLElement>(".result-player-names"),
+				),
+				scoreCenter: score
+					? score.getBoundingClientRect().left +
+						score.getBoundingClientRect().width / 2
+					: 0,
+				matchupCenter: matchup
+					? matchup.getBoundingClientRect().left +
+						matchup.getBoundingClientRect().width / 2
+					: 0,
+				scorePaddingTop: score
+					? Number.parseFloat(getComputedStyle(score).paddingTop)
+					: -1,
+			};
+		});
+		for (const index of [0, 1]) {
+			expect(
+				Math.abs(
+					resultAlignment.teamCenters[index] -
+						resultAlignment.photoCenters[index],
+				),
+			).toBeLessThan(1);
+			expect(
+				Math.abs(
+					resultAlignment.teamCenters[index] -
+						resultAlignment.flagCenters[index],
+				),
+			).toBeLessThan(1);
+			expect(
+				Math.abs(
+					resultAlignment.teamCenters[index] -
+						resultAlignment.nameCenters[index],
+				),
+			).toBeLessThan(1);
+		}
+		expect(
+			Math.abs(resultAlignment.scoreCenter - resultAlignment.matchupCenter),
+		).toBeLessThan(1);
+		expect(resultAlignment.scorePaddingTop).toBeLessThan(20);
 		await expect(page.locator(".result-details")).toHaveCount(0);
 		if (process.env.CAPTURE_LAYOUT === "1") {
 			await page.screenshot({
@@ -510,6 +574,9 @@ for (const viewport of [
 		await expect(page.locator(".upcoming-row").first()).toContainText(
 			"中国オープン2026",
 		);
+		await expect(
+			page.locator(".upcoming-row").first().locator(".tournament-watermark"),
+		).toHaveAttribute("src", "/view/tournaments/victor-china-open-2026.jpg");
 		await expect(page.locator(".upcoming-row").first()).not.toContainText(
 			/選手|所属|時刻|コート|Court/,
 		);
