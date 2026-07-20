@@ -1096,10 +1096,6 @@ main {
 	overflow: hidden;
 }
 
-.upcoming-row:hover {
-	background: #f4f8fb;
-}
-
 .tournament-watermark {
 	position: absolute;
 	inset: 0;
@@ -1165,10 +1161,12 @@ button.upcoming-main {
 	cursor: pointer;
 }
 
-button.upcoming-main:hover,
+button.upcoming-main:hover {
+	background: transparent;
+}
+
 button.upcoming-main:focus-visible {
-	background: rgb(231 241 247 / 72%);
-	outline: 0;
+	background: transparent;
 }
 
 .upcoming-meta {

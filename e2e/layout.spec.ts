@@ -577,6 +577,20 @@ for (const viewport of [
 		await expect(
 			page.locator(".upcoming-row").first().locator(".tournament-watermark"),
 		).toHaveAttribute("src", "/view/tournaments/victor-china-open-2026.jpg");
+		const plainTournament = page.locator(".upcoming-row").nth(1);
+		await expect(plainTournament).toHaveCSS(
+			"background-color",
+			"rgba(0, 0, 0, 0)",
+		);
+		await plainTournament.hover();
+		await expect(plainTournament).toHaveCSS(
+			"background-color",
+			"rgba(0, 0, 0, 0)",
+		);
+		await expect(plainTournament.locator(".upcoming-main")).toHaveCSS(
+			"background-color",
+			"rgba(0, 0, 0, 0)",
+		);
 		await expect(page.locator(".upcoming-row").first()).not.toContainText(
 			/選手|所属|時刻|コート|Court/,
 		);
