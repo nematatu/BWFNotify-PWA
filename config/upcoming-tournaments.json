@@ -1,5 +1,5 @@
 {
-	"generatedAt": "2026-07-20T06:27:16.776Z",
+	"generatedAt": "2026-07-21T06:07:07.938Z",
 	"tournaments": [
 		{
 			"id": "2026-07-21:中国オープン2026",
@@ -17,7 +17,7 @@
 			"endDate": "2026-07-25",
 			"grade": "インターナショナルチャレンジ",
 			"bwfUrl": "https://bwfbadminton.com/tournament/5722/crowne-plaza-saipan-international-2026/info",
-			"bajUrl": "https://www.badminton.or.jp/storage/conventions/pdf/1254/send_out_20260630150035.pdf"
+			"bajUrl": "https://www.badminton.or.jp/storage/conventions/pdf/1254/send_out_20260721141439.pdf"
 		},
 		{
 			"id": "2026-07-28:タイペイオープン2026",
@@ -35,7 +35,7 @@
 			"endDate": "2026-08-02",
 			"grade": "インターナショナルチャレンジ",
 			"bwfUrl": "https://bwfbadminton.com/tournament/5802/philippine-international-challenge-2026/info",
-			"bajUrl": "https://www.badminton.or.jp/storage/conventions/pdf/1368/contestant_20260619130401.pdf"
+			"bajUrl": "https://www.badminton.or.jp/storage/conventions/pdf/1368/contestant_20260721145504.pdf"
 		},
 		{
 			"id": "2026-08-04:韓国マスターズ2026",
