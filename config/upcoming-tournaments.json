@@ -1,5 +1,5 @@
 {
-	"generatedAt": "2026-07-25T05:57:25.429Z",
+	"generatedAt": "2026-07-26T06:16:02.794Z",
 	"tournaments": [
 		{
 			"id": "2026-07-21:中国オープン2026",
@@ -9,15 +9,6 @@
 			"grade": "Super 1000",
 			"bwfUrl": "https://bwfworldtour.bwfbadminton.com/tournament/5622/victor-china-open-2026/overview/",
 			"bajUrl": "https://www.badminton.or.jp/storage/conventions/pdf/1252/send_out_20260714111724.pdf"
-		},
-		{
-			"id": "2026-07-21:サイパンインターナショナル2026",
-			"name": "サイパンインターナショナル2026",
-			"startDate": "2026-07-21",
-			"endDate": "2026-07-25",
-			"grade": "インターナショナルチャレンジ",
-			"bwfUrl": "https://bwfbadminton.com/tournament/5722/crowne-plaza-saipan-international-2026/info",
-			"bajUrl": "https://www.badminton.or.jp/storage/conventions/pdf/1254/send_out_20260721153736.pdf"
 		},
 		{
 			"id": "2026-07-28:タイペイオープン2026",
@@ -72,6 +63,15 @@
 			"grade": "インターナショナルチャレンジ",
 			"bwfUrl": "https://bwfbadminton.com/tournament/5869/antica-singapore-international-challenge-2026/results/",
 			"bajUrl": "https://www.badminton.or.jp/storage/conventions/pdf/1379/contestant_20260710142634.pdf"
+		},
+		{
+			"id": "2026-08-18:LI NINGベトナムインターナショナルシリーズ2026",
+			"name": "LI NINGベトナムインターナショナルシリーズ2026",
+			"startDate": "2026-08-18",
+			"endDate": "2026-08-23",
+			"grade": "インターナショナルシリーズ",
+			"bwfUrl": "https://bwfbadminton.com/tournament/5845/li-ning-vietnam-international-series-2026/results/",
+			"bajUrl": "https://www.badminton.or.jp/storage/conventions/pdf/1381/contestant_20260710143025.pdf"
 		}
 	]
 }
