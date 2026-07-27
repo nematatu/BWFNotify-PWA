@@ -1,15 +1,6 @@
 {
-	"generatedAt": "2026-07-26T06:16:02.794Z",
+	"generatedAt": "2026-07-27T06:43:38.352Z",
 	"tournaments": [
-		{
-			"id": "2026-07-21:中国オープン2026",
-			"name": "中国オープン2026",
-			"startDate": "2026-07-21",
-			"endDate": "2026-07-26",
-			"grade": "Super 1000",
-			"bwfUrl": "https://bwfworldtour.bwfbadminton.com/tournament/5622/victor-china-open-2026/overview/",
-			"bajUrl": "https://www.badminton.or.jp/storage/conventions/pdf/1252/send_out_20260714111724.pdf"
-		},
 		{
 			"id": "2026-07-28:タイペイオープン2026",
 			"name": "タイペイオープン2026",
@@ -72,6 +63,15 @@
 			"grade": "インターナショナルシリーズ",
 			"bwfUrl": "https://bwfbadminton.com/tournament/5845/li-ning-vietnam-international-series-2026/results/",
 			"bajUrl": "https://www.badminton.or.jp/storage/conventions/pdf/1381/contestant_20260710143025.pdf"
+		},
+		{
+			"id": "2026-08-25:ポンティアナインターナショナルチャレンジ2026",
+			"name": "ポンティアナインターナショナルチャレンジ2026",
+			"startDate": "2026-08-25",
+			"endDate": "2026-08-30",
+			"grade": "インターナショナルチャレンジ",
+			"bwfUrl": "https://bwfbadminton.com/tournament/5577/polytron-pontianak-international-challenge-2026/info",
+			"bajUrl": "https://www.badminton.or.jp/storage/conventions/pdf/1383/contestant_20260717093032.pdf"
 		}
 	]
 }
