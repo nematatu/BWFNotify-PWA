@@ -1,5 +1,5 @@
 {
-	"generatedAt": "2026-07-27T06:43:38.352Z",
+	"generatedAt": "2026-07-28T06:04:34.840Z",
 	"tournaments": [
 		{
 			"id": "2026-07-28:タイペイオープン2026",
@@ -56,15 +56,6 @@
 			"bajUrl": "https://www.badminton.or.jp/storage/conventions/pdf/1379/contestant_20260710142634.pdf"
 		},
 		{
-			"id": "2026-08-18:LI NINGベトナムインターナショナルシリーズ2026",
-			"name": "LI NINGベトナムインターナショナルシリーズ2026",
-			"startDate": "2026-08-18",
-			"endDate": "2026-08-23",
-			"grade": "インターナショナルシリーズ",
-			"bwfUrl": "https://bwfbadminton.com/tournament/5845/li-ning-vietnam-international-series-2026/results/",
-			"bajUrl": "https://www.badminton.or.jp/storage/conventions/pdf/1381/contestant_20260710143025.pdf"
-		},
-		{
 			"id": "2026-08-25:ポンティアナインターナショナルチャレンジ2026",
 			"name": "ポンティアナインターナショナルチャレンジ2026",
 			"startDate": "2026-08-25",
@@ -72,6 +63,13 @@
 			"grade": "インターナショナルチャレンジ",
 			"bwfUrl": "https://bwfbadminton.com/tournament/5577/polytron-pontianak-international-challenge-2026/info",
 			"bajUrl": "https://www.badminton.or.jp/storage/conventions/pdf/1383/contestant_20260717093032.pdf"
+		},
+		{
+			"id": "2026-08-30:中国マスターズ2026",
+			"name": "中国マスターズ2026",
+			"startDate": "2026-08-30",
+			"endDate": "2026-09-06",
+			"grade": "Super 750"
 		}
 	]
 }
