@@ -109,6 +109,7 @@ export type UpcomingTournament = {
 	imageUrl?: string;
 	bwfUrl?: string;
 	bajUrl?: string;
+	matchCenterCode?: string;
 };
 
 export type PublicState = {

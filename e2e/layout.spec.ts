@@ -201,6 +201,7 @@ const augustTournament = {
 };
 
 async function preparePage(page: Page) {
+	await page.clock.install({ time: new Date("2026-07-18T09:00:00.000Z") });
 	await page.addInitScript(() => {
 		localStorage.setItem("bwf-sort-order", "time-asc");
 	});
@@ -867,6 +868,7 @@ test("wide: match cards use multiple columns in both sort modes", async ({
 test("opens results when there are no live or scheduled matches", async ({
 	page,
 }) => {
+	await page.clock.install({ time: new Date("2026-07-20T09:00:00.000Z") });
 	await page.route("**/api/config", (route) =>
 		route.fulfill({ json: { vapidPublicKey: "" } }),
 	);

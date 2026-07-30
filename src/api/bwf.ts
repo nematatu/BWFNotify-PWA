@@ -1,3 +1,4 @@
+import calendarSnapshot from "../../config/upcoming-tournaments.json";
 import type { BwfMatch, BwfPlayer, BwfTeam, MatchSummary } from "../type";
 import {
 	adjacentDates,
@@ -49,10 +50,11 @@ export async function fetchJapaneseMatches(
 	knownMatches: MatchSummary[] = [],
 	options: FetchJapaneseMatchesOptions = {},
 ): Promise<MatchSummary[]> {
-	const tournaments = tournamentsFrom(
-		await fetchBwfJson(BWF_LIVE_URL, options.upstreamCacheTtlSeconds),
-	);
 	const dates = options.dates || adjacentDates(todayJst());
+	const tournaments = tournamentsForDates(
+		await fetchBwfJson(BWF_LIVE_URL, options.upstreamCacheTtlSeconds),
+		dates,
+	);
 	const matches: BwfMatch[] = [];
 	let successfulDayRequests = 0;
 
@@ -95,6 +97,40 @@ export async function fetchJapaneseMatches(
 			? await enrichWithHeadToHead(current, cache, knownMatches, fetchBwfJson)
 			: current;
 	return [...enriched, ...completed];
+}
+
+export function tournamentsForDates(
+	payload: unknown,
+	dates: string[],
+): Tournament[] {
+	const byCode = new Map(
+		tournamentsFrom(payload).map((tournament) => [tournament.code, tournament]),
+	);
+	const sortedDates = [...dates].sort();
+	const firstDate = sortedDates[0];
+	const lastDate = sortedDates.at(-1);
+	if (!firstDate || !lastDate) return [...byCode.values()];
+
+	for (const value of calendarSnapshot.tournaments) {
+		const tournament = object(value);
+		const code = optionalString(tournament.matchCenterCode);
+		const startDate = optionalString(tournament.startDate);
+		const endDate = optionalString(tournament.endDate);
+		if (
+			code &&
+			startDate &&
+			endDate &&
+			startDate <= lastDate &&
+			endDate >= firstDate &&
+			!byCode.has(code)
+		) {
+			byCode.set(code, {
+				code,
+				name: optionalString(tournament.name),
+			});
+		}
+	}
+	return [...byCode.values()];
 }
 
 function tournamentsFrom(payload: unknown): Tournament[] {

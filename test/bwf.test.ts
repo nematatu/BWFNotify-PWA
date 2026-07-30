@@ -3,6 +3,7 @@ import {
 	eventType,
 	extractJapaneseMatches,
 	parseHeadToHead,
+	tournamentsForDates,
 } from "../src/api/bwf";
 import {
 	japanesePlayerName,
@@ -18,6 +19,39 @@ describe("adjacentDates", () => {
 			"2026-06-01",
 			"2026-06-02",
 		]);
+	});
+});
+
+describe("tournamentsForDates", () => {
+	test("adds an active configured tournament missing from the live endpoint", () => {
+		const tournaments = tournamentsForDates(
+			{
+				results: [
+					{
+						code: "97FF954D-0A47-498D-81D1-B9105D891B59",
+						name: "YONEX Taipei Open 2026",
+					},
+				],
+			},
+			["2026-07-29", "2026-07-30", "2026-07-31"],
+		);
+
+		expect(tournaments).toContainEqual({
+			code: "F5C3AACA-CA45-47CE-A7B4-80B3A59329EB",
+			name: "フィリピンインターナショナルチャレンジ2026",
+		});
+	});
+
+	test("does not duplicate a configured tournament already returned upstream", () => {
+		const code = "F5C3AACA-CA45-47CE-A7B4-80B3A59329EB";
+		const tournaments = tournamentsForDates(
+			{ results: [{ code, name: "Philippine International Challenge 2026" }] },
+			["2026-07-30"],
+		);
+
+		expect(
+			tournaments.filter((tournament) => tournament.code === code),
+		).toHaveLength(1);
 	});
 });
 

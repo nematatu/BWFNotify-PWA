@@ -41,6 +41,8 @@ Cloudflare Cron（2分間隔）
 
 外部レスポンスを扱う処理と、入力から結果を返す純粋処理を分けています。外部形式の変更は取得・解析側で吸収し、UIや通知処理へ未知の形式を渡しません。
 
+BWFの現在開催中大会APIに掲載されない大会は、`config/upcoming-tournaments.json` の開催期間と `matchCenterCode` で補完します。API掲載分とコードが一致する場合は重複取得せず、開催期間に重なる大会だけを日別試合APIの取得対象にします。
+
 ## 通知契約
 
 通知APIの型は `src/type/index.ts` でフロントエンドとWorkerが共有します。
