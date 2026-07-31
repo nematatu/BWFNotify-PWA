@@ -1,4 +1,4 @@
-import calendarSnapshot from "../../config/upcoming-tournaments.json";
+import matchCenterTournaments from "../../config/match-center-tournaments.json";
 import type { BwfMatch, BwfPlayer, BwfTeam, MatchSummary } from "../type";
 import {
 	adjacentDates,
@@ -111,9 +111,9 @@ export function tournamentsForDates(
 	const lastDate = sortedDates.at(-1);
 	if (!firstDate || !lastDate) return [...byCode.values()];
 
-	for (const value of calendarSnapshot.tournaments) {
+	for (const value of matchCenterTournaments.tournaments) {
 		const tournament = object(value);
-		const code = optionalString(tournament.matchCenterCode);
+		const code = optionalString(tournament.code);
 		const startDate = optionalString(tournament.startDate);
 		const endDate = optionalString(tournament.endDate);
 		if (

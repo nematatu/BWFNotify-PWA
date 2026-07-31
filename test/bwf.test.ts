@@ -1,4 +1,5 @@
 import { describe, expect, test } from "bun:test";
+import matchCenterTournaments from "../config/match-center-tournaments.json";
 import {
 	eventType,
 	extractJapaneseMatches,
@@ -23,6 +24,20 @@ describe("adjacentDates", () => {
 });
 
 describe("tournamentsForDates", () => {
+	test("keeps manual match-center codes outside the generated calendar", async () => {
+		const generatedCalendarSource = await Bun.file(
+			new URL("../config/upcoming-tournaments.json", import.meta.url),
+		).text();
+
+		expect(generatedCalendarSource).not.toContain("matchCenterCode");
+		expect(matchCenterTournaments.tournaments).toContainEqual({
+			code: "F5C3AACA-CA45-47CE-A7B4-80B3A59329EB",
+			name: "フィリピンインターナショナルチャレンジ2026",
+			startDate: "2026-07-28",
+			endDate: "2026-08-02",
+		});
+	});
+
 	test("adds an active configured tournament missing from the live endpoint", () => {
 		const tournaments = tournamentsForDates(
 			{
