@@ -1,5 +1,5 @@
 {
-	"generatedAt": "2026-08-07T05:04:03.010Z",
+	"generatedAt": "2026-08-08T04:29:41.628Z",
 	"tournaments": [
 		{
 			"id": "2026-08-04:韓国マスターズ2026",
@@ -47,11 +47,21 @@
 			"bajUrl": "https://www.badminton.or.jp/storage/conventions/pdf/1383/contestant_20260717093032.pdf"
 		},
 		{
-			"id": "2026-08-30:中国マスターズ2026",
+			"id": "2026-08-26:メキシコフューチャーシリーズ2026",
+			"name": "メキシコフューチャーシリーズ2026",
+			"startDate": "2026-08-26",
+			"endDate": "2026-08-30",
+			"bwfUrl": "https://bwfbadminton.com/tournament/5716/vi-mexico-future-series-2026/results/",
+			"bajUrl": "https://www.badminton.or.jp/storage/conventions/pdf/1366/send_out_20260807170826.pdf"
+		},
+		{
+			"id": "2026-09-01:中国マスターズ2026",
 			"name": "中国マスターズ2026",
-			"startDate": "2026-08-30",
+			"startDate": "2026-09-01",
 			"endDate": "2026-09-06",
-			"grade": "Super 750"
+			"grade": "Super 750",
+			"bwfUrl": "https://bwfworldtour.bwfbadminton.com/tournament/5625/li-ning-china-masters-2026/overview/",
+			"bajUrl": "https://www.badminton.or.jp/storage/conventions/pdf/1241/send_out_20260807150238.pdf"
 		},
 		{
 			"id": "2026-09-01:ポンティアナインドネシアマスターズ2026",
@@ -61,15 +71,6 @@
 			"grade": "Super 100",
 			"bwfUrl": "https://bwfbadminton.com/tournament/5527/polytron-pontianak-indonesia-masters-2026/info",
 			"bajUrl": "https://www.badminton.or.jp/storage/conventions/pdf/1382/contestant_20260717092920.pdf"
-		},
-		{
-			"id": "2026-09-08:ベトナムオープン2026",
-			"name": "ベトナムオープン2026",
-			"startDate": "2026-09-08",
-			"endDate": "2026-09-13",
-			"grade": "Super 100",
-			"bwfUrl": "https://bwfbadminton.com/tournament/5220/yonex-sunrise-vietnam-open-2026/results/",
-			"bajUrl": "https://www.badminton.or.jp/storage/conventions/pdf/1385/contestant_20260723113728.pdf"
 		}
 	]
 }
