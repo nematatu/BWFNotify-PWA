@@ -1,15 +1,6 @@
 {
-	"generatedAt": "2026-08-09T04:38:07.551Z",
+	"generatedAt": "2026-08-10T04:55:36.618Z",
 	"tournaments": [
-		{
-			"id": "2026-08-04:韓国マスターズ2026",
-			"name": "韓国マスターズ2026",
-			"startDate": "2026-08-04",
-			"endDate": "2026-08-09",
-			"grade": "Super 300",
-			"bwfUrl": "https://bwfworldtour.bwfbadminton.com/tournament/5596/victor-korea-masters-2026/overview/",
-			"bajUrl": "https://www.badminton.or.jp/storage/conventions/pdf/1257/send_out_20260710140141.pdf"
-		},
 		{
 			"id": "2026-08-11:マレーシアインターナショナルチャレンジ2026",
 			"name": "マレーシアインターナショナルチャレンジ2026",
@@ -71,6 +62,14 @@
 			"grade": "Super 100",
 			"bwfUrl": "https://bwfbadminton.com/tournament/5527/polytron-pontianak-indonesia-masters-2026/info",
 			"bajUrl": "https://www.badminton.or.jp/storage/conventions/pdf/1382/contestant_20260717092920.pdf"
+		},
+		{
+			"id": "2026-09-02:グアテマラフューチャーシリーズ2026",
+			"name": "グアテマラフューチャーシリーズ2026",
+			"startDate": "2026-09-02",
+			"endDate": "2026-09-06",
+			"bwfUrl": "https://bwfbadminton.com/tournament/5742/vlll-guatemala-future-series-2026/results/",
+			"bajUrl": "https://www.badminton.or.jp/storage/conventions/pdf/1367/send_out_20260807170929.pdf"
 		}
 	]
 }
