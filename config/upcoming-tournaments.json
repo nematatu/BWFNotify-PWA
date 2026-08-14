@@ -1,5 +1,5 @@
 {
-	"generatedAt": "2026-08-13T05:08:13.193Z",
+	"generatedAt": "2026-08-14T05:04:33.226Z",
 	"tournaments": [
 		{
 			"id": "2026-08-11:マレーシアインターナショナルチャレンジ2026",
@@ -8,13 +8,13 @@
 			"endDate": "2026-08-16",
 			"grade": "インターナショナルチャレンジ",
 			"bwfUrl": "https://bwfbadminton.com/tournament/5735/petronas-malaysia-international-challenge-2026/info",
-			"bajUrl": "https://www.badminton.or.jp/storage/conventions/pdf/1258/contestant_20260807112103.pdf"
+			"bajUrl": "https://www.badminton.or.jp/storage/conventions/pdf/1258/contestant_20260814110409.pdf"
 		},
 		{
 			"id": "2026-08-17:世界バドミントン選手権大会2026",
 			"name": "世界バドミントン選手権大会2026",
 			"startDate": "2026-08-17",
-			"endDate": "2026-08-23",
+			"endDate": "2026-08-24",
 			"grade": "Grade1",
 			"bwfUrl": "https://bwfbadminton.com/tournament/5601/bwf-world-championships-2026/info",
 			"bajUrl": "https://www.badminton.or.jp/storage/conventions/pdf/1260/send_out_20260724173228.pdf"
