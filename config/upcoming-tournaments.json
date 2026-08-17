@@ -1,15 +1,6 @@
 {
-	"generatedAt": "2026-08-16T04:00:40.795Z",
+	"generatedAt": "2026-08-17T04:04:27.195Z",
 	"tournaments": [
-		{
-			"id": "2026-08-11:マレーシアインターナショナルチャレンジ2026",
-			"name": "マレーシアインターナショナルチャレンジ2026",
-			"startDate": "2026-08-11",
-			"endDate": "2026-08-16",
-			"grade": "インターナショナルチャレンジ",
-			"bwfUrl": "https://bwfbadminton.com/tournament/5735/petronas-malaysia-international-challenge-2026/info",
-			"bajUrl": "https://www.badminton.or.jp/storage/conventions/pdf/1258/contestant_20260814110409.pdf"
-		},
 		{
 			"id": "2026-08-17:世界バドミントン選手権大会2026",
 			"name": "世界バドミントン選手権大会2026",
@@ -70,6 +61,15 @@
 			"endDate": "2026-09-06",
 			"bwfUrl": "https://bwfbadminton.com/tournament/5742/vlll-guatemala-future-series-2026/results/",
 			"bajUrl": "https://www.badminton.or.jp/storage/conventions/pdf/1367/send_out_20260807170929.pdf"
+		},
+		{
+			"id": "2026-09-08:ベトナムオープン2026",
+			"name": "ベトナムオープン2026",
+			"startDate": "2026-09-08",
+			"endDate": "2026-09-13",
+			"grade": "Super 100",
+			"bwfUrl": "https://bwfbadminton.com/tournament/5220/yonex-sunrise-vietnam-open-2026/results/",
+			"bajUrl": "https://www.badminton.or.jp/storage/conventions/pdf/1385/contestant_20260723113728.pdf"
 		}
 	]
 }
