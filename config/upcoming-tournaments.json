@@ -1,15 +1,6 @@
 {
-	"generatedAt": "2026-08-24T04:07:10.088Z",
+	"generatedAt": "2026-08-25T04:01:17.751Z",
 	"tournaments": [
-		{
-			"id": "2026-08-17:世界バドミントン選手権大会2026",
-			"name": "世界バドミントン選手権大会2026",
-			"startDate": "2026-08-17",
-			"endDate": "2026-08-24",
-			"grade": "Grade1",
-			"bwfUrl": "https://bwfbadminton.com/tournament/5601/bwf-world-championships-2026/info",
-			"bajUrl": "https://www.badminton.or.jp/storage/conventions/pdf/1260/send_out_20260818101204.pdf"
-		},
 		{
 			"id": "2026-08-25:ポンティアナインターナショナルチャレンジ2026",
 			"name": "ポンティアナインターナショナルチャレンジ2026",
@@ -69,6 +60,15 @@
 			"endDate": "2026-09-13",
 			"bwfUrl": "https://bwfbadminton.com/tournament/5878/badminton-asia-u17-u15-junior-championships-2026/overview/",
 			"bajUrl": "https://www.badminton.or.jp/storage/conventions/pdf/1390/send_out_20260807170216.pdf"
+		},
+		{
+			"id": "2026-09-15:ナコーンサワンインターナショナルシリーズ2026",
+			"name": "ナコーンサワンインターナショナルシリーズ2026",
+			"startDate": "2026-09-15",
+			"endDate": "2026-09-20",
+			"grade": "インターナショナルシリーズ",
+			"bwfUrl": "https://bwfbadminton.com/tournament/5756/toyota-nakhon-sawan-international-series-2026/info",
+			"bajUrl": "https://www.badminton.or.jp/storage/conventions/pdf/1386/contestant_20260807111832.pdf"
 		}
 	]
 }
