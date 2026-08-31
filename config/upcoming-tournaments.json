@@ -1,23 +1,6 @@
 {
-	"generatedAt": "2026-08-30T09:16:32.838Z",
+	"generatedAt": "2026-08-31T09:48:37.381Z",
 	"tournaments": [
-		{
-			"id": "2026-08-25:ポンティアナインターナショナルチャレンジ2026",
-			"name": "ポンティアナインターナショナルチャレンジ2026",
-			"startDate": "2026-08-25",
-			"endDate": "2026-08-30",
-			"grade": "インターナショナルチャレンジ",
-			"bwfUrl": "https://bwfbadminton.com/tournament/5577/polytron-pontianak-international-challenge-2026/info",
-			"bajUrl": "https://www.badminton.or.jp/storage/conventions/pdf/1383/contestant_20260717093032.pdf"
-		},
-		{
-			"id": "2026-08-26:メキシコフューチャーシリーズ2026",
-			"name": "メキシコフューチャーシリーズ2026",
-			"startDate": "2026-08-26",
-			"endDate": "2026-08-30",
-			"bwfUrl": "https://bwfbadminton.com/tournament/5716/vi-mexico-future-series-2026/results/",
-			"bajUrl": "https://www.badminton.or.jp/storage/conventions/pdf/1366/send_out_20260807170826.pdf"
-		},
 		{
 			"id": "2026-09-01:中国マスターズ2026",
 			"name": "中国マスターズ2026",
@@ -69,6 +52,22 @@
 			"grade": "インターナショナルシリーズ",
 			"bwfUrl": "https://bwfbadminton.com/tournament/5756/toyota-nakhon-sawan-international-series-2026/info",
 			"bajUrl": "https://www.badminton.or.jp/storage/conventions/pdf/1386/contestant_20260807111832.pdf"
+		},
+		{
+			"id": "2026-09-20:第20回アジア競技大会（2026/愛知・名古屋）（団体戦）",
+			"name": "第20回アジア競技大会（2026/愛知・名古屋）（団体戦）",
+			"startDate": "2026-09-20",
+			"endDate": "2026-09-29",
+			"bwfUrl": "https://bwfbadminton.com/tournament/5876/20th-asian-games-aichi-nagoya-2026-team/info",
+			"bajUrl": "https://www.badminton.or.jp/storage/conventions/pdf/1393/send_out_20260821155106.pdf"
+		},
+		{
+			"id": "2026-09-20:第20回アジア競技大会（2026/愛知・名古屋）（個人戦）",
+			"name": "第20回アジア競技大会（2026/愛知・名古屋）（個人戦）",
+			"startDate": "2026-09-20",
+			"endDate": "2026-09-29",
+			"bwfUrl": "https://bwfbadminton.com/tournament/5874/20th-asian-games-aichi-nagoya-2026-individual/info",
+			"bajUrl": "https://www.badminton.or.jp/storage/conventions/pdf/1394/send_out_20260821155258.pdf"
 		}
 	]
 }
