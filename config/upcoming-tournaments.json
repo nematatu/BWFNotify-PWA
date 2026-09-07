@@ -1,32 +1,6 @@
 {
-	"generatedAt": "2026-09-06T07:56:19.777Z",
+	"generatedAt": "2026-09-07T08:21:43.419Z",
 	"tournaments": [
-		{
-			"id": "2026-09-01:中国マスターズ2026",
-			"name": "中国マスターズ2026",
-			"startDate": "2026-09-01",
-			"endDate": "2026-09-06",
-			"grade": "Super 750",
-			"bwfUrl": "https://bwfworldtour.bwfbadminton.com/tournament/5625/li-ning-china-masters-2026/overview/",
-			"bajUrl": "https://www.badminton.or.jp/storage/conventions/pdf/1241/send_out_20260901151031.pdf"
-		},
-		{
-			"id": "2026-09-01:ポンティアナインドネシアマスターズ2026",
-			"name": "ポンティアナインドネシアマスターズ2026",
-			"startDate": "2026-09-01",
-			"endDate": "2026-09-06",
-			"grade": "Super 100",
-			"bwfUrl": "https://bwfbadminton.com/tournament/5527/polytron-pontianak-indonesia-masters-2026/info",
-			"bajUrl": "https://www.badminton.or.jp/storage/conventions/pdf/1382/contestant_20260717092920.pdf"
-		},
-		{
-			"id": "2026-09-02:グアテマラフューチャーシリーズ2026",
-			"name": "グアテマラフューチャーシリーズ2026",
-			"startDate": "2026-09-02",
-			"endDate": "2026-09-06",
-			"bwfUrl": "https://bwfbadminton.com/tournament/5742/vlll-guatemala-future-series-2026/results/",
-			"bajUrl": "https://www.badminton.or.jp/storage/conventions/pdf/1367/send_out_20260807170929.pdf"
-		},
 		{
 			"id": "2026-09-08:ベトナムオープン2026",
 			"name": "ベトナムオープン2026",
@@ -68,6 +42,33 @@
 			"endDate": "2026-09-29",
 			"bwfUrl": "https://bwfbadminton.com/tournament/5874/20th-asian-games-aichi-nagoya-2026-individual/info",
 			"bajUrl": "https://www.badminton.or.jp/storage/conventions/pdf/1394/send_out_20260821155258.pdf"
+		},
+		{
+			"id": "2026-09-22:スラバヤインターナショナルチャレンジ2026",
+			"name": "スラバヤインターナショナルチャレンジ2026",
+			"startDate": "2026-09-22",
+			"endDate": "2026-09-27",
+			"grade": "インターナショナルチャレンジ",
+			"bwfUrl": "https://bwfbadminton.com/tournament/5855/polytron-surabaya-international-challenge-2026/info",
+			"bajUrl": "https://www.badminton.or.jp/storage/conventions/pdf/1370/send_out_20260903150035.pdf"
+		},
+		{
+			"id": "2026-09-29:グアテマラインターナショナルチャレンジ2026",
+			"name": "グアテマラインターナショナルチャレンジ2026",
+			"startDate": "2026-09-29",
+			"endDate": "2026-10-04",
+			"grade": "インターナショナルチャレンジ",
+			"bwfUrl": "https://bwfbadminton.com/tournament/5753/guatemala-international-challenge-2026/info",
+			"bajUrl": "https://www.badminton.or.jp/storage/conventions/pdf/1391/contestant_20260821134007.pdf"
+		},
+		{
+			"id": "2026-09-30:ノースハーバーインターナショナル2026",
+			"name": "ノースハーバーインターナショナル2026",
+			"startDate": "2026-09-30",
+			"endDate": "2026-10-04",
+			"grade": "インターナショナルチャレンジ",
+			"bwfUrl": "https://bwfbadminton.com/tournament/5766/maxx-north-harbour-international-2026/info",
+			"bajUrl": "https://www.badminton.or.jp/storage/conventions/pdf/1392/contestant_20260821134210.pdf"
 		}
 	]
 }
