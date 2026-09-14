@@ -1,23 +1,6 @@
 {
-	"generatedAt": "2026-09-13T08:21:10.314Z",
+	"generatedAt": "2026-09-14T08:58:55.809Z",
 	"tournaments": [
-		{
-			"id": "2026-09-08:ベトナムオープン2026",
-			"name": "ベトナムオープン2026",
-			"startDate": "2026-09-08",
-			"endDate": "2026-09-13",
-			"grade": "Super 100",
-			"bwfUrl": "https://bwfbadminton.com/tournament/5220/yonex-sunrise-vietnam-open-2026/results/",
-			"bajUrl": "https://www.badminton.or.jp/storage/conventions/pdf/1385/contestant_20260723113728.pdf"
-		},
-		{
-			"id": "2026-09-08:アジアジュニアU17&15選手権大会2026",
-			"name": "アジアジュニアU17&15選手権大会2026",
-			"startDate": "2026-09-08",
-			"endDate": "2026-09-13",
-			"bwfUrl": "https://bwfbadminton.com/tournament/5878/badminton-asia-u17-u15-junior-championships-2026/overview/",
-			"bajUrl": "https://www.badminton.or.jp/storage/conventions/pdf/1390/send_out_20260807170216.pdf"
-		},
 		{
 			"id": "2026-09-15:ナコーンサワンインターナショナルシリーズ2026",
 			"name": "ナコーンサワンインターナショナルシリーズ2026",
@@ -69,6 +52,24 @@
 			"grade": "インターナショナルチャレンジ",
 			"bwfUrl": "https://bwfbadminton.com/tournament/5766/maxx-north-harbour-international-2026/info",
 			"bajUrl": "https://www.badminton.or.jp/storage/conventions/pdf/1392/contestant_20260821134210.pdf"
+		},
+		{
+			"id": "2026-10-07:アライズインターナショナルチャレンジ2026",
+			"name": "アライズインターナショナルチャレンジ2026",
+			"startDate": "2026-10-07",
+			"endDate": "2026-10-11",
+			"grade": "インターナショナルチャレンジ",
+			"bwfUrl": "https://bwfbadminton.com/tournament/5792/arise-international-challenge-2026/results/",
+			"bajUrl": "https://www.badminton.or.jp/storage/conventions/pdf/1395/contestant_20260828144240.pdf"
+		},
+		{
+			"id": "2026-10-07:トルコインターナショナルチャレンジ2026",
+			"name": "トルコインターナショナルチャレンジ2026",
+			"startDate": "2026-10-07",
+			"endDate": "2026-10-11",
+			"grade": "インターナショナルチャレンジ",
+			"bwfUrl": "https://bwfbadminton.com/tournament/5758/navek-turkiye-international-challenge-2026/results/",
+			"bajUrl": "https://www.badminton.or.jp/storage/conventions/pdf/1396/contestant_20260828144513.pdf"
 		}
 	]
 }
