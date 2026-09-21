@@ -1,15 +1,6 @@
 {
-	"generatedAt": "2026-09-20T08:37:57.360Z",
+	"generatedAt": "2026-09-21T09:00:13.272Z",
 	"tournaments": [
-		{
-			"id": "2026-09-15:ナコーンサワンインターナショナルシリーズ2026",
-			"name": "ナコーンサワンインターナショナルシリーズ2026",
-			"startDate": "2026-09-15",
-			"endDate": "2026-09-20",
-			"grade": "インターナショナルシリーズ",
-			"bwfUrl": "https://bwfbadminton.com/tournament/5756/toyota-nakhon-sawan-international-series-2026/info",
-			"bajUrl": "https://www.badminton.or.jp/storage/conventions/pdf/1386/contestant_20260807111832.pdf"
-		},
 		{
 			"id": "2026-09-20:第20回アジア競技大会（2026/愛知・名古屋）（団体戦）",
 			"name": "第20回アジア競技大会（2026/愛知・名古屋）（団体戦）",
@@ -70,6 +61,15 @@
 			"grade": "インターナショナルチャレンジ",
 			"bwfUrl": "https://bwfbadminton.com/tournament/5758/navek-turkiye-international-challenge-2026/results/",
 			"bajUrl": "https://www.badminton.or.jp/storage/conventions/pdf/1396/contestant_20260828144513.pdf"
+		},
+		{
+			"id": "2026-10-13:マレーシアスーパー100 2026",
+			"name": "マレーシアスーパー100 2026",
+			"startDate": "2026-10-13",
+			"endDate": "2026-10-18",
+			"grade": "Super 100",
+			"bwfUrl": "https://bwfbadminton.com/tournament/5228/allianz-malaysia-super-100-2026/results/",
+			"bajUrl": "https://www.badminton.or.jp/storage/conventions/pdf/1270/send_out_20260915150358.pdf"
 		}
 	]
 }
