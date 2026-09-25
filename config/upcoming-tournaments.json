@@ -1,14 +1,6 @@
 {
-	"generatedAt": "2026-09-24T08:30:15.025Z",
+	"generatedAt": "2026-09-25T08:51:57.520Z",
 	"tournaments": [
-		{
-			"id": "2026-09-20:第20回アジア競技大会（2026/愛知・名古屋）（個人戦）",
-			"name": "第20回アジア競技大会（2026/愛知・名古屋）（個人戦）",
-			"startDate": "2026-09-20",
-			"endDate": "2026-09-29",
-			"bwfUrl": "https://bwfbadminton.com/tournament/5874/20th-asian-games-aichi-nagoya-2026-individual/info",
-			"bajUrl": "https://www.badminton.or.jp/storage/conventions/pdf/1394/send_out_20260821155258.pdf"
-		},
 		{
 			"id": "2026-09-22:スラバヤインターナショナルチャレンジ2026",
 			"name": "スラバヤインターナショナルチャレンジ2026",
@@ -71,6 +63,15 @@
 			"grade": "Super 750",
 			"bwfUrl": "https://bwfworldtour.bwfbadminton.com/tournament/5210/victor-denmark-open-2026/overview/",
 			"bajUrl": "https://www.badminton.or.jp/storage/conventions/pdf/1271/send_out_20260911110515.pdf"
+		},
+		{
+			"id": "2026-10-14:サント・ドミンゴオープン2026",
+			"name": "サント・ドミンゴオープン2026",
+			"startDate": "2026-10-14",
+			"endDate": "2026-10-18",
+			"grade": "インターナショナルシリーズ",
+			"bwfUrl": "https://bwfbadminton.com/tournament/5760/xv-santo-domingo-open-2026/info",
+			"bajUrl": "https://www.badminton.or.jp/storage/conventions/pdf/1400/contestant_20260904112740.pdf"
 		}
 	]
 }
