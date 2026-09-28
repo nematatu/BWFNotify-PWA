@@ -1,15 +1,6 @@
 {
-	"generatedAt": "2026-09-27T09:18:34.640Z",
+	"generatedAt": "2026-09-28T09:50:50.021Z",
 	"tournaments": [
-		{
-			"id": "2026-09-22:スラバヤインターナショナルチャレンジ2026",
-			"name": "スラバヤインターナショナルチャレンジ2026",
-			"startDate": "2026-09-22",
-			"endDate": "2026-09-27",
-			"grade": "インターナショナルチャレンジ",
-			"bwfUrl": "https://bwfbadminton.com/tournament/5855/polytron-surabaya-international-challenge-2026/info",
-			"bajUrl": "https://www.badminton.or.jp/storage/conventions/pdf/1370/send_out_20260903150035.pdf"
-		},
 		{
 			"id": "2026-09-29:グアテマラインターナショナルチャレンジ2026",
 			"name": "グアテマラインターナショナルチャレンジ2026",
@@ -72,6 +63,15 @@
 			"grade": "インターナショナルシリーズ",
 			"bwfUrl": "https://bwfbadminton.com/tournament/5760/xv-santo-domingo-open-2026/info",
 			"bajUrl": "https://www.badminton.or.jp/storage/conventions/pdf/1400/contestant_20260904112740.pdf"
+		},
+		{
+			"id": "2026-10-14:シドニーインターナショナル2026",
+			"name": "シドニーインターナショナル2026",
+			"startDate": "2026-10-14",
+			"endDate": "2026-10-18",
+			"grade": "インターナショナルチャレンジ",
+			"bwfUrl": "https://bwfbadminton.com/tournament/5761/roketto-sydney-international-2026/info",
+			"bajUrl": "https://www.badminton.or.jp/storage/conventions/pdf/1401/contestant_20260904114112.pdf"
 		}
 	]
 }
