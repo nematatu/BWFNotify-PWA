@@ -1,24 +1,6 @@
 {
-	"generatedAt": "2026-09-30T09:45:18.213Z",
+	"generatedAt": "2026-10-01T10:11:53.398Z",
 	"tournaments": [
-		{
-			"id": "2026-09-29:グアテマラインターナショナルチャレンジ2026",
-			"name": "グアテマラインターナショナルチャレンジ2026",
-			"startDate": "2026-09-29",
-			"endDate": "2026-10-04",
-			"grade": "インターナショナルチャレンジ",
-			"bwfUrl": "https://bwfbadminton.com/tournament/5753/guatemala-international-challenge-2026/info",
-			"bajUrl": "https://www.badminton.or.jp/storage/conventions/pdf/1391/contestant_20260929170022.pdf"
-		},
-		{
-			"id": "2026-09-30:ノースハーバーインターナショナル2026",
-			"name": "ノースハーバーインターナショナル2026",
-			"startDate": "2026-09-30",
-			"endDate": "2026-10-04",
-			"grade": "インターナショナルチャレンジ",
-			"bwfUrl": "https://bwfbadminton.com/tournament/5766/maxx-north-harbour-international-2026/info",
-			"bajUrl": "https://www.badminton.or.jp/storage/conventions/pdf/1392/contestant_20260821134210.pdf"
-		},
 		{
 			"id": "2026-10-07:アライズインターナショナルチャレンジ2026",
 			"name": "アライズインターナショナルチャレンジ2026",
@@ -72,6 +54,24 @@
 			"grade": "インターナショナルチャレンジ",
 			"bwfUrl": "https://bwfbadminton.com/tournament/5761/roketto-sydney-international-2026/info",
 			"bajUrl": "https://www.badminton.or.jp/storage/conventions/pdf/1401/contestant_20260904114112.pdf"
+		},
+		{
+			"id": "2026-10-20:フランスオープン2026",
+			"name": "フランスオープン2026",
+			"startDate": "2026-10-20",
+			"endDate": "2026-10-25",
+			"grade": "Super 750",
+			"bwfUrl": "https://bwfworldtour.bwfbadminton.com/tournament/5272/yonex-french-open-2026/overview/",
+			"bajUrl": "https://www.badminton.or.jp/storage/conventions/pdf/1272/send_out_20260911110649.pdf"
+		},
+		{
+			"id": "2026-10-20:クドゥスインドネシアマスターズ2026",
+			"name": "クドゥスインドネシアマスターズ2026",
+			"startDate": "2026-10-20",
+			"endDate": "2026-10-25",
+			"grade": "Super 100",
+			"bwfUrl": "https://bwfbadminton.com/tournament/5526/polytron-kudus-indonesia-masters-2026/results/",
+			"bajUrl": "https://www.badminton.or.jp/storage/conventions/pdf/1404/send_out_20260915150519.pdf"
 		}
 	]
 }
