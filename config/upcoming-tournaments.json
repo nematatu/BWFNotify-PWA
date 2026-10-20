@@ -1,77 +1,63 @@
 {
-	"generatedAt": "2026-10-06T10:22:57.256Z",
+	"generatedAt": "2026-10-20T08:36:15.235Z",
 	"tournaments": [
 		{
-			"id": "2026-10-07:アライズインターナショナルチャレンジ2026",
-			"name": "アライズインターナショナルチャレンジ2026",
-			"startDate": "2026-10-07",
-			"endDate": "2026-10-11",
-			"grade": "インターナショナルチャレンジ",
-			"bwfUrl": "https://bwfbadminton.com/tournament/5792/arise-international-challenge-2026/results/",
-			"bajUrl": "https://www.badminton.or.jp/storage/conventions/pdf/1395/contestant_20260828144240.pdf"
-		},
-		{
-			"id": "2026-10-07:トルコインターナショナルチャレンジ2026",
-			"name": "トルコインターナショナルチャレンジ2026",
-			"startDate": "2026-10-07",
-			"endDate": "2026-10-11",
-			"grade": "インターナショナルチャレンジ",
-			"bwfUrl": "https://bwfbadminton.com/tournament/5758/navek-turkiye-international-challenge-2026/results/",
-			"bajUrl": "https://www.badminton.or.jp/storage/conventions/pdf/1396/contestant_20260828144513.pdf"
-		},
-		{
-			"id": "2026-10-13:マレーシアスーパー100 2026",
-			"name": "マレーシアスーパー100 2026",
-			"startDate": "2026-10-13",
-			"endDate": "2026-10-18",
-			"grade": "Super 100",
-			"bwfUrl": "https://bwfbadminton.com/tournament/5228/allianz-malaysia-super-100-2026/results/",
-			"bajUrl": "https://www.badminton.or.jp/storage/conventions/pdf/1270/send_out_20260915150358.pdf"
-		},
-		{
-			"id": "2026-10-13:デンマークオープン2026",
-			"name": "デンマークオープン2026",
-			"startDate": "2026-10-13",
-			"endDate": "2026-10-18",
-			"grade": "Super 750",
-			"bwfUrl": "https://bwfworldtour.bwfbadminton.com/tournament/5210/victor-denmark-open-2026/overview/",
-			"bajUrl": "https://www.badminton.or.jp/storage/conventions/pdf/1271/send_out_20261006144705.pdf"
-		},
-		{
-			"id": "2026-10-14:サント・ドミンゴオープン2026",
-			"name": "サント・ドミンゴオープン2026",
-			"startDate": "2026-10-14",
-			"endDate": "2026-10-18",
-			"grade": "インターナショナルシリーズ",
-			"bwfUrl": "https://bwfbadminton.com/tournament/5760/xv-santo-domingo-open-2026/info",
-			"bajUrl": "https://www.badminton.or.jp/storage/conventions/pdf/1400/contestant_20260904112740.pdf"
-		},
-		{
-			"id": "2026-10-14:シドニーインターナショナル2026",
-			"name": "シドニーインターナショナル2026",
-			"startDate": "2026-10-14",
-			"endDate": "2026-10-18",
-			"grade": "インターナショナルチャレンジ",
-			"bwfUrl": "https://bwfbadminton.com/tournament/5761/roketto-sydney-international-2026/info",
-			"bajUrl": "https://www.badminton.or.jp/storage/conventions/pdf/1401/contestant_20260904114112.pdf"
-		},
-		{
-			"id": "2026-10-20:フランスオープン2026",
+			"id": "2026-10-18:フランスオープン2026",
 			"name": "フランスオープン2026",
-			"startDate": "2026-10-20",
-			"endDate": "2026-10-25",
-			"grade": "Super 750",
-			"bwfUrl": "https://bwfworldtour.bwfbadminton.com/tournament/5272/yonex-french-open-2026/overview/",
-			"bajUrl": "https://www.badminton.or.jp/storage/conventions/pdf/1272/send_out_20261006144649.pdf"
+			"startDate": "2026-10-18",
+			"endDate": "2026-10-26",
+			"grade": "Super 750"
 		},
 		{
-			"id": "2026-10-20:クドゥスインドネシアマスターズ2026",
-			"name": "クドゥスインドネシアマスターズ2026",
-			"startDate": "2026-10-20",
-			"endDate": "2026-10-25",
-			"grade": "Super 100",
-			"bwfUrl": "https://bwfbadminton.com/tournament/5526/polytron-kudus-indonesia-masters-2026/results/",
-			"bajUrl": "https://www.badminton.or.jp/storage/conventions/pdf/1404/send_out_20260915150519.pdf"
+			"id": "2026-10-19:インドネシアマスターズ100 2026",
+			"name": "インドネシアマスターズ100 2026",
+			"startDate": "2026-10-19",
+			"endDate": "2026-10-26",
+			"grade": "Super 100"
+		},
+		{
+			"id": "2026-10-27:ハイロオープン2026",
+			"name": "ハイロオープン2026",
+			"startDate": "2026-10-27",
+			"endDate": "2026-11-01",
+			"grade": "Super 500",
+			"bwfUrl": "https://bwfworldtour.bwfbadminton.com/tournament/5273/hylo-open-2026/overview/"
+		},
+		{
+			"id": "2026-11-01:第4回ユースオリンピック競技大会（2026／ダカール）",
+			"name": "第4回ユースオリンピック競技大会（2026／ダカール）",
+			"startDate": "2026-11-01",
+			"endDate": "2026-11-05",
+			"bwfUrl": "https://bwfbadminton.com/tournament/5636/youth-olympic-games-dakar-2026/info",
+			"bajUrl": "https://www.badminton.or.jp/storage/conventions/pdf/1274/send_out_20261016115012.pdf"
+		},
+		{
+			"id": "2026-11-01:韓国オープン2026",
+			"name": "韓国オープン2026",
+			"startDate": "2026-11-01",
+			"endDate": "2026-11-08",
+			"grade": "Super 500"
+		},
+		{
+			"id": "2026-11-08:熊本マスターズジャパン2026",
+			"name": "熊本マスターズジャパン2026",
+			"startDate": "2026-11-08",
+			"endDate": "2026-11-15",
+			"grade": "Super 500"
+		},
+		{
+			"id": "2026-11-15:香港オープン2026",
+			"name": "香港オープン2026",
+			"startDate": "2026-11-15",
+			"endDate": "2026-11-22",
+			"grade": "Super 500"
+		},
+		{
+			"id": "2026-11-16:アジアシニア選手権2026",
+			"name": "アジアシニア選手権2026",
+			"startDate": "2026-11-16",
+			"endDate": "2026-11-22",
+			"bwfUrl": "https://bwfbadminton.com/tournament/5879/badminton-asia-senior-championships-2026/info"
 		}
 	]
 }
