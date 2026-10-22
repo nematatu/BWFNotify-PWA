@@ -1,5 +1,5 @@
 {
-	"generatedAt": "2026-10-21T08:37:26.662Z",
+	"generatedAt": "2026-10-22T08:39:48.323Z",
 	"tournaments": [
 		{
 			"id": "2026-10-18:フランスオープン2026",
@@ -14,6 +14,24 @@
 			"startDate": "2026-10-19",
 			"endDate": "2026-10-26",
 			"grade": "Super 100"
+		},
+		{
+			"id": "2026-10-20:クドゥスインドネシアマスターズ2026",
+			"name": "クドゥスインドネシアマスターズ2026",
+			"startDate": "2026-10-20",
+			"endDate": "2026-10-25",
+			"grade": "Super 100",
+			"bwfUrl": "https://bwfbadminton.com/tournament/5526/polytron-kudus-indonesia-masters-2026/results",
+			"bajUrl": "https://www.badminton.or.jp/storage/conventions/pdf/1408/contestant_20261022130934.pdf"
+		},
+		{
+			"id": "2026-10-21:ペルーインターナショナルチャレンジ2026",
+			"name": "ペルーインターナショナルチャレンジ2026",
+			"startDate": "2026-10-21",
+			"endDate": "2026-10-25",
+			"grade": "インターナショナルチャレンジ",
+			"bwfUrl": "https://bwfbadminton.com/tournament/5779/peru-international-challenge-2026/results",
+			"bajUrl": "https://www.badminton.or.jp/storage/conventions/pdf/1409/contestant_20261022131059.pdf"
 		},
 		{
 			"id": "2026-10-27:ハイロオープン2026",
@@ -44,20 +62,6 @@
 			"startDate": "2026-11-08",
 			"endDate": "2026-11-15",
 			"grade": "Super 500"
-		},
-		{
-			"id": "2026-11-15:香港オープン2026",
-			"name": "香港オープン2026",
-			"startDate": "2026-11-15",
-			"endDate": "2026-11-22",
-			"grade": "Super 500"
-		},
-		{
-			"id": "2026-11-16:アジアシニア選手権2026",
-			"name": "アジアシニア選手権2026",
-			"startDate": "2026-11-16",
-			"endDate": "2026-11-22",
-			"bwfUrl": "https://bwfbadminton.com/tournament/5879/badminton-asia-senior-championships-2026/info"
 		}
 	]
 }
