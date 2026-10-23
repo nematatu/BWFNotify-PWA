@@ -1,12 +1,13 @@
 {
-	"generatedAt": "2026-10-22T08:39:48.323Z",
+	"generatedAt": "2026-10-23T08:35:35.360Z",
 	"tournaments": [
 		{
 			"id": "2026-10-18:フランスオープン2026",
 			"name": "フランスオープン2026",
 			"startDate": "2026-10-18",
 			"endDate": "2026-10-26",
-			"grade": "Super 750"
+			"grade": "Super 750",
+			"bajUrl": "https://www.badminton.or.jp/storage/conventions/pdf/1272/send_out_20261023115053.pdf"
 		},
 		{
 			"id": "2026-10-19:インドネシアマスターズ100 2026",
@@ -22,7 +23,7 @@
 			"endDate": "2026-10-25",
 			"grade": "Super 100",
 			"bwfUrl": "https://bwfbadminton.com/tournament/5526/polytron-kudus-indonesia-masters-2026/results",
-			"bajUrl": "https://www.badminton.or.jp/storage/conventions/pdf/1408/contestant_20261022130934.pdf"
+			"bajUrl": "https://www.badminton.or.jp/storage/conventions/pdf/1408/send_out_20261023133848.pdf"
 		},
 		{
 			"id": "2026-10-21:ペルーインターナショナルチャレンジ2026",
@@ -42,6 +43,15 @@
 			"bwfUrl": "https://bwfworldtour.bwfbadminton.com/tournament/5273/hylo-open-2026/overview/"
 		},
 		{
+			"id": "2026-10-27:KBAダイヤモンドジュビリーインターナショナルチャレンジ2026",
+			"name": "KBAダイヤモンドジュビリーインターナショナルチャレンジ2026",
+			"startDate": "2026-10-27",
+			"endDate": "2026-11-01",
+			"grade": "インターナショナルチャレンジ",
+			"bwfUrl": "https://bwfbadminton.com/tournament/5217/kba-diamond-jubilee-india-international-challenge-2026/info",
+			"bajUrl": "https://www.badminton.or.jp/storage/conventions/pdf/1412/contestant_20261023141245.pdf"
+		},
+		{
 			"id": "2026-11-01:第4回ユースオリンピック競技大会（2026／ダカール）",
 			"name": "第4回ユースオリンピック競技大会（2026／ダカール）",
 			"startDate": "2026-11-01",
@@ -54,13 +64,6 @@
 			"name": "韓国オープン2026",
 			"startDate": "2026-11-01",
 			"endDate": "2026-11-08",
-			"grade": "Super 500"
-		},
-		{
-			"id": "2026-11-08:熊本マスターズジャパン2026",
-			"name": "熊本マスターズジャパン2026",
-			"startDate": "2026-11-08",
-			"endDate": "2026-11-15",
 			"grade": "Super 500"
 		}
 	]
