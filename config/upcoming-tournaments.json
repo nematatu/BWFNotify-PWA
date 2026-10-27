@@ -1,5 +1,5 @@
 {
-	"generatedAt": "2026-10-26T08:59:52.340Z",
+	"generatedAt": "2026-10-27T09:03:34.257Z",
 	"tournaments": [
 		{
 			"id": "2026-10-27:ハイロオープン2026",
@@ -27,18 +27,22 @@
 			"bajUrl": "https://www.badminton.or.jp/storage/conventions/pdf/1274/send_out_20261016115012.pdf"
 		},
 		{
-			"id": "2026-11-01:韓国オープン2026",
+			"id": "2026-11-03:韓国オープン2026",
 			"name": "韓国オープン2026",
-			"startDate": "2026-11-01",
+			"startDate": "2026-11-03",
 			"endDate": "2026-11-08",
-			"grade": "Super 500"
+			"grade": "Super 500",
+			"bwfUrl": "https://bwfworldtour.bwfbadminton.com/tournament/5597/yeosu-victor-korea-open-2026/overview/",
+			"bajUrl": "https://www.badminton.or.jp/storage/conventions/pdf/1276/send_out_20261027150211.pdf"
 		},
 		{
 			"id": "2026-11-08:熊本マスターズジャパン2026",
 			"name": "熊本マスターズジャパン2026",
 			"startDate": "2026-11-08",
 			"endDate": "2026-11-15",
-			"grade": "Super 500"
+			"grade": "Super 500",
+			"bwfUrl": "https://bwfworldtour.bwfbadminton.com/tournament/5216/kumamoto-masters-japan-2026/results/2026-11-10",
+			"bajUrl": "https://www.badminton.or.jp/storage/conventions/pdf/1236/send_out_20261027154404.pdf"
 		},
 		{
 			"id": "2026-11-11:アイルランドオープン2026",
@@ -50,18 +54,19 @@
 			"bajUrl": "https://www.badminton.or.jp/storage/conventions/pdf/1413/contestant_20261023150101.pdf"
 		},
 		{
-			"id": "2026-11-15:香港オープン2026",
-			"name": "香港オープン2026",
-			"startDate": "2026-11-15",
-			"endDate": "2026-11-22",
-			"grade": "Super 500"
-		},
-		{
 			"id": "2026-11-16:アジアシニア選手権2026",
 			"name": "アジアシニア選手権2026",
 			"startDate": "2026-11-16",
 			"endDate": "2026-11-22",
 			"bwfUrl": "https://bwfbadminton.com/tournament/5879/badminton-asia-senior-championships-2026/info"
+		},
+		{
+			"id": "2026-11-16:パトゥムターニージュニアインターナショナルチャレンジ2026",
+			"name": "パトゥムターニージュニアインターナショナルチャレンジ2026",
+			"startDate": "2026-11-16",
+			"endDate": "2026-11-22",
+			"bwfUrl": "https://bwfbadminton.com/tournament/5774/li-ning-pathumthani-junior-international-challenge-2026/results/",
+			"bajUrl": "https://www.badminton.or.jp/storage/conventions/pdf/1402/contestant_20261016092655.pdf"
 		}
 	]
 }
