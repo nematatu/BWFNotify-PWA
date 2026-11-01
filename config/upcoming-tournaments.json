@@ -1,23 +1,6 @@
 {
-	"generatedAt": "2026-10-31T09:42:02.992Z",
+	"generatedAt": "2026-11-01T10:30:59.473Z",
 	"tournaments": [
-		{
-			"id": "2026-10-27:ハイロオープン2026",
-			"name": "ハイロオープン2026",
-			"startDate": "2026-10-27",
-			"endDate": "2026-11-01",
-			"grade": "Super 500",
-			"bwfUrl": "https://bwfworldtour.bwfbadminton.com/tournament/5273/hylo-open-2026/overview/"
-		},
-		{
-			"id": "2026-10-27:KBAダイヤモンドジュビリーインターナショナルチャレンジ2026",
-			"name": "KBAダイヤモンドジュビリーインターナショナルチャレンジ2026",
-			"startDate": "2026-10-27",
-			"endDate": "2026-11-01",
-			"grade": "インターナショナルチャレンジ",
-			"bwfUrl": "https://bwfbadminton.com/tournament/5217/kba-diamond-jubilee-india-international-challenge-2026/info",
-			"bajUrl": "https://www.badminton.or.jp/storage/conventions/pdf/1412/contestant_20261023141245.pdf"
-		},
 		{
 			"id": "2026-11-01:第4回ユースオリンピック競技大会（2026／ダカール）",
 			"name": "第4回ユースオリンピック競技大会（2026／ダカール）",
@@ -67,6 +50,24 @@
 			"endDate": "2026-11-22",
 			"bwfUrl": "https://bwfbadminton.com/tournament/5774/li-ning-pathumthani-junior-international-challenge-2026/results/",
 			"bajUrl": "https://www.badminton.or.jp/storage/conventions/pdf/1402/contestant_20261016092655.pdf"
+		},
+		{
+			"id": "2026-11-17:香港オープン2026",
+			"name": "香港オープン2026",
+			"startDate": "2026-11-17",
+			"endDate": "2026-11-22",
+			"grade": "Super 500",
+			"bwfUrl": "https://bwfworldtour.bwfbadminton.com/tournament/5218/li-ning-hong-kong-open-2026/overview/",
+			"bajUrl": "https://www.badminton.or.jp/storage/conventions/pdf/1277/send_out_20261027145920.pdf"
+		},
+		{
+			"id": "2026-11-17:ジョクジャカルタインターナショナルチャレンジ2026",
+			"name": "ジョクジャカルタインターナショナルチャレンジ2026",
+			"startDate": "2026-11-17",
+			"endDate": "2026-11-22",
+			"grade": "インターナショナルチャレンジ",
+			"bwfUrl": "https://bwfbadminton.com/tournament/5576/polytron-yogyakarta-international-challenge-2026/results/",
+			"bajUrl": "https://www.badminton.or.jp/storage/conventions/pdf/1403/contestant_20261016094524.pdf"
 		}
 	]
 }
