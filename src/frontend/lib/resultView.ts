@@ -36,11 +36,12 @@ export function resultView(match: MatchSummary): ResultView {
 	};
 }
 
-export function orderedResultScores(match: MatchSummary, leftIndex: 1 | 2) {
+/** 各ゲームの得点を、画面の左右の並び（日本人選手が左）にそろえて返す。 */
+export function orderedGameScores(match: MatchSummary, leftIndex: 1 | 2) {
 	return match.scores.map((game) =>
 		leftIndex === 1
-			? `${game.team1} - ${game.team2}`
-			: `${game.team2} - ${game.team1}`,
+			? { left: game.team1, right: game.team2 }
+			: { left: game.team2, right: game.team1 },
 	);
 }
 

@@ -23,7 +23,7 @@ import {
 import { pollingMode } from "../src/frontend/lib/pollingPolicy.ts";
 import {
 	groupResultsByDay,
-	orderedResultScores,
+	orderedGameScores,
 	resultView,
 } from "../src/frontend/lib/resultView.ts";
 import { preferredInitialView } from "../src/frontend/lib/viewPolicy.ts";
@@ -113,7 +113,7 @@ describe("completed match perspective", () => {
 			outcome: "loss",
 		});
 		expect(
-			orderedResultScores(
+			orderedGameScores(
 				match(
 					[],
 					[
@@ -123,7 +123,10 @@ describe("completed match perspective", () => {
 				),
 				view.leftIndex,
 			),
-		).toEqual(["18 - 21", "16 - 21"]);
+		).toEqual([
+			{ left: 18, right: 21 },
+			{ left: 16, right: 21 },
+		]);
 	});
 
 	test("does not assign one overall Japanese result to a Japanese matchup", () => {
@@ -462,13 +465,30 @@ describe("media utilities", () => {
 // static assets and configuration
 // ---------------------------------------------------------------------------
 describe("page structure", () => {
-	test("uses square cards without decorative partial color borders", async () => {
+	test("draws cards with one thin border and no partial color borders", async () => {
 		const css = await Bun.file("src/frontend/app.css").text();
-		expect(css).toContain(
-			".match {\n\tmargin-bottom: 18px;\n\tborder: 1px solid #bcbcbc;\n\tborder-radius: 0;",
-		);
+		const cardRule = css.match(/\n\.match \{([^}]+)\}/)?.[1] || "";
+		expect(cardRule).toContain("border: 1px solid var(--color-line);");
 		expect(css).not.toContain(".live-match {");
-		expect(css).not.toContain("border-top: 4px solid #d71920");
+		expect(css).not.toMatch(/border-(top|left|right|bottom): [2-9]px solid/);
+	});
+
+	test("uses only the defined type scale and two font weights", async () => {
+		const css = await Bun.file("src/frontend/app.css").text();
+		const weights = new Set(
+			[...css.matchAll(/font-weight: ([^;]+);/g)].map((match) => match[1]),
+		);
+		expect([...weights].sort()).toEqual([
+			"var(--weight-bold)",
+			"var(--weight-regular)",
+		]);
+		// 文字サイズはトークン経由だけ（数値の直接指定はトークン定義とスコアの微調整に限る）
+		const rawSizes = [...css.matchAll(/font-size: (\d+px);/g)].map(
+			(match) => match[1],
+		);
+		expect(rawSizes.every((size) => ["24px", "28px"].includes(size))).toBe(
+			true,
+		);
 	});
 
 	test("avoids decorative shadows and badge styling", async () => {

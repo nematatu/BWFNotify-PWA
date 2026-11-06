@@ -200,6 +200,18 @@ const augustTournament = {
 		"https://bwfworldtour.bwfbadminton.com/tournament/5596/victor-korea-masters-2026/overview/",
 };
 
+/** デザイントークン（CSSカスタムプロパティ）の色を、計算後の rgb() 表記で返す。 */
+function tokenColor(page: Page, token: string) {
+	return page.evaluate((name) => {
+		const probe = document.createElement("span");
+		probe.style.color = `var(${name})`;
+		document.body.append(probe);
+		const color = getComputedStyle(probe).color;
+		probe.remove();
+		return color;
+	}, token);
+}
+
 async function preparePage(page: Page) {
 	await page.clock.install({ time: new Date("2026-07-18T09:00:00.000Z") });
 	await page.addInitScript(() => {
@@ -297,36 +309,42 @@ for (const viewport of [
 		await page.setViewportSize(viewport);
 		await preparePage(page);
 		await expect(page.locator("body")).toHaveCSS("font-family", /LINE Seed JP/);
-		await expect(page.locator("main")).toHaveCSS(
-			"background-color",
-			"rgb(255, 255, 255)",
-		);
+		// 色はデザイントークンの値だけを使う
+		const surface = await tokenColor(page, "--color-surface");
+		const sunken = await tokenColor(page, "--color-surface-sunken");
+		const text = await tokenColor(page, "--color-text");
+		const textSecondary = await tokenColor(page, "--color-text-secondary");
+		await expect(page.locator("main")).toHaveCSS("background-color", surface);
 		await expect(page.locator(".notification-settings")).toHaveCSS(
 			"background-color",
-			"rgb(240, 242, 244)",
+			sunken,
 		);
-		await expect(page.locator(".match-toolbar")).toHaveCSS(
+		await expect(page.locator(".match-tabs")).toHaveCSS(
 			"background-color",
-			"rgb(228, 230, 232)",
+			sunken,
 		);
 		await expect(page.locator('.match-tab[aria-selected="true"]')).toHaveCSS(
 			"background-color",
-			"rgb(255, 255, 255)",
+			surface,
 		);
 		await expect(page.locator('.match-tab[aria-selected="true"]')).toHaveCSS(
 			"color",
-			"rgb(38, 66, 89)",
+			text,
 		);
 		await expect(
 			page.locator('.match-tab[aria-selected="false"]').first(),
-		).toHaveCSS("color", "rgb(14, 120, 196)");
+		).toHaveCSS("color", textSecondary);
+		// 太字は選択中のタブだけ
+		await expect(page.locator('.match-tab[aria-selected="true"]')).toHaveCSS(
+			"font-weight",
+			"700",
+		);
+		await expect(
+			page.locator('.match-tab[aria-selected="false"]').first(),
+		).toHaveCSS("font-weight", "400");
 		await expect(page.locator(".notification-controls")).toHaveCSS(
 			"border-top-width",
 			"0px",
-		);
-		await expect(page.locator(".sort-select")).toHaveCSS(
-			"border-radius",
-			"50px",
 		);
 		await expect(page.locator(".match-tab span").first()).toHaveCSS(
 			"background-color",
@@ -336,11 +354,12 @@ for (const viewport of [
 		await expect(sortButton).toHaveCSS("background-color", "rgba(0, 0, 0, 0)");
 		await sortButton.click();
 		const openedSortOptions = page.getByRole("listbox", { name: "ソート順" });
-		await expect(openedSortOptions).toHaveCSS(
+		await expect(openedSortOptions).toHaveCSS("background-color", surface);
+		// 開いてもボタンを色で塗りつぶさない（ホバー時の薄い背景だけ）
+		await expect(sortButton).not.toHaveCSS(
 			"background-color",
-			"rgb(14, 120, 196)",
+			await tokenColor(page, "--color-accent"),
 		);
-		await expect(sortButton).toHaveCSS("background-color", "rgba(0, 0, 0, 0)");
 		await openedSortOptions
 			.getByRole("option", { name: "時間が早い順" })
 			.click();
@@ -381,9 +400,11 @@ for (const viewport of [
 		await expect(page.locator(".app-footer svg.brand-icon")).toHaveCount(2);
 		await expect(page.locator(".footer-message")).not.toContainText("💡");
 		const card = page.locator(".match:has(.matchup)").first();
-		await expect(card).toHaveCSS("border-radius", "0px");
 		await expect(card).toHaveCSS("border-top-width", "1px");
-		await expect(card).toHaveCSS("border-top-color", "rgb(188, 188, 188)");
+		await expect(card).toHaveCSS(
+			"border-top-color",
+			await tokenColor(page, "--color-line"),
+		);
 		for (const flag of await page.locator(".country-flag").all()) {
 			await expect(flag).toHaveCSS("border-width", "0px");
 		}
@@ -506,8 +527,13 @@ for (const viewport of [
 			"background-color",
 			"rgb(255, 255, 255)",
 		);
+		// 勝敗は日本語で示し、勝ちは緑・負けは灰色で区別する
 		await expect(resultRows.nth(0).locator(".result-outcome")).toHaveText(
-			"WIN",
+			"勝ち",
+		);
+		await expect(resultRows.nth(0).locator(".result-outcome")).toHaveCSS(
+			"color",
+			await tokenColor(page, "--color-win"),
 		);
 		await expect(resultRows.nth(1)).toHaveClass(/result-loss/);
 		await expect(resultRows.nth(1)).toHaveCSS("background-image", "none");
@@ -516,16 +542,26 @@ for (const viewport of [
 			"rgb(255, 255, 255)",
 		);
 		await expect(resultRows.nth(1).locator(".result-outcome")).toHaveText(
-			"LOSE",
+			"負け",
+		);
+		await expect(resultRows.nth(1).locator(".result-outcome")).toHaveCSS(
+			"color",
+			await tokenColor(page, "--color-loss"),
 		);
 		await expect(resultRows.nth(2)).toHaveClass(/result-japanese-match/);
 		await expect(resultRows.nth(2).locator(".result-outcome")).toHaveText(
 			"日本人対決",
 		);
+		// 日本人対決でも、勝った側にだけ「勝ち」の印を付ける
 		await expect(resultRows.nth(2).locator(".team-result")).toHaveText([
-			"WIN",
-			"LOSE",
+			"勝ち",
 		]);
+		await expect(
+			resultRows.nth(2).locator(".result-team-winner .team-result"),
+		).toHaveCount(1);
+		await expect(resultRows.nth(2).locator(".result-team-loser")).toHaveCount(
+			1,
+		);
 		await expect(resultRows.nth(2).locator(".result-team-japan")).toHaveCount(
 			2,
 		);
@@ -535,7 +571,17 @@ for (const viewport of [
 			).toHaveClass(/result-team-japan/);
 			await expect(row.locator(".result-flag")).toHaveCount(2);
 		}
-		await expect(resultRows.nth(0).locator(".team-result")).toHaveCount(0);
+		// 勝った日本人選手側に「勝ち」の印、負けた相手側は淡色
+		await expect(
+			resultRows.nth(0).locator(".result-team-japan.result-team-winner"),
+		).toHaveCount(1);
+		await expect(resultRows.nth(0).locator(".result-team-loser")).toHaveCount(
+			1,
+		);
+		// 各ゲームで勝った側の得点だけを太字にする
+		await expect(
+			resultRows.nth(0).locator(".result-game").first().locator(".game-won"),
+		).toHaveCount(1);
 		await expect(resultRows.nth(0).locator(".result-meta")).toContainText(
 			"DAIHATSU Japan Open 2026",
 		);
@@ -863,7 +909,10 @@ test("wide: match cards use multiple columns in both sort modes", async ({
 
 	await page.getByRole("button", { name: "ソート順: 時間が早い順" }).click();
 	const sortOptions = page.getByRole("listbox", { name: "ソート順" });
-	await expect(sortOptions).toHaveCSS("background-color", "rgb(14, 120, 196)");
+	await expect(sortOptions).toHaveCSS(
+		"background-color",
+		await tokenColor(page, "--color-surface"),
+	);
 	if (process.env.CAPTURE_LAYOUT === "1") {
 		await page.screenshot({
 			path: "/tmp/bwfnotify-sort-menu.png",

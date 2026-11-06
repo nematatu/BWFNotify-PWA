@@ -5,22 +5,23 @@ import { recentResults } from "../lib/matchesState";
 import { proxiedImageUrl } from "../lib/media";
 import {
 	groupResultsByDay,
-	orderedResultScores,
+	orderedGameScores,
 	type ResultView,
 	resultView,
 } from "../lib/resultView";
 
-type TeamResult = "WIN" | "LOSE" | "未確定";
-
+/** 日本人選手側から見た勝敗。色と文言を1か所で決める。 */
 const OUTCOME_DISPLAY: Record<
 	ResultView["outcome"],
 	{ className: string; label: string }
 > = {
-	win: { className: "result-win", label: "WIN" },
-	loss: { className: "result-loss", label: "LOSE" },
+	win: { className: "result-win", label: "勝ち" },
+	loss: { className: "result-loss", label: "負け" },
 	"japanese-match": { className: "result-japanese-match", label: "日本人対決" },
 	unknown: { className: "result-unknown", label: "結果未確定" },
 };
+
+type TeamStanding = "winner" | "loser" | "undecided";
 
 export function RecentResults() {
 	return (
@@ -67,11 +68,13 @@ export function RecentResults() {
 function ResultRow(props: { match: MatchSummary }) {
 	const view = () => resultView(props.match);
 	const outcome = () => OUTCOME_DISPLAY[view().outcome];
-	const isJapaneseMatch = () => view().kind === "japanese-match";
 	const teamAt = (index: 1 | 2) => props.match.teams[index - 1];
-	/** 日本人対決のときだけ、各チームに勝敗を表示する。 */
-	const resultOf = (index: 1 | 2) =>
-		isJapaneseMatch() ? teamResult(view().winner, index) : undefined;
+	/** 勝敗が決まっている試合では、勝った側に印を付け、負けた側を淡く表示する。 */
+	const standing = (index: 1 | 2): TeamStanding => {
+		const winner = view().winner;
+		if (!winner) return "undecided";
+		return winner === index ? "winner" : "loser";
+	};
 
 	return (
 		<article class={`result-row ${outcome().className}`}>
@@ -88,18 +91,28 @@ function ResultRow(props: { match: MatchSummary }) {
 				<ResultTeam
 					team={teamAt(view().leftIndex)}
 					isJapanese={true}
-					teamResult={resultOf(view().leftIndex)}
+					standing={standing(view().leftIndex)}
 				/>
 				<div class="result-score">
 					<span class="visually-hidden">ゲームスコア</span>
-					<For each={orderedResultScores(props.match, view().leftIndex)}>
-						{(score) => <span>{score}</span>}
+					<For each={orderedGameScores(props.match, view().leftIndex)}>
+						{(game) => (
+							<span class="result-game">
+								<span classList={{ "game-won": game.left > game.right }}>
+									{game.left}
+								</span>
+								<span class="result-game-separator">-</span>
+								<span classList={{ "game-won": game.right > game.left }}>
+									{game.right}
+								</span>
+							</span>
+						)}
 					</For>
 				</div>
 				<ResultTeam
 					team={teamAt(view().rightIndex)}
-					isJapanese={isJapaneseMatch()}
-					teamResult={resultOf(view().rightIndex)}
+					isJapanese={view().kind === "japanese-match"}
+					standing={standing(view().rightIndex)}
 				/>
 			</div>
 		</article>
@@ -109,18 +122,25 @@ function ResultRow(props: { match: MatchSummary }) {
 function ResultTeam(props: {
 	team: MatchTeamSummary | undefined;
 	isJapanese: boolean;
-	teamResult?: TeamResult;
+	standing: TeamStanding;
 }) {
 	const players = () => props.team?.players || [];
 	return (
-		<div class={`result-team ${props.isJapanese ? "result-team-japan" : ""}`}>
+		<div
+			class="result-team"
+			classList={{
+				"result-team-japan": props.isJapanese,
+				"result-team-winner": props.standing === "winner",
+				"result-team-loser": props.standing === "loser",
+			}}
+		>
 			<div class="result-player-photos">
 				<For each={players().filter((player) => player.photoUrl)}>
 					{(player) => (
 						<img
-							class="result-player-photo"
 							loading="lazy"
 							decoding="async"
+							class="result-player-photo"
 							src={proxiedImageUrl(player.photoUrl, "photo")}
 							alt={`${player.name}選手`}
 						/>
@@ -130,15 +150,12 @@ function ResultTeam(props: {
 			<div class="result-team-head">
 				<Show when={props.team?.flagUrl}>
 					<img
-						class="result-flag"
 						loading="lazy"
 						decoding="async"
+						class="result-flag"
 						src={proxiedImageUrl(props.team?.flagUrl, "flag")}
 						alt={props.team?.countryCode || "国旗"}
 					/>
-				</Show>
-				<Show when={props.teamResult}>
-					<span class="team-result">{props.teamResult}</span>
 				</Show>
 			</div>
 			<div class="result-player-names">
@@ -153,11 +170,10 @@ function ResultTeam(props: {
 					)}
 				</For>
 			</div>
+			{/* 勝った側にだけ印を付ける（名前の下に置き、左右の位置をそろえる） */}
+			<Show when={props.standing === "winner"}>
+				<span class="team-result">勝ち</span>
+			</Show>
 		</div>
 	);
-}
-
-function teamResult(winner: 1 | 2 | undefined, team: 1 | 2): TeamResult {
-	if (!winner) return "未確定";
-	return winner === team ? "WIN" : "LOSE";
 }
