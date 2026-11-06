@@ -8,6 +8,11 @@ import {
 	type SortOrder,
 } from "./matchList";
 import { type PollingMode, pollingMode } from "./pollingPolicy";
+import {
+	browserStorage,
+	readCachedStatus,
+	writeCachedStatus,
+} from "./statusCache";
 import { type MainView, preferredInitialView } from "./viewPolicy";
 
 export type { MainView } from "./viewPolicy";
@@ -39,6 +44,8 @@ const [sortOrder, setSortOrderSignal] = createSignal<SortOrder>(
 	readSavedSort() || DEFAULT_SORT_ORDER,
 );
 const [idle, setIdle] = createSignal(false);
+/** 試合情報を一度でも表示できたか（保存データまたは最新の取得）。未取得の間は「読み込み中」を出す。 */
+const [statusLoaded, setStatusLoaded] = createSignal(false);
 
 export {
 	checkedAt,
@@ -46,6 +53,7 @@ export {
 	matches,
 	recentResults,
 	sortOrder,
+	statusLoaded,
 	upcomingTournaments,
 };
 
@@ -67,24 +75,45 @@ export const setCurrentView = (view: MainView) => {
 };
 
 // --- 取得 ---
+
+const whenIdle = (task: () => void) => {
+	if ("requestIdleCallback" in window) {
+		window.requestIdleCallback(task, { timeout: 2000 });
+	} else {
+		setTimeout(task, 1000);
+	}
+};
+
+/**
+ * 試合情報を画面へ反映する。`fresh` が false（前回の保存データ）の場合は、
+ * 最新の情報が届いたときに初期タブを選び直せるよう、タブの選択を確定しない。
+ */
+const applyStatus = (state: PublicState, fresh: boolean) => {
+	setCheckedAt(state.checkedAt);
+	setMatches(state.matches || []);
+	setRecentResults(state.recentResults || []);
+	setUpcomingTournaments(state.upcomingTournaments || []);
+	setStatusLoaded(true);
+	if (!initialViewSelected) {
+		setCurrentViewSignal(
+			preferredInitialView(
+				state.matches || [],
+				state.recentResults?.length || 0,
+				state.upcomingTournaments?.length || 0,
+			),
+		);
+		initialViewSelected = fresh;
+	}
+};
+
 export const loadStatus = async () => {
 	try {
+		// 初回は index.html の preload で取得済みの応答が使われる
 		const state = await api<PublicState>("/api/status");
-		setCheckedAt(state.checkedAt);
-		setMatches(state.matches || []);
-		setRecentResults(state.recentResults || []);
-		setUpcomingTournaments(state.upcomingTournaments || []);
-		if (!initialViewSelected) {
-			setCurrentViewSignal(
-				preferredInitialView(
-					state.matches || [],
-					state.recentResults?.length || 0,
-					state.upcomingTournaments?.length || 0,
-				),
-			);
-			initialViewSelected = true;
-		}
+		applyStatus(state, true);
 		syncPollingMode();
+		// 約150KBの保存は描画を待たせるため、画面を描き終えたあとの空き時間に行う
+		whenIdle(() => writeCachedStatus(browserStorage(), state));
 	} catch (error) {
 		console.error("Failed to load status:", error);
 	}
@@ -213,6 +242,10 @@ export function initMatchesState() {
 			passive: passiveEvents.has(type),
 		});
 	}
+
+	// 前回の試合情報があれば、取得を待たずにすぐ表示する
+	const cached = readCachedStatus(browserStorage());
+	if (cached) applyStatus(cached, false);
 
 	const init = async () => {
 		await loadStatus();

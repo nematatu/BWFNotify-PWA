@@ -45,6 +45,7 @@ import {
 	notificationDisabled,
 	updateMatchNotif,
 } from "../lib/pushNotificationState";
+import { EmptyState } from "./EmptyState";
 
 // --- ツールバー ---
 
@@ -217,7 +218,9 @@ export function MatchList() {
 		>
 			<Show
 				when={visibleMatches().length > 0}
-				fallback={<p class="empty-state">対象の試合はありません</p>}
+				fallback={
+					<EmptyState class="empty-state" message="対象の試合はありません" />
+				}
 			>
 				<Show
 					when={isTournamentOrder()}
