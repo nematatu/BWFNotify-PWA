@@ -78,6 +78,14 @@ KVには次のデータを保存します。
 
 購読一覧はKVのlist結果に含まれるmetadataを利用します。metadataは送信に必要な値だけを短縮キーで保存し、JSON表現が[Cloudflareの1024バイト上限](https://developers.cloudflare.com/kv/platform/limits/)を超える場合はmetadataを付けず、送信時にそのレコードだけ個別getへフォールバックします。KVの利用量はCloudflare側のメトリクスで確認し、固定の削減率は文書上で保証しません。
 
+## 画像
+
+選手写真、国旗、大会ロゴはBWFの画像配信（`img.bwfbadminton.com`）から `/api/media` 経由で表示します。画面側（`src/frontend/lib/media.ts`）でURLの `/image/upload/` 直後に縮小指定を加え、表示サイズに合った画像だけを取得します（選手写真は144px四方、国旗は幅96px、ロゴは幅112px）。画面外の画像は `loading="lazy"` で表示されるまで読み込みません。
+
+公開中のデータで計測した結果、結果タブを開いた直後の画像通信はスマホで約15.2MBから約0.16MBへ、結果を最後まで見た場合でも約0.39MBへ減りました。
+
+大会ヘッダー画像（`tournamentHeaderImageUrl`）は開催地の風景写真で大会を識別できず、1枚約0.9MBと重いため表示しません。
+
 ## PWA
 
 本番ビルド時だけManifestとApple向けPWAメタデータをHTMLへ追加し、ハッシュ付きJS/CSSをService Workerのアプリシェルへ埋め込みます。本番通知では日本人選手写真を`image`と`icon`へ設定し、写真がない場合はアプリアイコンへフォールバックします。

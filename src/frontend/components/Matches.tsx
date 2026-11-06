@@ -262,7 +262,9 @@ function TournamentHeading(props: {
 			>
 				<img
 					class="tournament-logo"
-					src={proxiedImageUrl(props.logoUrl)}
+					loading="lazy"
+					decoding="async"
+					src={proxiedImageUrl(props.logoUrl, "logo")}
 					alt={props.name}
 				/>
 			</Show>
@@ -317,7 +319,9 @@ export function MatchCard(props: {
 						>
 							<img
 								class="match-tournament-logo"
-								src={proxiedImageUrl(props.match.tournamentLogoUrl)}
+								loading="lazy"
+								decoding="async"
+								src={proxiedImageUrl(props.match.tournamentLogoUrl, "logo")}
 								alt=""
 							/>
 						</Show>
@@ -406,7 +410,9 @@ export function TeamBlock(props: {
 				>
 					<img
 						class="country-flag"
-						src={proxiedImageUrl(props.team?.flagUrl)}
+						loading="lazy"
+						decoding="async"
+						src={proxiedImageUrl(props.team?.flagUrl, "flag")}
 						alt={props.team?.countryCode || "国旗"}
 					/>
 				</Show>
@@ -423,7 +429,9 @@ export function TeamBlock(props: {
 							>
 								<img
 									class="player-photo"
-									src={proxiedImageUrl(player.photoUrl)}
+									loading="lazy"
+									decoding="async"
+									src={proxiedImageUrl(player.photoUrl, "photo")}
 									alt={player.name}
 								/>
 							</Show>

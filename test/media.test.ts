@@ -10,6 +10,14 @@ describe("allowedBwfImageUrl", () => {
 		).toBe("img.bwfbadminton.com");
 	});
 
+	test("accepts resized BWF images requested by the screen", () => {
+		expect(
+			allowedBwfImageUrl(
+				"https://img.bwfbadminton.com/image/upload/c_fill,g_face,w_144,h_144,q_auto/v1590501423/assets/players/thumbnail/39276.jpg",
+			)?.hostname,
+		).toBe("img.bwfbadminton.com");
+	});
+
 	test("accepts BWF tournament fallback images", () => {
 		expect(
 			allowedBwfImageUrl(

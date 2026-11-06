@@ -106,7 +106,9 @@ function ResultTeam(props: {
 					{(player) => (
 						<img
 							class="result-player-photo"
-							src={proxiedImageUrl(player.photoUrl)}
+							loading="lazy"
+							decoding="async"
+							src={proxiedImageUrl(player.photoUrl, "photo")}
 							alt={`${player.name}選手`}
 						/>
 					)}
@@ -116,7 +118,9 @@ function ResultTeam(props: {
 				<Show when={props.team?.flagUrl}>
 					<img
 						class="result-flag"
-						src={proxiedImageUrl(props.team?.flagUrl)}
+						loading="lazy"
+						decoding="async"
+						src={proxiedImageUrl(props.team?.flagUrl, "flag")}
 						alt={props.team?.countryCode || "国旗"}
 					/>
 				</Show>

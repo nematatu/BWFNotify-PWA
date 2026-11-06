@@ -15,7 +15,11 @@ import {
 	sortedMatches,
 	tournamentGroups,
 } from "../src/frontend/lib/matchList.ts";
-import { proxiedImageUrl, safeHttpsUrl } from "../src/frontend/lib/media.ts";
+import {
+	proxiedImageUrl,
+	resizedBwfImageUrl,
+	safeHttpsUrl,
+} from "../src/frontend/lib/media.ts";
 import { pollingMode } from "../src/frontend/lib/pollingPolicy.ts";
 import {
 	orderedResultScores,
@@ -362,6 +366,59 @@ describe("media utilities", () => {
 		);
 		expect(proxiedImageUrl(null)).toBe("");
 		expect(proxiedImageUrl(undefined)).toBe("");
+	});
+
+	// URLの形は公開中の /api/status が返した実データに合わせている。
+	test("requests BWF images at the displayed size", () => {
+		const base = "https://img.bwfbadminton.com/image/upload";
+		expect(
+			resizedBwfImageUrl(
+				`${base}/v1590501423/assets/players/thumbnail/39276.jpg`,
+				"photo",
+			),
+		).toBe(
+			`${base}/c_fill,g_face,w_144,h_144,q_auto/v1590501423/assets/players/thumbnail/39276.jpg`,
+		);
+		expect(
+			resizedBwfImageUrl(
+				`${base}/v2/assets/flag-circle-svg-custom/JPN.png`,
+				"flag",
+			),
+		).toBe(
+			`${base}/c_limit,w_96,q_auto/v2/assets/flag-circle-svg-custom/JPN.png`,
+		);
+		expect(
+			resizedBwfImageUrl(
+				`${base}/assets/players/thumbnail/profile_male.jpg`,
+				"photo",
+			),
+		).toBe(
+			`${base}/c_fill,g_face,w_144,h_144,q_auto/assets/players/thumbnail/profile_male.jpg`,
+		);
+	});
+
+	test("leaves already-transformed and non-BWF image URLs unchanged", () => {
+		const named =
+			"https://img.bwfbadminton.com/image/upload/t_Fansite_Homepage_Tourament_Header_big/v1/assets/tournaments/header/A.png";
+		expect(resizedBwfImageUrl(named, "logo")).toBe(named);
+		expect(
+			resizedBwfImageUrl(
+				"https://extranet.bwfbadminton.com/images/a.jpg",
+				"logo",
+			),
+		).toBe("https://extranet.bwfbadminton.com/images/a.jpg");
+		expect(resizedBwfImageUrl("not a url", "photo")).toBe("not a url");
+	});
+
+	test("proxies the resized image URL when a kind is given", () => {
+		expect(
+			proxiedImageUrl(
+				"http://img.bwfbadminton.com/image/upload/v1/assets/players/thumbnail/1.jpg",
+				"photo",
+			),
+		).toBe(
+			`/api/media?url=${encodeURIComponent("https://img.bwfbadminton.com/image/upload/c_fill,g_face,w_144,h_144,q_auto/v1/assets/players/thumbnail/1.jpg")}`,
+		);
 	});
 
 	test("safeHttpsUrl upgrades HTTP to HTTPS", () => {
