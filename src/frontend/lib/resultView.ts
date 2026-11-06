@@ -80,3 +80,35 @@ export function groupResultsByDay(matches: MatchSummary[]): ResultDay[] {
 			return right.date.localeCompare(left.date);
 		});
 }
+
+/** 取ったゲーム数を、画面の左右の並び（日本人選手が左）で返す。例: { left: 2, right: 1 } */
+export function gamesWon(match: MatchSummary, leftIndex: 1 | 2) {
+	const games = orderedGameScores(match, leftIndex);
+	return {
+		left: games.filter((game) => game.left > game.right).length,
+		right: games.filter((game) => game.right > game.left).length,
+	};
+}
+
+export type ResultFilter = "all" | "win" | "loss";
+
+/** 日本人選手側から見た勝ち・負けの数。日本人対決と結果未確定は数えない。 */
+export function countOutcomes(matches: MatchSummary[]) {
+	let win = 0;
+	let loss = 0;
+	for (const match of matches) {
+		const { outcome } = resultView(match);
+		if (outcome === "win") win += 1;
+		if (outcome === "loss") loss += 1;
+	}
+	return { win, loss };
+}
+
+/** 勝ち・負けで絞り込む。「すべて」以外では、日本人対決と結果未確定は除く。 */
+export function filterResults(
+	matches: MatchSummary[],
+	filter: ResultFilter,
+): MatchSummary[] {
+	if (filter === "all") return matches;
+	return matches.filter((match) => resultView(match).outcome === filter);
+}

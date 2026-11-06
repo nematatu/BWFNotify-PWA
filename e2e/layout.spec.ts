@@ -473,30 +473,18 @@ for (const viewport of [
 		);
 		await expect(page.locator(".score-updated")).toHaveCount(1);
 		await expect(page.locator(".score-updated strong")).toHaveText("12");
-		await expect(page.locator(".h2h-scoreline .h2h-wins")).toHaveText([
-			"3勝",
-			"1勝",
-		]);
-		// 勝ち数は、それぞれのチームの真下（チームの横幅の中）にある
-		const h2hAlignment = await page.evaluate(() => {
-			const card = document.querySelector(".live-match");
-			const box = (selector: string, index = 0) =>
-				card?.querySelectorAll(selector)[index]?.getBoundingClientRect();
-			const center = (rect?: DOMRect) =>
-				rect ? rect.left + rect.width / 2 : Number.NaN;
-			const left = box(".team-left");
-			const right = box(".team-right");
-			return {
-				leftWins: center(box(".h2h-wins", 0)),
-				rightWins: center(box(".h2h-wins", 1)),
-				left: [left?.left ?? 0, left?.right ?? 0],
-				right: [right?.left ?? 0, right?.right ?? 0],
-			};
-		});
-		expect(h2hAlignment.leftWins).toBeGreaterThan(h2hAlignment.left[0]);
-		expect(h2hAlignment.leftWins).toBeLessThan(h2hAlignment.left[1]);
-		expect(h2hAlignment.rightWins).toBeGreaterThan(h2hAlignment.right[0]);
-		expect(h2hAlignment.rightWins).toBeLessThan(h2hAlignment.right[1]);
+		// 対戦成績は、日本人選手（左のチーム）から見た「N勝M敗」で示す
+		await expect(page.locator(".live-match .h2h-record")).toHaveText("3勝1敗");
+		// 日本人選手の欄は背景色で示す（相手側には付けない）
+		const japanPanel = await tokenColor(page, "--color-japan");
+		await expect(page.locator(".live-match .japanese-team")).toHaveCSS(
+			"background-color",
+			japanPanel,
+		);
+		await expect(page.locator(".live-match .foreign-team")).toHaveCSS(
+			"background-color",
+			"rgba(0, 0, 0, 0)",
+		);
 		await expect(page.locator(".current-game")).toContainText("ゲーム");
 		await expect(page.locator(".game-score span").first()).toHaveText(
 			"第1ゲーム",
@@ -527,13 +515,16 @@ for (const viewport of [
 			"background-color",
 			"rgb(255, 255, 255)",
 		);
-		// 勝敗は日本語で示し、勝ちは緑・負けは灰色で区別する
+		// 日本人選手側の勝敗を、カード上部の帯の色と文字で示す（勝ちは緑、負けは灰色）
 		await expect(resultRows.nth(0).locator(".result-outcome")).toHaveText(
 			"勝ち",
 		);
-		await expect(resultRows.nth(0).locator(".result-outcome")).toHaveCSS(
-			"color",
+		await expect(resultRows.nth(0).locator(".result-header")).toHaveCSS(
+			"background-color",
 			await tokenColor(page, "--color-win"),
+		);
+		await expect(resultRows.nth(0).locator(".result-games")).toContainText(
+			"2-0",
 		);
 		await expect(resultRows.nth(1)).toHaveClass(/result-loss/);
 		await expect(resultRows.nth(1)).toHaveCSS("background-image", "none");
@@ -544,24 +535,18 @@ for (const viewport of [
 		await expect(resultRows.nth(1).locator(".result-outcome")).toHaveText(
 			"負け",
 		);
-		await expect(resultRows.nth(1).locator(".result-outcome")).toHaveCSS(
-			"color",
+		await expect(resultRows.nth(1).locator(".result-header")).toHaveCSS(
+			"background-color",
 			await tokenColor(page, "--color-loss"),
 		);
 		await expect(resultRows.nth(2)).toHaveClass(/result-japanese-match/);
 		await expect(resultRows.nth(2).locator(".result-outcome")).toHaveText(
 			"日本人対決",
 		);
-		// 日本人対決でも、勝った側にだけ「勝ち」の印を付ける
+		// 日本人対決では、勝った側にだけ「勝ち」の印を付ける
 		await expect(resultRows.nth(2).locator(".team-result")).toHaveText([
 			"勝ち",
 		]);
-		await expect(
-			resultRows.nth(2).locator(".result-team-winner .team-result"),
-		).toHaveCount(1);
-		await expect(resultRows.nth(2).locator(".result-team-loser")).toHaveCount(
-			1,
-		);
 		await expect(resultRows.nth(2).locator(".result-team-japan")).toHaveCount(
 			2,
 		);
@@ -571,13 +556,16 @@ for (const viewport of [
 			).toHaveClass(/result-team-japan/);
 			await expect(row.locator(".result-flag")).toHaveCount(2);
 		}
-		// 勝った日本人選手側に「勝ち」の印、負けた相手側は淡色
-		await expect(
-			resultRows.nth(0).locator(".result-team-japan.result-team-winner"),
-		).toHaveCount(1);
-		await expect(resultRows.nth(0).locator(".result-team-loser")).toHaveCount(
-			1,
-		);
+		// 日本人対決以外では、海外選手が勝っても印を付けない（勝敗は日本人側の帯で示す）
+		await expect(resultRows.nth(1).locator(".team-result")).toHaveCount(0);
+		// 集計と絞り込み
+		await expect(page.locator(".result-total-win")).toHaveText("1勝");
+		await expect(page.locator(".result-total-loss")).toHaveText("1敗");
+		await page.getByRole("button", { name: "負け", exact: true }).click();
+		await expect(resultRows).toHaveCount(1);
+		await expect(resultRows.first()).toHaveClass(/result-loss/);
+		await page.getByRole("button", { name: "すべて" }).click();
+		await expect(resultRows).toHaveCount(3);
 		// 各ゲームで勝った側の得点だけを太字にする
 		await expect(
 			resultRows.nth(0).locator(".result-game").first().locator(".game-won"),

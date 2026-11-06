@@ -518,23 +518,24 @@ function HeadToHead(props: { match: MatchSummary }) {
 	const previous = () => h2h()?.previous;
 	const previousWinner = () =>
 		teamLabel(props.match.teams[previous()?.winner === 1 ? 0 : 1]);
+	// 左のチーム（日本人選手）から見た成績。日本人対決のときは誰から見た成績かを名前で示す
+	const isJapaneseMatch = () =>
+		props.match.teams.every((team) =>
+			team.players.some((player) => player.isJapanese),
+		);
+	const wins = () => h2h()?.team1Wins ?? 0;
+	const losses = () => h2h()?.team2Wins ?? 0;
 
 	return (
 		<details class="h2h">
-			{/* 勝ち数は、それぞれの選手の真下に置いて誰の成績か分かるようにする */}
 			<summary class="h2h-scoreline">
-				<strong class="h2h-wins" aria-hidden="true">
-					{h2h()?.team1Wins ?? 0}勝
-				</strong>
-				<span class="h2h-label" aria-hidden="true">
-					対戦成績
-				</span>
-				<strong class="h2h-wins" aria-hidden="true">
-					{h2h()?.team2Wins ?? 0}勝
-				</strong>
-				<span class="visually-hidden">
-					対戦成績 {teamLabel(props.match.teams[0])} {h2h()?.team1Wins ?? 0}
-					勝、{teamLabel(props.match.teams[1])} {h2h()?.team2Wins ?? 0}勝
+				<span class="h2h-label">対戦成績</span>
+				<Show when={isJapaneseMatch()}>
+					<span class="h2h-subject">{teamLabel(props.match.teams[0])}</span>
+				</Show>
+				<span class="h2h-record">
+					<span class="h2h-wins">{wins()}勝</span>
+					<span class="h2h-losses">{losses()}敗</span>
 				</span>
 			</summary>
 			<Show when={previous()}>

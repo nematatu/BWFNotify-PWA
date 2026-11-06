@@ -22,6 +22,9 @@ import {
 } from "../src/frontend/lib/media.ts";
 import { pollingMode } from "../src/frontend/lib/pollingPolicy.ts";
 import {
+	countOutcomes,
+	filterResults,
+	gamesWon,
 	groupResultsByDay,
 	orderedGameScores,
 	resultView,
@@ -232,6 +235,48 @@ describe("previous match scores", () => {
 		expect(
 			previousGameScoreline([{ team1: 21, team2: 18 }, { team1: 15 }]),
 		).toBe("21-18");
+	});
+});
+
+// ---------------------------------------------------------------------------
+// Japanese-side result summary
+// ---------------------------------------------------------------------------
+describe("Japanese-side result summary", () => {
+	const player = (isJapanese) => ({ name: "x", isJapanese });
+	const result = (id, japaneseIndex, scores) => ({
+		id,
+		teams:
+			japaneseIndex === 1
+				? [{ players: [player(true)] }, { players: [player(false)] }]
+				: [{ players: [player(false)] }, { players: [player(true)] }],
+		scores: scores.map(([team1, team2], index) => ({
+			game: index + 1,
+			team1,
+			team2,
+		})),
+	});
+	const win = result("win", 2, [
+		[18, 21],
+		[21, 19],
+		[15, 21],
+	]);
+	const loss = result("loss", 1, [
+		[14, 21],
+		[24, 26],
+	]);
+
+	test("counts games from the Japanese side", () => {
+		expect(gamesWon(win, 2)).toEqual({ left: 2, right: 1 });
+		expect(gamesWon(loss, 1)).toEqual({ left: 0, right: 2 });
+	});
+
+	test("tallies and filters wins and losses of Japanese players", () => {
+		expect(countOutcomes([win, loss, win])).toEqual({ win: 2, loss: 1 });
+		expect(filterResults([win, loss], "win").map((m) => m.id)).toEqual(["win"]);
+		expect(filterResults([win, loss], "loss").map((m) => m.id)).toEqual([
+			"loss",
+		]);
+		expect(filterResults([win, loss], "all")).toHaveLength(2);
 	});
 });
 

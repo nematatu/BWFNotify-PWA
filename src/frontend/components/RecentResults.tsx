@@ -1,11 +1,15 @@
-import { For, Show } from "solid-js";
+import { createMemo, createSignal, For, Show } from "solid-js";
 import type { MatchSummary, MatchTeamSummary } from "../../type";
 import { displayRound, formatScheduleDate } from "../lib/format";
 import { recentResults } from "../lib/matchesState";
 import { proxiedImageUrl } from "../lib/media";
 import {
+	countOutcomes,
+	filterResults,
+	gamesWon,
 	groupResultsByDay,
 	orderedGameScores,
+	type ResultFilter,
 	type ResultView,
 	resultView,
 } from "../lib/resultView";
@@ -21,9 +25,19 @@ const OUTCOME_DISPLAY: Record<
 	unknown: { className: "result-unknown", label: "結果未確定" },
 };
 
-type TeamStanding = "winner" | "loser" | "undecided";
+const FILTERS: Array<{ value: ResultFilter; label: string }> = [
+	{ value: "all", label: "すべて" },
+	{ value: "win", label: "勝ち" },
+	{ value: "loss", label: "負け" },
+];
 
 export function RecentResults() {
+	const [filter, setFilter] = createSignal<ResultFilter>("all");
+	const totals = createMemo(() => countOutcomes(recentResults()));
+	const days = createMemo(() =>
+		groupResultsByDay(filterResults(recentResults(), filter())),
+	);
+
 	return (
 		<section
 			class="data-section tab-data-section"
@@ -41,25 +55,59 @@ export function RecentResults() {
 				when={recentResults().length > 0}
 				fallback={<p class="data-empty">取得済みの試合結果はありません</p>}
 			>
-				<For each={groupResultsByDay(recentResults())}>
-					{(day) => (
-						<section class="result-day">
-							<h3 class="result-day-heading">
-								<Show when={day.date} fallback="日付不明">
-									{(date) => (
-										<time datetime={date()}>{formatScheduleDate(date())}</time>
-									)}
-								</Show>
-								<span>{day.matches.length}試合</span>
-							</h3>
-							<div class="result-list">
-								<For each={day.matches}>
-									{(match) => <ResultRow match={match} />}
-								</For>
-							</div>
-						</section>
-					)}
-				</For>
+				{/* 日本人選手の勝敗の集計と、勝ち・負けの絞り込み */}
+				<div class="result-summary">
+					<p class="result-totals">
+						<span class="result-totals-label">日本人選手</span>
+						<span class="result-total-win">{totals().win}勝</span>
+						<span class="result-total-loss">{totals().loss}敗</span>
+					</p>
+					<fieldset class="result-filter">
+						<legend class="visually-hidden">試合結果の絞り込み</legend>
+						<For each={FILTERS}>
+							{(option) => (
+								<button
+									type="button"
+									aria-pressed={filter() === option.value}
+									onClick={() => setFilter(option.value)}
+								>
+									{option.label}
+								</button>
+							)}
+						</For>
+					</fieldset>
+				</div>
+				<Show
+					when={days().length > 0}
+					fallback={<p class="data-empty">該当する試合はありません</p>}
+				>
+					<For each={days()}>
+						{(day) => {
+							const dayTotals = () => countOutcomes(day.matches);
+							return (
+								<section class="result-day">
+									<h3 class="result-day-heading">
+										<Show when={day.date} fallback="日付不明">
+											{(date) => (
+												<time datetime={date()}>
+													{formatScheduleDate(date())}
+												</time>
+											)}
+										</Show>
+										<span class="result-day-totals">
+											{dayTotals().win}勝 {dayTotals().loss}敗
+										</span>
+									</h3>
+									<div class="result-list">
+										<For each={day.matches}>
+											{(match) => <ResultRow match={match} />}
+										</For>
+									</div>
+								</section>
+							);
+						}}
+					</For>
+				</Show>
 			</Show>
 		</section>
 	);
@@ -68,18 +116,21 @@ export function RecentResults() {
 function ResultRow(props: { match: MatchSummary }) {
 	const view = () => resultView(props.match);
 	const outcome = () => OUTCOME_DISPLAY[view().outcome];
+	const games = () => gamesWon(props.match, view().leftIndex);
+	const isJapaneseMatch = () => view().kind === "japanese-match";
 	const teamAt = (index: 1 | 2) => props.match.teams[index - 1];
-	/** 勝敗が決まっている試合では、勝った側に印を付け、負けた側を淡く表示する。 */
-	const standing = (index: 1 | 2): TeamStanding => {
-		const winner = view().winner;
-		if (!winner) return "undecided";
-		return winner === index ? "winner" : "loser";
-	};
 
 	return (
 		<article class={`result-row ${outcome().className}`}>
+			{/* 日本人選手側から見た勝敗を、カード上部の帯で示す */}
 			<div class="result-header">
 				<span class="result-outcome">{outcome().label}</span>
+				<Show when={!isJapaneseMatch() && view().winner}>
+					<span class="result-games">
+						<span class="visually-hidden">取ったゲーム数 </span>
+						{games().left}-{games().right}
+					</span>
+				</Show>
 				<div class="result-meta">
 					<span class="result-tournament">{props.match.tournament}</span>
 					<Show when={props.match.round}>
@@ -91,7 +142,9 @@ function ResultRow(props: { match: MatchSummary }) {
 				<ResultTeam
 					team={teamAt(view().leftIndex)}
 					isJapanese={true}
-					standing={standing(view().leftIndex)}
+					wonJapaneseMatch={
+						isJapaneseMatch() && view().winner === view().leftIndex
+					}
 				/>
 				<div class="result-score">
 					<span class="visually-hidden">ゲームスコア</span>
@@ -111,8 +164,10 @@ function ResultRow(props: { match: MatchSummary }) {
 				</div>
 				<ResultTeam
 					team={teamAt(view().rightIndex)}
-					isJapanese={view().kind === "japanese-match"}
-					standing={standing(view().rightIndex)}
+					isJapanese={isJapaneseMatch()}
+					wonJapaneseMatch={
+						isJapaneseMatch() && view().winner === view().rightIndex
+					}
 				/>
 			</div>
 		</article>
@@ -122,17 +177,14 @@ function ResultRow(props: { match: MatchSummary }) {
 function ResultTeam(props: {
 	team: MatchTeamSummary | undefined;
 	isJapanese: boolean;
-	standing: TeamStanding;
+	/** 日本人対決のときだけ、勝った側に「勝ち」の印を付ける */
+	wonJapaneseMatch: boolean;
 }) {
 	const players = () => props.team?.players || [];
 	return (
 		<div
 			class="result-team"
-			classList={{
-				"result-team-japan": props.isJapanese,
-				"result-team-winner": props.standing === "winner",
-				"result-team-loser": props.standing === "loser",
-			}}
+			classList={{ "result-team-japan": props.isJapanese }}
 		>
 			<div class="result-player-photos">
 				<For each={players().filter((player) => player.photoUrl)}>
@@ -170,8 +222,7 @@ function ResultTeam(props: {
 					)}
 				</For>
 			</div>
-			{/* 勝った側にだけ印を付ける（名前の下に置き、左右の位置をそろえる） */}
-			<Show when={props.standing === "winner"}>
+			<Show when={props.wonJapaneseMatch}>
 				<span class="team-result">勝ち</span>
 			</Show>
 		</div>
