@@ -1,4 +1,4 @@
-import { createMemo, createSignal } from "solid-js";
+import { createSignal } from "solid-js";
 import type {
 	SaveSubscriptionRequest,
 	SubscriptionResponse,
@@ -16,17 +16,15 @@ import { registerServiceWorker } from "./pwa";
 import { openInstall } from "./pwaInstallState";
 
 // --- 状態 ---
-export const [notifText, setNotifText] = createSignal("確認中");
-export const [notifError, setNotifError] = createSignal(false);
-export const [testDisabled, setTestDisabled] = createSignal(true);
-export const [toggleDisabled, setToggleDisabled] = createSignal(true);
-export const [toggleChecked, setToggleChecked] = createSignal(false);
-export const [excludedIds, setExcludedIds] = createSignal<Set<string>>(
-	new Set(),
-);
-export const [permissionOpen, setPermissionOpen] = createSignal(false);
-export const [permissionBlockedOpen, setPermissionBlockedOpen] =
-	createSignal(false);
+// 書き換えはこのモジュールの操作関数だけに限り、外部へは読み取り関数だけを公開する。
+const [notifText, setNotifText] = createSignal("確認中");
+const [notifError, setNotifError] = createSignal(false);
+const [testDisabled, setTestDisabled] = createSignal(true);
+const [toggleDisabled, setToggleDisabled] = createSignal(true);
+const [toggleChecked, setToggleChecked] = createSignal(false);
+const [excludedIds, setExcludedIds] = createSignal<Set<string>>(new Set());
+const [permissionOpen, setPermissionOpen] = createSignal(false);
+const [permissionBlockedOpen, setPermissionBlockedOpen] = createSignal(false);
 const [subscription, setSubscription] = createSignal<PushSubscription | null>(
 	null,
 );
@@ -36,14 +34,24 @@ let vapidKey: string | undefined;
 let preferenceWrite: Promise<void> = Promise.resolve();
 let preferenceVersion = 0;
 
-export const notificationDisabled = createMemo(
-	() =>
-		!(
-			subscription() &&
-			"Notification" in window &&
-			Notification.permission === "granted"
-		),
-);
+export {
+	excludedIds,
+	notifError,
+	notifText,
+	permissionBlockedOpen,
+	permissionOpen,
+	testDisabled,
+	toggleChecked,
+	toggleDisabled,
+};
+
+/** 試合ごとの通知トグルを操作できない状態か（購読がない、または未許可）。 */
+export const notificationDisabled = () =>
+	!(
+		subscription() &&
+		"Notification" in window &&
+		Notification.permission === "granted"
+	);
 
 const setOverlayOpen = (open: boolean) =>
 	document.body.classList.toggle("overlay-open", open);
@@ -124,7 +132,7 @@ export const initNotifications = async () => {
 	}
 };
 
-export const updateSubscription = async (enabled: boolean) => {
+const updateSubscription = async (enabled: boolean) => {
 	if (!registration || !vapidKey) return;
 	setToggleDisabled(true);
 	setTestDisabled(true);
@@ -250,7 +258,7 @@ export const onToggleChange = (event: Event) => {
 	void updateSubscription((event.target as HTMLInputElement).checked);
 };
 
-export const closePermission = () => {
+const closePermission = () => {
 	setPermissionOpen(false);
 	setOverlayOpen(false);
 };

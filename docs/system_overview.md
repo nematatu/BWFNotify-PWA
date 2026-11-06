@@ -27,6 +27,8 @@ Cloudflare Cron（2分間隔）
   - `RecentResults.tsx`: 直近7日間の試合結果
   - `Schedule.tsx`: 今後の大会の一覧・カレンダー・詳細
   - `Notifications.tsx`: 通知設定とインストール・許可の案内
+状態モジュール（`matchesState.ts`、`pushNotificationState.ts`、`pwaInstallState.ts`）は読み取り関数と操作関数だけを公開し、状態の書き換え関数（setter）は外部へ公開しません。算出値は描画ルートの外で `createMemo` を作らず、通常の関数として公開します。
+
 - `src/frontend/lib/matchesState.ts`: 試合状態と更新ライフサイクル
 - `src/frontend/lib/pollingPolicy.ts`: 停止・通常・ライブ更新の純粋な判定
 - `src/frontend/lib/pushNotificationState.ts`: Push購読と試合別除外設定
@@ -72,6 +74,8 @@ KVには次のデータを保存します。
 - Push購読と試合別除外
 - H2Hキャッシュ
 
+大会カレンダーは同梱設定（`config/bwf-calendar-2026.json`、`config/upcoming-tournaments.json`）から `/api/status` が毎回組み立てるため、KVには保存しません。旧バージョンが保存した `upcomingTournaments` は読まずに無視し、次回の書き込みで消えます。
+
 購読一覧はKVのlist結果に含まれるmetadataを利用します。metadataは送信に必要な値だけを短縮キーで保存し、JSON表現が[Cloudflareの1024バイト上限](https://developers.cloudflare.com/kv/platform/limits/)を超える場合はmetadataを付けず、送信時にそのレコードだけ個別getへフォールバックします。KVの利用量はCloudflare側のメトリクスで確認し、固定の削減率は文書上で保証しません。
 
 ## PWA
@@ -106,3 +110,5 @@ GitHub Actionsでも同じコマンドを実行します。`main`へのpush後�
 - BWFの取得先は安定提供が保証された公開APIであることを確認できていません。形式変更をfixtureとログで検知する必要があります。
 - iOSのWeb Pushはホーム画面へ追加したWebアプリから許可する必要があります。自動テストだけで実機配送を証明できないため、リリース前の実機確認対象です。
 - KV metadataのサイズとlistページ数は購読数増加時に計測し、上限接近を監視する必要があります。
+- `/api/live` は、エッジキャッシュが切れるたびに、Cron と同じ全件取得（大会数×3日分の日別試合API）を実行します。ライブ得点だけを軽く取得できるBWFの取得先があるかは、実レスポンスで確認できていないため未対応です。
+- 公開API（`/api/status`、`/api/live`）には、画面で使っていない項目（`players`、大会ヘッダー画像URLなど）が含まれています。別リポジトリのCLIがこれらを使っているか確認できていないため、互換性のため残しています。

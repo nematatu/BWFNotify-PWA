@@ -27,23 +27,27 @@ function readSavedSort(): SortOrder | null {
 }
 
 // --- 状態 ---
-export const [matches, setMatches] = createSignal<MatchSummary[]>([]);
-export const [checkedAt, setCheckedAt] = createSignal<string | null>(null);
-export const [recentResults, setRecentResults] = createSignal<MatchSummary[]>(
-	[],
-);
-export const [calendarCheckedAt, setCalendarCheckedAt] = createSignal<
-	string | null
->(null);
-export const [upcomingTournaments, setUpcomingTournaments] = createSignal<
+// 書き換えはこのモジュールの操作関数だけに限り、外部へは読み取り関数だけを公開する。
+const [matches, setMatches] = createSignal<MatchSummary[]>([]);
+const [checkedAt, setCheckedAt] = createSignal<string | null>(null);
+const [recentResults, setRecentResults] = createSignal<MatchSummary[]>([]);
+const [upcomingTournaments, setUpcomingTournaments] = createSignal<
 	UpcomingTournament[]
 >([]);
-export const [currentView, setCurrentViewSignal] =
-	createSignal<MainView>("live");
-export const [sortOrder, setSortOrderSignal] = createSignal<SortOrder>(
+const [currentView, setCurrentViewSignal] = createSignal<MainView>("live");
+const [sortOrder, setSortOrderSignal] = createSignal<SortOrder>(
 	readSavedSort() || DEFAULT_SORT_ORDER,
 );
 const [idle, setIdle] = createSignal(false);
+
+export {
+	checkedAt,
+	currentView,
+	matches,
+	recentResults,
+	sortOrder,
+	upcomingTournaments,
+};
 
 let livePromise: Promise<void> | null = null;
 let liveTimer: ReturnType<typeof setTimeout> | null = null;
@@ -69,7 +73,6 @@ export const loadStatus = async () => {
 		setCheckedAt(state.checkedAt);
 		setMatches(state.matches || []);
 		setRecentResults(state.recentResults || []);
-		setCalendarCheckedAt(state.calendarCheckedAt || null);
 		setUpcomingTournaments(state.upcomingTournaments || []);
 		if (!initialViewSelected) {
 			setCurrentViewSignal(
@@ -87,7 +90,7 @@ export const loadStatus = async () => {
 	}
 };
 
-export const loadLive = async () => {
+const loadLive = async () => {
 	// 取得中の場合は同じリクエストを共有し、二重に取得しない。
 	if (livePromise) return livePromise;
 	const run = async () => {
@@ -108,7 +111,7 @@ export const loadLive = async () => {
 };
 
 /** loadStatus・loadLiveはどちらも失敗を記録して握りつぶすため、例外は投げない。 */
-export const refreshAll = async () => {
+const refreshAll = async () => {
 	await loadStatus();
 	if (hasLiveMatches()) await loadLive();
 };

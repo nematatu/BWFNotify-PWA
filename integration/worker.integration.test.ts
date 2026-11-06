@@ -315,7 +315,7 @@ describe("Worker integration", () => {
 		expect(notificationCalls).toBe(3);
 	});
 
-	test("keeps completed matches for seven days and stores generated calendar data", async () => {
+	test("keeps completed matches for seven days without storing the bundled calendar", async () => {
 		const completed: MatchSummary = {
 			...liveMatch,
 			id: "completed-recent",
@@ -348,9 +348,42 @@ describe("Worker integration", () => {
 			"completed-recent",
 		]);
 		expect(stored?.calendarCheckedAt).toBe(calendarSnapshot.generatedAt);
-		expect(stored?.upcomingTournaments).toHaveLength(
-			staticTournamentCalendar().length,
+		// 大会カレンダーは /api/status が同梱設定から返すため、KVには保存しない。
+		expect(stored).not.toHaveProperty("upcomingTournaments");
+	});
+
+	test("ignores a calendar stored by an older version without forcing a write", async () => {
+		const legacyState = {
+			checkedAt: "2026-07-18T00:00:00.000Z",
+			matches: [liveMatch],
+			recentResults: [],
+			calendarCheckedAt: calendarSnapshot.generatedAt,
+			upcomingTournaments: [{ id: "stale", name: "古い大会" }],
+			historyCheckedAt: "2026-07-18T00:00:00.000Z",
+			notificationAttempts: {},
+			notifiedLiveMatches: { [liveMatch.id]: "2026-07-18T00:00:00.000Z" },
+		};
+		await env.NOTIFIED_MATCHES.put("push:state", JSON.stringify(legacyState));
+
+		const result = await runNotificationCheck(env, {
+			fetchMatches: async () => [liveMatch],
+			fetchHistory: async () => [],
+			sendNotifications: async () => {
+				throw new Error("must not notify an already-notified match");
+			},
+			now: () => new Date("2026-07-18T00:02:00.000Z"),
+		});
+		expect(result).toMatchObject({ newMatches: 0, stateWritten: false });
+
+		const context = createExecutionContext();
+		const response = await worker.fetch(
+			new Request("https://example.com/api/status?legacy=1"),
+			env,
+			context,
 		);
+		await waitOnExecutionContext(context);
+		const body = await response.json<{ upcomingTournaments: unknown[] }>();
+		expect(body.upcomingTournaments).toEqual(staticTournamentCalendar());
 	});
 
 	test("retries only the match whose deliveries all failed", async () => {

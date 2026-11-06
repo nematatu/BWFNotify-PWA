@@ -1,5 +1,10 @@
-import { createMemo, createSignal } from "solid-js";
-import { isGoogleApp, isIosDevice, isStandaloneDisplay } from "./browser";
+import { createSignal } from "solid-js";
+import {
+	isGoogleApp,
+	isIosDevice,
+	isMobileBrowser,
+	isStandaloneDisplay,
+} from "./browser";
 
 /** インストール案内の1ステップ目に表示する内容。 */
 export type InstallGuidance = {
@@ -14,12 +19,20 @@ export interface DeferredInstallPrompt {
 }
 
 // --- 状態 ---
-export const [installPrompt, setInstallPrompt] =
+// 書き換えはこのモジュールの操作関数だけに限り、外部へは読み取り関数だけを公開する。
+const [installPrompt, setInstallPrompt] =
 	createSignal<DeferredInstallPrompt | null>(null);
-export const [installOpen, setInstallOpen] = createSignal(false);
-export const [bannerHidden, setBannerHidden] = createSignal(true);
+const [installOpen, setInstallOpen] = createSignal(false);
+const [bannerHidden, setBannerHidden] = createSignal(true);
+
+export { bannerHidden, installOpen };
 
 export const standalone = () => isStandaloneDisplay();
+
+/** ホーム画面版でないモバイルブラウザにだけ、追加案内のバナーを出す。 */
+export const showInstallBannerIfNeeded = () => {
+	if (!standalone() && isMobileBrowser()) setBannerHidden(false);
+};
 
 // --- 操作 ---
 export const openInstall = () => {
@@ -50,7 +63,7 @@ export const handleInstall = async (dismissButton?: HTMLButtonElement) => {
 	}
 };
 
-export const guidance = createMemo((): InstallGuidance => {
+export const guidance = (): InstallGuidance => {
 	if (installPrompt()) {
 		return {
 			title: "ホーム画面に追加",
@@ -80,7 +93,7 @@ export const guidance = createMemo((): InstallGuidance => {
 			"メニューの「アプリをインストール」または「ホーム画面に追加」を選びます。",
 		hasAction: false,
 	};
-});
+};
 
 // --- ブラウザのインストールイベント（読み込み時に一度だけ登録） ---
 if (typeof window !== "undefined") {

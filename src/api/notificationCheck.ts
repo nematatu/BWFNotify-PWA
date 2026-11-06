@@ -2,10 +2,7 @@ import type { DeliveryResult, MatchSummary, PublicState } from "../type";
 import { errorMessage, todayJst } from "../utils";
 import { fetchJapaneseMatches } from "./bwf";
 import { sendPushNotifications } from "./push";
-import {
-	CALENDAR_GENERATED_AT,
-	staticTournamentCalendar,
-} from "./tournamentCalendar";
+import { CALENDAR_GENERATED_AT } from "./tournamentCalendar";
 
 export const STATE_KEY = "push:state";
 /** 内容が変わらなくても、この間隔を超えたら状態を書き直す（ハートビート）。 */
@@ -21,7 +18,12 @@ const HISTORY_DAYS = 7;
 const RECENT_RESULTS_MAX_AGE_MS = 7 * DAY_MS;
 const NOTIFICATION_DEDUP_AGE_MS = 30 * DAY_MS;
 
-export type StoredState = PublicState & {
+/**
+ * KVの "push:state" に保存する内容。
+ * 大会カレンダーは同梱設定から毎回作るため保存しない（/api/status が設定から返す）。
+ * 旧バージョンが保存した upcomingTournaments は読まずに無視する。
+ */
+export type StoredState = Omit<PublicState, "upcomingTournaments"> & {
 	/** 旧バージョンで使っていた履歴取得時刻。historyCheckedAtへ移行済み。 */
 	calendarAttemptedAt?: string;
 	historyCheckedAt?: string;
@@ -116,7 +118,6 @@ export async function runNotificationCheck(
 		matches,
 		recentResults: mergeRecentResults(previousResults, completed, now),
 		calendarCheckedAt: CALENDAR_GENERATED_AT,
-		upcomingTournaments: staticTournamentCalendar(),
 		historyCheckedAt: history.checkedAt || undefined,
 		notificationAttempts,
 		notifiedLiveMatches: nextNotifiedLiveMatches(
@@ -199,7 +200,6 @@ function stateSignature(state: StoredState): string {
 	return JSON.stringify([
 		sortedById(state.matches),
 		sortedById(state.recentResults || []),
-		state.upcomingTournaments || [],
 		state.calendarCheckedAt || null,
 		state.historyCheckedAt || null,
 		state.notificationAttempts || {},

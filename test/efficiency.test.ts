@@ -2,9 +2,10 @@ import { describe, expect, test } from "bun:test";
 import {
 	historyRefreshDue,
 	STATE_MAX_AGE_MS,
+	type StoredState,
 	shouldPersistState,
 } from "../src/api/notificationCheck";
-import type { MatchSummary, PublicState } from "../src/type";
+import type { MatchSummary } from "../src/type";
 
 const match = (score = 10): MatchSummary => ({
 	id: "match-1",
@@ -17,12 +18,11 @@ const match = (score = 10): MatchSummary => ({
 
 describe("KV state persistence", () => {
 	const checkedAt = new Date("2026-07-18T00:00:00.000Z");
-	const previous: PublicState = {
+	const previous: StoredState = {
 		checkedAt: checkedAt.toISOString(),
 		matches: [match()],
 		recentResults: [],
 		calendarCheckedAt: null,
-		upcomingTournaments: [],
 	};
 
 	test("does not rewrite unchanged state every minute", () => {
