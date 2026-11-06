@@ -13,6 +13,7 @@ import {
 	type ResultView,
 	resultView,
 } from "../lib/resultView";
+import { EmptyState } from "./EmptyState";
 
 /** 日本人選手側から見た勝敗。色と文言を1か所で決める。 */
 const OUTCOME_DISPLAY: Record<
@@ -53,7 +54,12 @@ export function RecentResults() {
 			</div>
 			<Show
 				when={recentResults().length > 0}
-				fallback={<p class="data-empty">取得済みの試合結果はありません</p>}
+				fallback={
+					<EmptyState
+						class="data-empty"
+						message="取得済みの試合結果はありません"
+					/>
+				}
 			>
 				{/* 日本人選手の勝敗の集計と、勝ち・負けの絞り込み */}
 				<div class="result-summary">

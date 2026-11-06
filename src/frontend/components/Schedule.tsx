@@ -22,6 +22,7 @@ import {
 	WEEKDAY_LABELS,
 } from "../lib/format";
 import { upcomingTournaments } from "../lib/matchesState";
+import { EmptyState } from "./EmptyState";
 
 type ScheduleView = "list" | "calendar";
 
@@ -81,7 +82,9 @@ export function UpcomingSchedule() {
 			</div>
 			<Show
 				when={upcomingTournaments().length > 0}
-				fallback={<p class="data-empty">今後の大会はありません</p>}
+				fallback={
+					<EmptyState class="data-empty" message="今後の大会はありません" />
+				}
 			>
 				<Show
 					when={scheduleView() === "list"}
