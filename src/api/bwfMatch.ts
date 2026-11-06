@@ -8,6 +8,7 @@ import type {
 	MatchSummary,
 	MatchTeamSummary,
 } from "../type";
+import { isPresent } from "../utils";
 
 const TARGET_COUNTRY = "JPN";
 
@@ -167,11 +168,12 @@ function matchScores(score: BwfGameScore[] | undefined, swapTeams: boolean) {
 	}));
 }
 
-function swapTeamNumber(
+export function swapTeamNumber(
 	value: 1 | 2 | undefined,
 	swapTeams: boolean,
 ): 1 | 2 | undefined {
-	return value == null || !swapTeams ? value : value === 1 ? 2 : 1;
+	if (value == null || !swapTeams) return value;
+	return value === 1 ? 2 : 1;
 }
 
 function statusCandidates(match: BwfMatch): string[] {
@@ -183,8 +185,4 @@ function statusCandidates(match: BwfMatch): string[] {
 	]
 		.map((status) => status?.trim())
 		.filter((status): status is string => Boolean(status));
-}
-
-function isPresent<T>(value: T | null | undefined): value is T {
-	return value != null;
 }

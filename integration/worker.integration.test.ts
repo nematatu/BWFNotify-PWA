@@ -7,8 +7,9 @@ import { env } from "cloudflare:workers";
 import { afterEach, describe, expect, test } from "vitest";
 import calendarSnapshot from "../config/upcoming-tournaments.json";
 import worker from "../src";
-import { runNotificationCheck, staticTournamentCalendar } from "../src/api/app";
 import { parseTournamentPage } from "../src/api/baj";
+import { runNotificationCheck } from "../src/api/notificationCheck";
+import { staticTournamentCalendar } from "../src/api/tournamentCalendar";
 import type { MatchSummary } from "../src/type";
 
 const liveMatch: MatchSummary = {
@@ -161,6 +162,33 @@ describe("Worker integration", () => {
 		expect(await response.json()).toEqual({
 			error: "Push subscription not found",
 		});
+	});
+
+	test("rejects oversized bodies on every subscription route", async () => {
+		const routes = [
+			["POST", "/api/subscriptions"],
+			["PATCH", "/api/subscriptions"],
+			["DELETE", "/api/subscriptions"],
+			["POST", "/api/subscriptions/test"],
+		] as const;
+		for (const [method, path] of routes) {
+			const context = createExecutionContext();
+			const response = await worker.fetch(
+				new Request(`https://example.com${path}`, {
+					method,
+					headers: {
+						"content-type": "application/json",
+						"content-length": "4097",
+					},
+					body: "{}",
+				}),
+				env,
+				context,
+			);
+			await waitOnExecutionContext(context);
+			expect(response.status).toBe(413);
+			expect(response.headers.get("cache-control")).toBe("no-store");
+		}
 	});
 
 	test("serves public status from edge cache without notification retry state", async () => {

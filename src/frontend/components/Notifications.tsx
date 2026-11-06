@@ -1,4 +1,5 @@
-import { Show } from "solid-js";
+import { type JSX, Show } from "solid-js";
+import { isInAppBrowser } from "../lib/browser";
 import {
 	cancelPermission,
 	closeBlockedPermission,
@@ -20,205 +21,136 @@ import {
 	openInstall,
 	standalone,
 } from "../lib/pwaInstallState";
-import { isInAppBrowser } from "../lib/utils";
 
-// ==========================================
-// 1. InstallOverlay Component
-// ==========================================
-export type InstallGuidance = {
-	title: string;
-	description: string;
-	hasAction: boolean;
-};
-
-export function InstallOverlay(props: {
-	dismissRef?: (el: HTMLButtonElement) => void;
-}) {
-	const handleClose = () => {
-		closeInstall();
-	};
-
-	let localDismissBtn: HTMLButtonElement | undefined;
-
-	const handleInstallPrompt = async () => {
-		await handleInstall(localDismissBtn);
-	};
+export function InstallOverlay() {
+	// インストールを断られた場合は「今はブラウザで見る」へフォーカスを戻す。
+	let dismissButton: HTMLButtonElement | undefined;
 
 	return (
-		<div
+		<OverlaySheet
 			id="install-overlay"
-			class="install-overlay"
-			onClick={handleClose}
-			role="dialog"
-			tabIndex={-1}
-			onKeyDown={(e) => e.key === "Escape" && handleClose()}
+			labelledBy="install-overlay-heading"
+			onClose={closeInstall}
 		>
-			<section
-				class="install-sheet"
-				role="dialog"
-				aria-modal="true"
-				aria-labelledby="install-overlay-heading"
-				onClick={(e) => e.stopPropagation()}
-				onKeyDown={(e) => e.stopPropagation()}
+			<button
+				id="install-overlay-close"
+				class="install-overlay-close"
+				type="button"
+				aria-label="案内を閉じる"
+				onClick={closeInstall}
 			>
-				<button
-					id="install-overlay-close"
-					class="install-overlay-close"
-					type="button"
-					aria-label="案内を閉じる"
-					onClick={handleClose}
-				>
-					×
-				</button>
-				<p class="overlay-step-count">通知を使うまで 3ステップ</p>
-				<h2 id="install-overlay-heading">ホーム画面から開いてください</h2>
-				<ol class="install-steps">
-					<li>
-						<strong id="install-step-title">{guidance().title}</strong>
-						<span id="install-step-description">{guidance().description}</span>
-					</li>
-					<li>
-						<strong>追加したアイコンから起動</strong>
-						<span>ブラウザを閉じても試合情報を確認できます。</span>
-					</li>
-					<li>
-						<strong>通知をオン</strong>
-						<span>許可画面は、内容を説明したあとに一度だけ表示します。</span>
-					</li>
-				</ol>
-				<p class="install-assurance">
-					通知対象は日本人選手の試合開始です。試合ごとに後から解除できます。
-				</p>
-				<div class="install-actions">
-					<Show when={guidance().hasAction}>
-						<button
-							id="install-action"
-							class="primary-action"
-							type="button"
-							onClick={handleInstallPrompt}
-						>
-							ホーム画面に追加
-						</button>
-					</Show>
+				×
+			</button>
+			<p class="overlay-step-count">通知を使うまで 3ステップ</p>
+			<h2 id="install-overlay-heading">ホーム画面から開いてください</h2>
+			<ol class="install-steps">
+				<li>
+					<strong id="install-step-title">{guidance().title}</strong>
+					<span id="install-step-description">{guidance().description}</span>
+				</li>
+				<li>
+					<strong>追加したアイコンから起動</strong>
+					<span>ブラウザを閉じても試合情報を確認できます。</span>
+				</li>
+				<li>
+					<strong>通知をオン</strong>
+					<span>許可画面は、内容を説明したあとに一度だけ表示します。</span>
+				</li>
+			</ol>
+			<p class="install-assurance">
+				通知対象は日本人選手の試合開始です。試合ごとに後から解除できます。
+			</p>
+			<div class="install-actions">
+				<Show when={guidance().hasAction}>
 					<button
-						ref={(el) => {
-							localDismissBtn = el;
-							if (props.dismissRef) props.dismissRef(el);
-						}}
+						id="install-action"
+						class="primary-action"
 						type="button"
-						onClick={handleClose}
+						onClick={() => handleInstall(dismissButton)}
 					>
-						今はブラウザで見る
+						ホーム画面に追加
 					</button>
-				</div>
-			</section>
-		</div>
+				</Show>
+				<button ref={dismissButton} type="button" onClick={closeInstall}>
+					今はブラウザで見る
+				</button>
+			</div>
+		</OverlaySheet>
 	);
 }
 
-// ==========================================
-// 2. PermissionOverlay Component
-// ==========================================
 export function PermissionOverlay() {
 	return (
-		<div
+		<OverlaySheet
 			id="permission-overlay"
-			class="install-overlay"
-			onClick={cancelPermission}
-			role="dialog"
-			tabIndex={-1}
-			onKeyDown={(e) => e.key === "Escape" && cancelPermission()}
+			sheetClass="permission-sheet"
+			labelledBy="permission-heading"
+			onClose={cancelPermission}
 		>
-			<section
-				class="install-sheet permission-sheet"
-				role="dialog"
-				aria-modal="true"
-				aria-labelledby="permission-heading"
-				onClick={(e) => e.stopPropagation()}
-				onKeyDown={(e) => e.stopPropagation()}
-			>
-				<p class="overlay-step-count">通知許可の前に</p>
-				<h2 id="permission-heading">試合開始を通知します</h2>
-				<div class="permission-summary">
-					<p>
-						<strong>通知する</strong> 日本人選手の対象試合が始まったとき
-					</p>
-					<p>
-						<strong>通知しない</strong> 得点更新、広告、ニュース
-					</p>
-				</div>
-				<p class="permission-note">
-					次にブラウザの許可画面が表示されます。拒否しても試合情報はそのまま利用できます。
+			<p class="overlay-step-count">通知許可の前に</p>
+			<h2 id="permission-heading">試合開始を通知します</h2>
+			<div class="permission-summary">
+				<p>
+					<strong>通知する</strong> 日本人選手の対象試合が始まったとき
 				</p>
-				<div class="permission-actions">
-					<button
-						id="permission-cancel"
-						type="button"
-						onClick={cancelPermission}
-					>
-						キャンセル
-					</button>
-					<button
-						id="permission-confirm"
-						class="primary-action"
-						type="button"
-						onClick={confirmPermission}
-					>
-						通知を許可する
-					</button>
-				</div>
-			</section>
-		</div>
+				<p>
+					<strong>通知しない</strong> 得点更新、広告、ニュース
+				</p>
+			</div>
+			<p class="permission-note">
+				次にブラウザの許可画面が表示されます。拒否しても試合情報はそのまま利用できます。
+			</p>
+			<div class="permission-actions">
+				<button id="permission-cancel" type="button" onClick={cancelPermission}>
+					キャンセル
+				</button>
+				<button
+					id="permission-confirm"
+					class="primary-action"
+					type="button"
+					onClick={confirmPermission}
+				>
+					通知を許可する
+				</button>
+			</div>
+		</OverlaySheet>
 	);
 }
 
 export function BlockedPermissionOverlay() {
 	return (
-		<div
+		<OverlaySheet
 			id="blocked-permission-overlay"
-			class="install-overlay"
-			onClick={closeBlockedPermission}
-			role="dialog"
-			tabIndex={-1}
-			onKeyDown={(e) => e.key === "Escape" && closeBlockedPermission()}
+			sheetClass="permission-sheet"
+			labelledBy="blocked-permission-heading"
+			onClose={closeBlockedPermission}
 		>
-			<section
-				class="install-sheet permission-sheet"
-				role="dialog"
-				aria-modal="true"
-				aria-labelledby="blocked-permission-heading"
-				onClick={(e) => e.stopPropagation()}
-				onKeyDown={(e) => e.stopPropagation()}
-			>
-				<p class="overlay-step-count">通知がブロックされています</p>
-				<h2 id="blocked-permission-heading">通知の許可を変更してください</h2>
-				<p class="permission-note">
-					端末またはブラウザのサイト設定で、このサイトの通知を「許可」に変更してください。変更後に再確認すると通知をオンにできます。
-				</p>
-				<div class="permission-actions">
-					<button type="button" onClick={closeBlockedPermission}>
-						閉じる
-					</button>
-					<button
-						id="blocked-permission-retry"
-						class="primary-action"
-						type="button"
-						onClick={retryNotificationPermission}
-					>
-						再確認
-					</button>
-				</div>
-			</section>
-		</div>
+			<p class="overlay-step-count">通知がブロックされています</p>
+			<h2 id="blocked-permission-heading">通知の許可を変更してください</h2>
+			<p class="permission-note">
+				端末またはブラウザのサイト設定で、このサイトの通知を「許可」に変更してください。変更後に再確認すると通知をオンにできます。
+			</p>
+			<div class="permission-actions">
+				<button type="button" onClick={closeBlockedPermission}>
+					閉じる
+				</button>
+				<button
+					id="blocked-permission-retry"
+					class="primary-action"
+					type="button"
+					onClick={retryNotificationPermission}
+				>
+					再確認
+				</button>
+			</div>
+		</OverlaySheet>
 	);
 }
 
-// ==========================================
-// 3. NotificationSettings Component
-// ==========================================
 export function NotificationSettings() {
 	const inApp = isInAppBrowser();
 
+	// 通知欄を押したら、ホーム画面版でない利用者へ追加方法を案内する。
 	const handleSectionClick = () => {
 		if (!standalone() && !inApp) openInstall();
 	};
@@ -228,8 +160,8 @@ export function NotificationSettings() {
 			class="notification-settings"
 			aria-labelledby="notification-heading"
 			onClick={handleSectionClick}
-			onKeyDown={(e) =>
-				(e.key === "Enter" || e.key === " ") && handleSectionClick()
+			onKeyDown={(event) =>
+				(event.key === "Enter" || event.key === " ") && handleSectionClick()
 			}
 		>
 			<div>
@@ -244,9 +176,10 @@ export function NotificationSettings() {
 			</div>
 			<fieldset
 				class="notification-controls"
-				onClick={(e) => e.stopPropagation()}
-				onKeyDown={(e) =>
-					(e.key === "Enter" || e.key === " ") && e.stopPropagation()
+				onClick={(event) => event.stopPropagation()}
+				onKeyDown={(event) =>
+					(event.key === "Enter" || event.key === " ") &&
+					event.stopPropagation()
 				}
 			>
 				<button
@@ -271,5 +204,40 @@ export function NotificationSettings() {
 				</label>
 			</fieldset>
 		</section>
+	);
+}
+
+/** 背景クリックとEscapeで閉じる下部シート。シート内の操作は背景へ伝えない。 */
+function OverlaySheet(props: {
+	id: string;
+	sheetClass?: string;
+	labelledBy: string;
+	onClose: () => void;
+	children: JSX.Element;
+}) {
+	return (
+		<div
+			id={props.id}
+			class="install-overlay"
+			onClick={() => props.onClose()}
+			role="dialog"
+			tabIndex={-1}
+			onKeyDown={(event) => event.key === "Escape" && props.onClose()}
+		>
+			<section
+				class={
+					props.sheetClass
+						? `install-sheet ${props.sheetClass}`
+						: "install-sheet"
+				}
+				role="dialog"
+				aria-modal="true"
+				aria-labelledby={props.labelledBy}
+				onClick={(event) => event.stopPropagation()}
+				onKeyDown={(event) => event.stopPropagation()}
+			>
+				{props.children}
+			</section>
+		</div>
 	);
 }

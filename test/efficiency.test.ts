@@ -3,7 +3,7 @@ import {
 	historyRefreshDue,
 	STATE_MAX_AGE_MS,
 	shouldPersistState,
-} from "../src/api/app";
+} from "../src/api/notificationCheck";
 import type { MatchSummary, PublicState } from "../src/type";
 
 const match = (score = 10): MatchSummary => ({
@@ -98,8 +98,15 @@ describe("match history refresh", () => {
 
 describe("BAJ discovery load", () => {
 	test("keeps BAJ crawling out of the production Worker", async () => {
-		const source = await Bun.file("src/api/app.ts").text();
-		expect(source).not.toContain("fetchUpcomingTournaments");
-		expect(source).toContain("upcoming-tournaments.json");
+		const workerFiles = [...new Bun.Glob("src/api/*.ts").scanSync()].filter(
+			(path) => !path.endsWith("baj.ts"),
+		);
+		for (const path of workerFiles) {
+			expect(await Bun.file(path).text()).not.toContain(
+				"fetchUpcomingTournaments",
+			);
+		}
+		const calendar = await Bun.file("src/api/tournamentCalendar.ts").text();
+		expect(calendar).toContain("upcoming-tournaments.json");
 	});
 });

@@ -7,7 +7,9 @@ import {
 	NotificationSettings,
 	PermissionOverlay,
 } from "./components/Notifications";
-import { RecentResults, UpcomingSchedule } from "./components/Schedule";
+import { RecentResults } from "./components/RecentResults";
+import { UpcomingSchedule } from "./components/Schedule";
+import { isMobileBrowser } from "./lib/browser";
 import { currentView, initMatchesState } from "./lib/matchesState";
 import {
 	initNotifications,
@@ -19,7 +21,6 @@ import {
 	setBannerHidden,
 	standalone,
 } from "./lib/pwaInstallState";
-import { isMobileBrowser } from "./lib/utils";
 
 export default function App() {
 	onMount(() => {

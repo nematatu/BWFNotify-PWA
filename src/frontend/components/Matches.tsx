@@ -12,14 +12,20 @@ import {
 	onMount,
 	Show,
 } from "solid-js";
-import type {
-	MatchPlayerSummary,
-	MatchSummary,
-	MatchTeamSummary,
-} from "../../type";
+import type { MatchSummary, MatchTeamSummary } from "../../type";
+import {
+	displayCourt,
+	displayRound,
+	formatMatchTime,
+	formatTournamentDate,
+	playerInitial,
+	previousGameScoreline,
+	teamLabel,
+} from "../lib/format";
 import {
 	currentView,
 	loadStatus,
+	type MainView,
 	matches,
 	recentResults,
 	setCurrentView,
@@ -28,143 +34,71 @@ import {
 	upcomingTournaments,
 } from "../lib/matchesState";
 import {
+	type LiveMatch,
+	type SortOrder,
+	sortedMatches,
+	tournamentGroups,
+} from "../lib/matchList";
+import { proxiedImageUrl } from "../lib/media";
+import {
 	excludedIds,
 	notificationDisabled,
 	updateMatchNotif,
 } from "../lib/pushNotificationState";
-import {
-	displayCourt,
-	displayRound,
-	formatMatchTime,
-	formatTournamentDate,
-	playerInitial,
-	previousGameScoreline,
-	proxiedImageUrl,
-	type SortOrder,
-	sortedMatches,
-	teamLabel,
-	tournamentGroups,
-} from "../lib/utils";
 
-// ==========================================
-// 1. TeamBlock Component
-// ==========================================
-export function TeamBlock(props: {
-	team: MatchTeamSummary | undefined;
-	side: "left" | "right";
-}) {
-	const isJapanese = () => props.team?.players?.some((p) => p.isJapanese);
-	return (
-		<div
-			class={`team team-${props.side} ${isJapanese() ? "japanese-team" : "foreign-team"}`}
-		>
-			<div class="team-identity">
-				<Show
-					when={props.team?.flagUrl}
-					fallback={<div class="country-flag-fallback" />}
-				>
-					<img
-						class="country-flag"
-						src={proxiedImageUrl(props.team?.flagUrl)}
-						alt={props.team?.countryCode || "国旗"}
-					/>
-				</Show>
-				<div class="player-photos">
-					<For each={props.team?.players || []}>
-						{(p: MatchPlayerSummary) => (
-							<Show
-								when={p.photoUrl}
-								fallback={
-									<div class="player-photo player-photo-placeholder">
-										{playerInitial(p.name)}
-									</div>
-								}
-							>
-								<img
-									class="player-photo"
-									src={proxiedImageUrl(p.photoUrl)}
-									alt={p.name}
-								/>
-							</Show>
-						)}
-					</For>
-				</div>
-			</div>
-			<div class="player-names">
-				<For each={props.team?.players || []}>
-					{(p: MatchPlayerSummary, idx) => (
-						<>
-							<Show when={idx() > 0}>
-								<span class="player-separator"> / </span>
-							</Show>
-							<span
-								class={`player-name ${p.isJapanese ? "japanese-player" : ""}`}
-							>
-								{p.name}
-							</span>
-						</>
-					)}
-				</For>
-			</div>
-		</div>
-	);
-}
+// --- ツールバー ---
 
-// ==========================================
-// 2. MatchToolbar Component
-// ==========================================
+const countMatches = (eventType: MatchSummary["eventType"]) =>
+	matches().filter((match) => match.eventType === eventType).length;
+
+const VIEW_TABS: Array<{
+	view: MainView;
+	label: string;
+	countId?: string;
+	count: () => number;
+}> = [
+	{
+		view: "live",
+		label: "ライブ",
+		countId: "live-count",
+		count: () => countMatches("live"),
+	},
+	{
+		view: "scheduled",
+		label: "このあと",
+		countId: "scheduled-count",
+		count: () => countMatches("scheduled"),
+	},
+	{ view: "results", label: "結果", count: () => recentResults().length },
+	{
+		view: "upcoming",
+		label: "大会",
+		count: () => upcomingTournaments().length,
+	},
+];
+
 export function MatchToolbar() {
-	const liveCount = () =>
-		matches().filter((m) => m.eventType === "live").length;
-	const scheduledCount = () =>
-		matches().filter((m) => m.eventType === "scheduled").length;
-	const matchView = () =>
+	const isMatchView = () =>
 		currentView() === "live" || currentView() === "scheduled";
 
 	return (
 		<>
 			<div class="match-toolbar">
 				<div class="match-tabs" role="tablist" aria-label="試合状態">
-					<button
-						id="live-tab"
-						class="match-tab"
-						type="button"
-						role="tab"
-						aria-selected={currentView() === "live" ? "true" : "false"}
-						onClick={() => setCurrentView("live")}
-					>
-						ライブ <span id="live-count">{liveCount()}</span>
-					</button>
-					<button
-						id="scheduled-tab"
-						class="match-tab"
-						type="button"
-						role="tab"
-						aria-selected={currentView() === "scheduled" ? "true" : "false"}
-						onClick={() => setCurrentView("scheduled")}
-					>
-						このあと <span id="scheduled-count">{scheduledCount()}</span>
-					</button>
-					<button
-						id="results-tab"
-						class="match-tab"
-						type="button"
-						role="tab"
-						aria-selected={currentView() === "results" ? "true" : "false"}
-						onClick={() => setCurrentView("results")}
-					>
-						結果 <span>{recentResults().length}</span>
-					</button>
-					<button
-						id="upcoming-tab"
-						class="match-tab"
-						type="button"
-						role="tab"
-						aria-selected={currentView() === "upcoming" ? "true" : "false"}
-						onClick={() => setCurrentView("upcoming")}
-					>
-						大会 <span>{upcomingTournaments().length}</span>
-					</button>
+					<For each={VIEW_TABS}>
+						{(tab) => (
+							<button
+								id={`${tab.view}-tab`}
+								class="match-tab"
+								type="button"
+								role="tab"
+								aria-selected={currentView() === tab.view ? "true" : "false"}
+								onClick={() => setCurrentView(tab.view)}
+							>
+								{tab.label} <span id={tab.countId}>{tab.count()}</span>
+							</button>
+						)}
+					</For>
 				</div>
 				<div class="match-controls">
 					<button
@@ -178,7 +112,7 @@ export function MatchToolbar() {
 					</button>
 				</div>
 			</div>
-			<Show when={matchView()}>
+			<Show when={isMatchView()}>
 				<div class="match-sort-toolbar">
 					<SortControl />
 				</div>
@@ -187,7 +121,7 @@ export function MatchToolbar() {
 	);
 }
 
-const sortOptions: Array<{ value: SortOrder; label: string }> = [
+const SORT_LABELS: Array<{ value: SortOrder; label: string }> = [
 	{ value: "time-asc", label: "時間が早い順" },
 	{ value: "time-desc", label: "時間が遅い順" },
 	{ value: "tournament", label: "大会名順" },
@@ -197,14 +131,21 @@ function SortControl() {
 	const [open, setOpen] = createSignal(false);
 	let root: HTMLDivElement | undefined;
 	const selectedLabel = () =>
-		sortOptions.find((option) => option.value === sortOrder())?.label || "";
+		SORT_LABELS.find((option) => option.value === sortOrder())?.label || "";
+	const closeOnEscape = (event: KeyboardEvent) => {
+		if (event.key === "Escape") setOpen(false);
+	};
+
 	onMount(() => {
-		const closeOutside = (event: PointerEvent) => {
+		const closeOnOutsideClick = (event: PointerEvent) => {
 			if (!root?.contains(event.target as Node)) setOpen(false);
 		};
-		document.addEventListener("pointerdown", closeOutside);
-		onCleanup(() => document.removeEventListener("pointerdown", closeOutside));
+		document.addEventListener("pointerdown", closeOnOutsideClick);
+		onCleanup(() =>
+			document.removeEventListener("pointerdown", closeOnOutsideClick),
+		);
 	});
+
 	return (
 		<div ref={root} class="sort-select">
 			<button
@@ -214,9 +155,7 @@ function SortControl() {
 				aria-haspopup="listbox"
 				aria-expanded={open()}
 				onClick={() => setOpen((value) => !value)}
-				onKeyDown={(event) => {
-					if (event.key === "Escape") setOpen(false);
-				}}
+				onKeyDown={closeOnEscape}
 			>
 				<ArrowDownWideNarrow size={17} aria-hidden="true" />
 				<span>{selectedLabel()}</span>
@@ -231,11 +170,9 @@ function SortControl() {
 					class="sort-options"
 					role="listbox"
 					aria-label="ソート順"
-					onKeyDown={(event) => {
-						if (event.key === "Escape") setOpen(false);
-					}}
+					onKeyDown={closeOnEscape}
 				>
-					<For each={sortOptions}>
+					<For each={SORT_LABELS}>
 						{(option) => (
 							<button
 								type="button"
@@ -260,38 +197,93 @@ function SortControl() {
 	);
 }
 
-// ==========================================
-// 3. MatchCard Component
-// ==========================================
+// --- 試合一覧 ---
+
+export function MatchList() {
+	const visibleMatches = createMemo(() =>
+		matches().filter((match) => match.eventType === currentView()),
+	);
+	const sorted = createMemo(() => sortedMatches(visibleMatches(), sortOrder()));
+	const groups = createMemo(() => tournamentGroups(visibleMatches()));
+	const isTournamentOrder = () => sortOrder() === "tournament";
+
+	return (
+		<div
+			id="match-list"
+			class={`match-list ${isTournamentOrder() ? "" : "time-grid"}`}
+			role="tabpanel"
+			aria-labelledby={`${currentView()}-tab`}
+			aria-live="polite"
+		>
+			<Show
+				when={visibleMatches().length > 0}
+				fallback={<p class="empty-state">対象の試合はありません</p>}
+			>
+				<Show
+					when={isTournamentOrder()}
+					fallback={
+						<For each={sorted()}>
+							{(match) => <MatchCard match={match} showTournament={true} />}
+						</For>
+					}
+				>
+					<For each={groups()}>
+						{(group) => (
+							<div class="tournament-group">
+								<TournamentHeading
+									name={group.name}
+									logoUrl={group.matches[0]?.tournamentLogoUrl}
+									category={group.matches[0]?.tournamentCategory}
+								/>
+								<div class="tournament-matches">
+									<For each={group.matches}>
+										{(match) => <MatchCard match={match} />}
+									</For>
+								</div>
+							</div>
+						)}
+					</For>
+				</Show>
+			</Show>
+		</div>
+	);
+}
+
+function TournamentHeading(props: {
+	name: string;
+	logoUrl?: string;
+	category?: string;
+}) {
+	return (
+		<div class="tournament-heading">
+			<Show
+				when={props.logoUrl}
+				fallback={<div class="tournament-logo-fallback">BWF</div>}
+			>
+				<img
+					class="tournament-logo"
+					src={proxiedImageUrl(props.logoUrl)}
+					alt={props.name}
+				/>
+			</Show>
+			<div class="tournament-heading-text">
+				<h2>{props.name}</h2>
+				<Show when={props.category}>
+					<p class="tournament-category">{props.category}</p>
+				</Show>
+			</div>
+		</div>
+	);
+}
+
+// --- 試合カード ---
+
 export function MatchCard(props: {
-	match: MatchSummary & { scoreChangedTeam?: 1 | 2 };
+	match: LiveMatch;
 	showTournament?: boolean;
 }) {
 	const scores = () => props.match.scores;
-	const lastScore = () => scores()?.at(-1);
 	const isLive = () => props.match.eventType === "live";
-
-	const renderScoreSide = (sideIndex: 1 | 2) => {
-		const scoreVal = () =>
-			sideIndex === 1 ? lastScore()?.team1 : lastScore()?.team2;
-		const isServing = () => lastScore()?.servingTeam === sideIndex;
-		const isChanged = () => props.match.scoreChangedTeam === sideIndex;
-		return (
-			<div class={`score-side score-team-${sideIndex}`}>
-				{sideIndex === 1 && isServing() && (
-					<img class="shuttle-indicator" src="/view/shuttle.svg" alt="サーブ" />
-				)}
-				<Show when={isChanged()} fallback={<strong>{scoreVal() ?? 0}</strong>}>
-					<span class="score-updated">
-						<strong>{scoreVal() ?? 0}</strong>
-					</span>
-				</Show>
-				{sideIndex === 2 && isServing() && (
-					<img class="shuttle-indicator" src="/view/shuttle.svg" alt="サーブ" />
-				)}
-			</div>
-		);
-	};
 
 	return (
 		<div class={`match ${isLive() ? "live-match" : "scheduled-match"}`}>
@@ -309,22 +301,9 @@ export function MatchCard(props: {
 					</Show>
 				</div>
 				<div class="match-actions">
+					{/* 開始済みの試合には通知トグルを出さない */}
 					<Show when={props.match.eventType === "scheduled"}>
-						<div class="match-notification-control">
-							<span>開始通知</span>
-							<label class="switch">
-								<span class="visually-hidden">通知設定</span>
-								<input
-									type="checkbox"
-									checked={!excludedIds().has(props.match.id)}
-									disabled={notificationDisabled()}
-									onChange={(e) =>
-										updateMatchNotif(props.match.id, e.target.checked)
-									}
-								/>
-								<span class="switch-track" aria-hidden="true" />
-							</label>
-						</div>
+						<MatchNotificationToggle matchId={props.match.id} />
 					</Show>
 				</div>
 			</div>
@@ -362,12 +341,7 @@ export function MatchCard(props: {
 						when={isLive() && scores()?.length > 0}
 						fallback={<span class="versus">vs</span>}
 					>
-						<span class="current-game">GAME {scores().length}</span>
-						<div class="current-score">
-							{renderScoreSide(1)}
-							<span class="score-separator">-</span>
-							{renderScoreSide(2)}
-						</div>
+						<CurrentScore match={props.match} />
 					</Show>
 				</div>
 				<TeamBlock team={props.match.teams[1]} side="right" />
@@ -376,11 +350,11 @@ export function MatchCard(props: {
 			<Show when={scores()?.length > 0}>
 				<div class="game-scores">
 					<For each={scores()}>
-						{(gs) => (
+						{(game) => (
 							<div class="game-score">
-								<span>SET {gs.game}</span>
+								<span>SET {game.game}</span>
 								<strong>
-									{gs.team1} - {gs.team2}
+									{game.team1} - {game.team2}
 								</strong>
 							</div>
 						)}
@@ -389,100 +363,174 @@ export function MatchCard(props: {
 			</Show>
 
 			<Show when={props.match.h2h}>
-				<details class="h2h">
-					<summary class="h2h-scoreline">
-						<span>対戦成績</span>
-						<strong>
-							{props.match.h2h?.team1Wins ?? 0}勝 -{" "}
-							{props.match.h2h?.team2Wins ?? 0}勝
-						</strong>
-					</summary>
-					<Show when={props.match.h2h?.previous}>
-						<div class="previous-meeting">
-							<div class="previous-detail">
-								前回対戦:{" "}
-								{formatTournamentDate(props.match.h2h?.previous?.date)}{" "}
-								{props.match.h2h?.previous?.tournament}
-							</div>
-							<div class="previous-winner">
-								{props.match.h2h?.previous?.winner === 1
-									? teamLabel(props.match.teams[0])
-									: teamLabel(props.match.teams[1])}{" "}
-								勝利
-							</div>
-							<div class="previous-scoreline">
-								{previousGameScoreline(props.match.h2h?.previous?.games)}
-							</div>
-						</div>
-					</Show>
-				</details>
+				<HeadToHead match={props.match} />
 			</Show>
 		</div>
 	);
 }
 
-// ==========================================
-// 4. MatchList Component
-// ==========================================
-export function MatchList() {
-	const filtered = createMemo(() =>
-		matches().filter((m) => m.eventType === currentView()),
+function MatchNotificationToggle(props: { matchId: string }) {
+	return (
+		<div class="match-notification-control">
+			<span>開始通知</span>
+			<label class="switch">
+				<span class="visually-hidden">通知設定</span>
+				<input
+					type="checkbox"
+					checked={!excludedIds().has(props.matchId)}
+					disabled={notificationDisabled()}
+					onChange={(event) =>
+						updateMatchNotif(props.matchId, event.target.checked)
+					}
+				/>
+				<span class="switch-track" aria-hidden="true" />
+			</label>
+		</div>
 	);
-	const sorted = createMemo(() => sortedMatches(filtered(), sortOrder()));
-	const grouped = createMemo(() => tournamentGroups(filtered()));
-	const isTournamentView = () => sortOrder() === "tournament";
+}
 
+export function TeamBlock(props: {
+	team: MatchTeamSummary | undefined;
+	side: "left" | "right";
+}) {
+	const players = () => props.team?.players || [];
+	const isJapanese = () => players().some((player) => player.isJapanese);
 	return (
 		<div
-			id="match-list"
-			class={`match-list ${isTournamentView() ? "" : "time-grid"}`}
-			role="tabpanel"
-			aria-labelledby={`${currentView()}-tab`}
-			aria-live="polite"
+			class={`team team-${props.side} ${isJapanese() ? "japanese-team" : "foreign-team"}`}
 		>
-			<Show
-				when={filtered().length > 0}
-				fallback={<p class="empty-state">対象の試合はありません</p>}
-			>
+			<div class="team-identity">
 				<Show
-					when={isTournamentView()}
-					fallback={
-						<For each={sorted()}>
-							{(m) => <MatchCard match={m} showTournament={true} />}
-						</For>
-					}
+					when={props.team?.flagUrl}
+					fallback={<div class="country-flag-fallback" />}
 				>
-					<For each={grouped()}>
-						{(g) => (
-							<div class="tournament-group">
-								<div class="tournament-heading">
-									<Show
-										when={g.matches[0]?.tournamentLogoUrl}
-										fallback={<div class="tournament-logo-fallback">BWF</div>}
-									>
-										<img
-											class="tournament-logo"
-											src={proxiedImageUrl(g.matches[0].tournamentLogoUrl)}
-											alt={g.name}
-										/>
-									</Show>
-									<div class="tournament-heading-text">
-										<h2>{g.name}</h2>
-										<Show when={g.matches[0]?.tournamentCategory}>
-											<p class="tournament-category">
-												{g.matches[0].tournamentCategory}
-											</p>
-										</Show>
+					<img
+						class="country-flag"
+						src={proxiedImageUrl(props.team?.flagUrl)}
+						alt={props.team?.countryCode || "国旗"}
+					/>
+				</Show>
+				<div class="player-photos">
+					<For each={players()}>
+						{(player) => (
+							<Show
+								when={player.photoUrl}
+								fallback={
+									<div class="player-photo player-photo-placeholder">
+										{playerInitial(player.name)}
 									</div>
-								</div>
-								<div class="tournament-matches">
-									<For each={g.matches}>{(m) => <MatchCard match={m} />}</For>
-								</div>
-							</div>
+								}
+							>
+								<img
+									class="player-photo"
+									src={proxiedImageUrl(player.photoUrl)}
+									alt={player.name}
+								/>
+							</Show>
 						)}
 					</For>
-				</Show>
+				</div>
+			</div>
+			<div class="player-names">
+				<For each={players()}>
+					{(player, index) => (
+						<>
+							<Show when={index() > 0}>
+								<span class="player-separator"> / </span>
+							</Show>
+							<span
+								class={`player-name ${player.isJapanese ? "japanese-player" : ""}`}
+							>
+								{player.name}
+							</span>
+						</>
+					)}
+				</For>
+			</div>
+		</div>
+	);
+}
+
+/** ライブ中の現在ゲーム得点。サーブ側はシャトルアイコンを外側に表示する。 */
+function CurrentScore(props: { match: LiveMatch }) {
+	const currentGame = () => props.match.scores.at(-1);
+	return (
+		<>
+			<span class="current-game">GAME {props.match.scores.length}</span>
+			<div class="current-score">
+				<ScoreSide
+					team={1}
+					score={currentGame()?.team1}
+					serving={currentGame()?.servingTeam === 1}
+					changed={props.match.scoreChangedTeam === 1}
+				/>
+				<span class="score-separator">-</span>
+				<ScoreSide
+					team={2}
+					score={currentGame()?.team2}
+					serving={currentGame()?.servingTeam === 2}
+					changed={props.match.scoreChangedTeam === 2}
+				/>
+			</div>
+		</>
+	);
+}
+
+function ScoreSide(props: {
+	team: 1 | 2;
+	score: number | undefined;
+	serving: boolean;
+	changed: boolean;
+}) {
+	return (
+		<div class={`score-side score-team-${props.team}`}>
+			<Show when={props.team === 1 && props.serving}>
+				<ShuttleIcon />
+			</Show>
+			<Show when={props.changed} fallback={<strong>{props.score ?? 0}</strong>}>
+				{/* 得点した側だけを強調アニメーションの対象にする */}
+				<span class="score-updated">
+					<strong>{props.score ?? 0}</strong>
+				</span>
+			</Show>
+			<Show when={props.team === 2 && props.serving}>
+				<ShuttleIcon />
 			</Show>
 		</div>
+	);
+}
+
+function ShuttleIcon() {
+	return <img class="shuttle-indicator" src="/view/shuttle.svg" alt="サーブ" />;
+}
+
+/** H2H（通算成績）と前回対戦。チーム順は現在の日本人先頭順に揃えてある。 */
+function HeadToHead(props: { match: MatchSummary }) {
+	const h2h = () => props.match.h2h;
+	const previous = () => h2h()?.previous;
+	const previousWinner = () =>
+		teamLabel(props.match.teams[previous()?.winner === 1 ? 0 : 1]);
+
+	return (
+		<details class="h2h">
+			<summary class="h2h-scoreline">
+				<span>対戦成績</span>
+				<strong>
+					{h2h()?.team1Wins ?? 0}勝 - {h2h()?.team2Wins ?? 0}勝
+				</strong>
+			</summary>
+			<Show when={previous()}>
+				<div class="previous-meeting">
+					<div class="previous-detail">
+						前回対戦: {formatTournamentDate(previous()?.date)}{" "}
+						{previous()?.tournament}
+					</div>
+					<div class="previous-winner">{previousWinner()} 勝利</div>
+					<div class="previous-scoreline">
+						{previousGameScoreline(previous()?.games)}
+					</div>
+				</div>
+			</Show>
+		</details>
 	);
 }

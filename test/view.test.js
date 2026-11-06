@@ -1,25 +1,26 @@
 import { describe, expect, test } from "bun:test";
-import { pollingMode } from "../src/frontend/lib/pollingPolicy.ts";
-import {
-	orderedResultScores,
-	resultView,
-} from "../src/frontend/lib/resultView.ts";
+import { notificationToggleAction } from "../src/frontend/lib/browser.ts";
 import {
 	displayCourt,
 	displayRound,
 	displayTournamentCategory,
 	formatMatchTime,
 	japanDateKey,
-	mergeLiveMatches,
-	notificationToggleAction,
 	playerInitial,
 	previousGameScoreline,
-	proxiedImageUrl,
-	safeHttpsUrl,
-	sortedMatches,
 	teamLabel,
+} from "../src/frontend/lib/format.ts";
+import {
+	mergeLiveMatches,
+	sortedMatches,
 	tournamentGroups,
-} from "../src/frontend/lib/utils.ts";
+} from "../src/frontend/lib/matchList.ts";
+import { proxiedImageUrl, safeHttpsUrl } from "../src/frontend/lib/media.ts";
+import { pollingMode } from "../src/frontend/lib/pollingPolicy.ts";
+import {
+	orderedResultScores,
+	resultView,
+} from "../src/frontend/lib/resultView.ts";
 import { preferredInitialView } from "../src/frontend/lib/viewPolicy.ts";
 
 describe("notification toggle policy", () => {

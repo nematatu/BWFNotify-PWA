@@ -1,5 +1,13 @@
 import type { HeadToHeadSummary, MatchSummary, PreviousMeeting } from "../type";
-import { array, object, optionalString } from "../utils";
+import {
+	array,
+	errorMessage,
+	isPresent,
+	object,
+	optionalNumber,
+	optionalString,
+} from "../utils";
+import { swapTeamNumber } from "./bwfMatch";
 
 const BWF_H2H_URL = "https://extranet-lv.bwfbadminton.com/api/h2h/statistics";
 const H2H_CACHE_PREFIX = "bwf:h2h:v3:";
@@ -43,7 +51,7 @@ export async function enrichWithHeadToHead(
 					JSON.stringify({
 						event: "bwf-h2h-error",
 						matchId: match.id,
-						error: error instanceof Error ? error.message : String(error),
+						error: errorMessage(error),
 					}),
 				);
 				return match;
@@ -118,25 +126,18 @@ function parsePreviousMeeting(
 			const game = object(value);
 			const team1 = optionalNumber(game.team1);
 			const team2 = optionalNumber(game.team2);
-			return team1 == null || team2 == null
-				? null
-				: swapTeams
-					? { team1: team2, team2: team1 }
-					: { team1, team2 };
+			if (team1 == null || team2 == null) return null;
+			return swapTeams ? { team1: team2, team2: team1 } : { team1, team2 };
 		})
 		.filter(isPresent);
 	const tournamentName = optionalString(tournament.name);
 	if (!tournamentName || games.length === 0) return null;
 
 	const rawWinner = optionalNumber(result.winner);
-	const winner =
-		rawWinner === 1 || rawWinner === 2
-			? swapTeams
-				? rawWinner === 1
-					? 2
-					: 1
-				: rawWinner
-			: undefined;
+	const winner = swapTeamNumber(
+		rawWinner === 1 || rawWinner === 2 ? rawWinner : undefined,
+		swapTeams,
+	);
 	return {
 		tournament: tournamentName,
 		date:
@@ -181,14 +182,4 @@ function samePlayerIds(left: string[], right: string[]): boolean {
 		sortedLeft.length === sortedRight.length &&
 		sortedLeft.every((id, index) => id === sortedRight[index])
 	);
-}
-
-function optionalNumber(value: unknown): number | undefined {
-	return typeof value === "number" && Number.isFinite(value)
-		? value
-		: undefined;
-}
-
-function isPresent<T>(value: T | null | undefined): value is T {
-	return value != null;
 }

@@ -1,13 +1,19 @@
 import { createMemo, createSignal } from "solid-js";
-import type { InstallGuidance } from "../components/Notifications";
-import { isGoogleApp, isIosDevice, isStandaloneDisplay } from "./utils";
+import { isGoogleApp, isIosDevice, isStandaloneDisplay } from "./browser";
+
+/** インストール案内の1ステップ目に表示する内容。 */
+export type InstallGuidance = {
+	title: string;
+	description: string;
+	hasAction: boolean;
+};
 
 export interface DeferredInstallPrompt {
 	prompt: () => Promise<void>;
 	userChoice?: Promise<{ outcome: "accepted" | "dismissed" | string }>;
 }
 
-// --- Domain States ---
+// --- 状態 ---
 export const [installPrompt, setInstallPrompt] =
 	createSignal<DeferredInstallPrompt | null>(null);
 export const [installOpen, setInstallOpen] = createSignal(false);
@@ -15,7 +21,7 @@ export const [bannerHidden, setBannerHidden] = createSignal(true);
 
 export const standalone = () => isStandaloneDisplay();
 
-// --- Domain Actions ---
+// --- 操作 ---
 export const openInstall = () => {
 	if (standalone()) return;
 	setInstallOpen(true);
@@ -27,9 +33,7 @@ export const closeInstall = () => {
 	document.body.classList.remove("overlay-open");
 };
 
-export const handleInstall = async (
-	dismissBtnRef?: HTMLButtonElement | undefined,
-) => {
+export const handleInstall = async (dismissButton?: HTMLButtonElement) => {
 	const prompt = installPrompt();
 	if (!prompt) return;
 	try {
@@ -38,11 +42,11 @@ export const handleInstall = async (
 		setInstallPrompt(null);
 		if (choice?.outcome === "accepted") {
 			closeInstall();
-		} else if (dismissBtnRef) {
-			dismissBtnRef.focus();
+		} else {
+			dismissButton?.focus();
 		}
-	} catch (e) {
-		console.error("Install prompt error:", e);
+	} catch (error) {
+		console.error("Install prompt error:", error);
 	}
 };
 
@@ -78,7 +82,7 @@ export const guidance = createMemo((): InstallGuidance => {
 	};
 });
 
-// --- Initialize Event Listeners (Run once) ---
+// --- ブラウザのインストールイベント（読み込み時に一度だけ登録） ---
 if (typeof window !== "undefined") {
 	const onBeforeInstall = (e: Event) => {
 		e.preventDefault();

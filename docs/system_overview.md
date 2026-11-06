@@ -9,7 +9,7 @@ Cloudflare Cron（2分間隔）
   -> BWF Match Centreから大会・試合を取得
   -> 日本人選手の試合を抽出・正規化
   -> H2Hを解決
-  -> 変更時または5分経過時だけ試合状態をKVへ保存
+  -> 変更時または30分経過時だけ試合状態をKVへ保存
   -> 新しくライブになった試合を購読者へ通知
 
 ブラウザ
@@ -23,16 +23,27 @@ Cloudflare Cron（2分間隔）
 ### フロントエンド
 
 - `src/frontend/components/`: 表示と操作
+  - `Matches.tsx`: タブ、並び替え、試合カード、H2H
+  - `RecentResults.tsx`: 直近7日間の試合結果
+  - `Schedule.tsx`: 今後の大会の一覧・カレンダー・詳細
+  - `Notifications.tsx`: 通知設定とインストール・許可の案内
 - `src/frontend/lib/matchesState.ts`: 試合状態と更新ライフサイクル
 - `src/frontend/lib/pollingPolicy.ts`: 停止・通常・ライブ更新の純粋な判定
 - `src/frontend/lib/pushNotificationState.ts`: Push購読と試合別除外設定
+- `src/frontend/lib/matchList.ts`: 試合の並び替え、大会別グループ化、ライブ得点の反映
+- `src/frontend/lib/calendar.ts`: 大会カレンダーの月・週・帯の計算（純粋関数）
+- `src/frontend/lib/format.ts`: 日付、ラウンド、コート、スコアの表示整形
+- `src/frontend/lib/browser.ts`: 端末・ブラウザ判定と通知トグルの動作判定
+- `src/frontend/lib/api.ts`, `media.ts`: API呼び出しと画像中継URL
 - `src/frontend/pwa/sw.js`: オフラインキャッシュとPush表示
 
 試合カードでは、ライブ状態または開始時刻、選手、得点を主情報とします。大会名、ラウンド、コート、H2H、前回対戦は補助情報です。日本人チームはAPI正規化時に先頭へ移動します。
 
 ### Worker API
 
-- `src/api/app.ts`: HTTPルートとCronのオーケストレーション
+- `src/api/app.ts`: HTTPルート、APIキャッシュ、Cronの入口
+- `src/api/notificationCheck.ts`: Cronの定期処理（試合取得、通知対象の判定、KV保存の要否判定）
+- `src/api/tournamentCalendar.ts`: 同梱した大会カレンダー設定の結合
 - `src/api/bwf.ts`: BWFへのHTTP取得と処理の組み立て
 - `src/api/bwfMatch.ts`: 試合状態判定と日本人試合の正規化
 - `src/api/bwfH2h.ts`: H2H取得、キャッシュ、レスポンス解析

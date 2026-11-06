@@ -3,7 +3,10 @@ import type { BwfMatch, BwfPlayer, BwfTeam, MatchSummary } from "../type";
 import {
 	adjacentDates,
 	array,
+	errorMessage,
+	isPresent,
 	object,
+	optionalNumber,
 	optionalString,
 	todayJst,
 } from "../utils";
@@ -77,7 +80,7 @@ export async function fetchJapaneseMatches(
 						event: "bwf-day-matches-error",
 						tournamentCode: tournament.code,
 						date,
-						error: error instanceof Error ? error.message : String(error),
+						error: errorMessage(error),
 					}),
 				);
 			}
@@ -230,12 +233,6 @@ function optionalTeamNumber(value: unknown): 1 | 2 | undefined {
 	return value === 1 || value === 2 ? value : undefined;
 }
 
-function optionalNumber(value: unknown): number | undefined {
-	return typeof value === "number" && Number.isFinite(value)
-		? value
-		: undefined;
-}
-
 async function fetchBwfJson(
 	url: string,
 	cacheTtlSeconds?: number,
@@ -268,8 +265,4 @@ function dayMatchesUrl(tournamentCode: string, date: string): string {
 	url.searchParams.set("order", "2");
 	url.searchParams.set("court", "0");
 	return url.toString();
-}
-
-function isPresent<T>(value: T | null | undefined): value is T {
-	return value != null;
 }

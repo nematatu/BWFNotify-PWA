@@ -5,7 +5,7 @@ import type {
 	MatchSummary,
 	StoredSubscription,
 } from "../type";
-import { object, optionalString } from "../utils";
+import { errorMessage, object, optionalString } from "../utils";
 
 const SUBSCRIPTION_PREFIX = "push:subscription:";
 const MAX_USER_AGENT_LENGTH = 240;
@@ -146,9 +146,7 @@ export async function sendTestNotification(
 		);
 		return "sent";
 	} catch (error) {
-		const status =
-			error instanceof webpush.WebPushError ? error.statusCode : undefined;
-		if (status === 404 || status === 410) {
+		if (isExpiredSubscriptionError(error)) {
 			await deleteSubscription(env.NOTIFIED_MATCHES, endpoint);
 			return "removed";
 		}
@@ -194,9 +192,7 @@ export async function sendPushNotifications(
 				result.sent += 1;
 				matchResult.sent += 1;
 			} catch (error) {
-				const status =
-					error instanceof webpush.WebPushError ? error.statusCode : undefined;
-				if (status === 404 || status === 410) {
+				if (isExpiredSubscriptionError(error)) {
 					await deleteSubscription(env.NOTIFIED_MATCHES, subscription.endpoint);
 					result.removed += 1;
 					matchResult.removed += 1;
@@ -209,8 +205,8 @@ export async function sendPushNotifications(
 					JSON.stringify({
 						event: "push-delivery-error",
 						matchId: match.id,
-						status,
-						error: error instanceof Error ? error.message : String(error),
+						status: pushErrorStatus(error),
+						error: errorMessage(error),
 					}),
 				);
 			}
@@ -218,6 +214,16 @@ export async function sendPushNotifications(
 	}
 
 	return result;
+}
+
+function pushErrorStatus(error: unknown): number | undefined {
+	return error instanceof webpush.WebPushError ? error.statusCode : undefined;
+}
+
+/** Push serviceが購読の失効を返した場合（404/410）は購読を削除する。 */
+function isExpiredSubscriptionError(error: unknown): boolean {
+	const status = pushErrorStatus(error);
+	return status === 404 || status === 410;
 }
 
 function emptyDeliveryCounts(): DeliveryCounts {
