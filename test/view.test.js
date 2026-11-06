@@ -518,6 +518,16 @@ describe("page structure", () => {
 		expect(css).not.toMatch(/border-(top|left|right|bottom): [2-9]px solid/);
 	});
 
+	test("skips layout of off-screen cards so tab switches stay fast", async () => {
+		const css = await Bun.file("src/frontend/app.css").text();
+		for (const selector of [".match", ".result-day", ".result-row"]) {
+			const rule =
+				css.match(new RegExp(`\\n\\${selector} \\{([^}]+)\\}`))?.[1] || "";
+			expect(rule).toContain("content-visibility: auto;");
+			expect(rule).toContain("contain-intrinsic-size: auto");
+		}
+	});
+
 	test("uses only the defined type scale and two font weights", async () => {
 		const css = await Bun.file("src/frontend/app.css").text();
 		const weights = new Set(

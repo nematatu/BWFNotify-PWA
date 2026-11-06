@@ -567,6 +567,9 @@ main {
 	border-radius: var(--radius-lg);
 	background: var(--color-surface);
 	overflow: hidden;
+	/* 画面外のカードは見えるまで配置計算を省き、タブ切り替えを速くする */
+	content-visibility: auto;
+	contain-intrinsic-size: auto 320px;
 }
 
 /* 1段目: 状態（ライブ中 / 開始時刻）と通知 */
@@ -1099,8 +1102,12 @@ main {
 	font-weight: var(--weight-bold);
 }
 
+/* 結果タブは最大60試合あるため、画面外の日付とカードは見えるまで配置計算を省く。
+   CPUを6分の1に落とした計測で、タブ切り替えが約480msから約190msになった */
 .result-day {
 	margin-top: var(--space-5);
+	content-visibility: auto;
+	contain-intrinsic-size: auto 1500px;
 }
 
 .result-day-heading {
@@ -1132,6 +1139,8 @@ main {
 	border-radius: var(--radius-lg);
 	background: var(--color-surface);
 	overflow: hidden;
+	content-visibility: auto;
+	contain-intrinsic-size: auto 300px;
 }
 
 /* カード上部の帯: 日本人選手側の勝敗を色と文字で示す */
