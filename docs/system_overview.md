@@ -122,6 +122,12 @@ KVには次のデータを保存します。
 
 購読一覧はKVのlist結果に含まれるmetadataを利用します。metadataは送信に必要な値だけを短縮キーで保存し、JSON表現が[Cloudflareの1024バイト上限](https://developers.cloudflare.com/kv/platform/limits/)を超える場合はmetadataを付けず、送信時にそのレコードだけ個別getへフォールバックします。KVの利用量はCloudflare側のメトリクスで確認し、固定の削減率は文書上で保証しません。
 
+## 日本人選手名
+
+BWFはローマ字表記（例: `Hina AKECHI`）で返すため、`src/config/japanese-player-names.ts` の辞書で漢字表記へ変換します。変換はCronがBWFから取得した時点で行うため、辞書を更新すると、現在の試合は次のCronで、KVに保存済みの直近の結果は次の履歴取得（12時間ごと）で反映されます。
+
+辞書には、日本バドミントン協会の派遣・参加者名簿など公式資料で確認できた表記だけを追加します。名簿にはローマ字が無いため、同じ大会の名簿で種目とペアの組み合わせが一致すること、または姓が名簿内で1人だけであることを照合の根拠にします。
+
 ## 画像
 
 選手写真、国旗、大会ロゴはBWFの画像配信（`img.bwfbadminton.com`）から `/api/media` 経由で表示します。画面側（`src/frontend/lib/media.ts`）でURLの `/image/upload/` 直後に縮小指定を加え、表示サイズに合った画像だけを取得します（選手写真は144px四方、国旗は幅96px、ロゴは幅112px）。画面外の画像は `loading="lazy"` で表示されるまで読み込みません。
