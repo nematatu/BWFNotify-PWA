@@ -12,6 +12,22 @@ import { swapTeamNumber } from "./bwfMatch";
 const BWF_H2H_URL = "https://extranet-lv.bwfbadminton.com/api/h2h/statistics";
 const H2H_CACHE_PREFIX = "bwf:h2h:v3:";
 const H2H_CACHE_TTL_SECONDS = 30 * 24 * 60 * 60;
+/** BWFが成績を返さなかった組み合わせを、問い合わせずに済ませる期間。 */
+const H2H_UNAVAILABLE_TTL_SECONDS = 6 * 60 * 60;
+/** 通信エラーなど一時的な失敗のあと、問い合わせを控える期間。 */
+const H2H_ERROR_TTL_SECONDS = 60 * 60;
+
+/**
+ * KVのH2Hキャッシュに入る値。
+ * 取得できなかったことも記録し、Cronのたびに同じ問い合わせを繰り返さない。
+ */
+type CachedHeadToHead = HeadToHeadSummary | { unavailable: true };
+
+function isUnavailable(
+	value: CachedHeadToHead,
+): value is { unavailable: true } {
+	return "unavailable" in value && value.unavailable === true;
+}
 
 export async function enrichWithHeadToHead(
 	matches: MatchSummary[],
@@ -31,9 +47,15 @@ export async function enrichWithHeadToHead(
 			if (knownValue) return { ...match, h2h: knownValue };
 
 			const key = `${H2H_CACHE_PREFIX}${match.id}`;
-			const cached = await cache.get<HeadToHeadSummary>(key, "json");
-			if (cached) return { ...match, h2h: cached };
+			const cached = await cache.get<CachedHeadToHead>(key, "json");
+			if (cached) {
+				return isUnavailable(cached) ? match : { ...match, h2h: cached };
+			}
 
+			const markUnavailable = (ttlSeconds: number) =>
+				cache.put(key, JSON.stringify({ unavailable: true }), {
+					expirationTtl: ttlSeconds,
+				});
 			try {
 				const h2h = parseHeadToHead(
 					await fetchJson(headToHeadUrl(match)),
@@ -41,7 +63,10 @@ export async function enrichWithHeadToHead(
 						team.players.map((player) => player.id).filter(isPresent),
 					),
 				);
-				if (!h2h) return match;
+				if (!h2h) {
+					await markUnavailable(H2H_UNAVAILABLE_TTL_SECONDS);
+					return match;
+				}
 				await cache.put(key, JSON.stringify(h2h), {
 					expirationTtl: H2H_CACHE_TTL_SECONDS,
 				});
@@ -54,6 +79,7 @@ export async function enrichWithHeadToHead(
 						error: errorMessage(error),
 					}),
 				);
+				await markUnavailable(H2H_ERROR_TTL_SECONDS).catch(() => undefined);
 				return match;
 			}
 		}),
