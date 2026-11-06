@@ -255,6 +255,14 @@ describe("live score updates", () => {
 		expect(merged[0].scoreChangedTeam).toBe(1);
 	});
 
+	test("does not add an H2H key when neither response has one", () => {
+		const [merged] = mergeLiveMatches(
+			[{ id: "live", eventType: "live", scores: [] }],
+			[{ id: "live", eventType: "live", scores: [] }],
+		);
+		expect("h2h" in merged).toBe(false);
+	});
+
 	test("removes a live match when it is no longer returned", () => {
 		expect(mergeLiveMatches([{ id: "live", eventType: "live" }], [])).toEqual(
 			[],

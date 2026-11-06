@@ -48,6 +48,11 @@ export const notificationDisabled = createMemo(
 const setOverlayOpen = (open: boolean) =>
 	document.body.classList.toggle("overlay-open", open);
 
+const disableNotificationControls = () => {
+	setToggleDisabled(true);
+	setTestDisabled(true);
+};
+
 const setStatus = (text: string, isError = false) => {
 	setNotifText(text);
 	setNotifError(isError);
@@ -85,14 +90,16 @@ export const initNotifications = async () => {
 
 	try {
 		registration = await registerServiceWorker();
-		// 以下の早期returnでは、冒頭で無効化したトグルとテスト通知をそのまま残す。
+		// 待機中に別の操作で有効化されていても、通知を使えない環境では必ず無効に戻す。
 		if (!registration) {
 			setStatus("開発環境: 通知は無効化されています");
+			disableNotificationControls();
 			return;
 		}
 
 		if (!("pushManager" in registration) || !("Notification" in window)) {
 			setStatus("ホーム画面版で通知を利用できます");
+			disableNotificationControls();
 			return;
 		}
 

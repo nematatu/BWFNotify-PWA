@@ -203,9 +203,12 @@ export function initMatchesState() {
 	};
 
 	const activityEvents = ["mousemove", "click", "keydown", "scroll"] as const;
+	const passiveEvents = new Set(["mousemove", "scroll"]);
 	document.addEventListener("visibilitychange", onVisibility);
 	for (const type of activityEvents) {
-		window.addEventListener(type, onActivity, { passive: true });
+		window.addEventListener(type, onActivity, {
+			passive: passiveEvents.has(type),
+		});
 	}
 
 	const init = async () => {

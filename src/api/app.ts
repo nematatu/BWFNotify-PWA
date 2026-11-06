@@ -1,4 +1,4 @@
-import { type Context, Hono } from "hono";
+import { type Context, Hono, type MiddlewareHandler } from "hono";
 import type {
 	PublicState,
 	SaveSubscriptionRequest,
@@ -43,12 +43,13 @@ app.use("/api/*", async (c, next) => {
 	c.header("X-Content-Type-Options", "nosniff");
 });
 
-app.use("/api/subscriptions/*", async (c, next) => {
+/** 購読APIの各ルートで、本文を読む前にサイズ上限を確認する。 */
+const limitRequestSize: MiddlewareHandler<AppBindings> = async (c, next) => {
 	if (requestTooLarge(c.req.header("content-length"))) {
 		return c.json({ error: "Request is too large" }, 413);
 	}
 	await next();
-});
+};
 
 // --- 試合情報 ---
 
@@ -87,7 +88,7 @@ app.get("/api/live", (c) =>
 
 // --- Push購読 ---
 
-app.post("/api/subscriptions", async (c) => {
+app.post("/api/subscriptions", limitRequestSize, async (c) => {
 	const body = (await readJsonObject(
 		c.req.raw,
 	)) as Partial<SaveSubscriptionRequest>;
@@ -107,7 +108,7 @@ app.post("/api/subscriptions", async (c) => {
 	);
 });
 
-app.patch("/api/subscriptions", async (c) => {
+app.patch("/api/subscriptions", limitRequestSize, async (c) => {
 	const body = (await readJsonObject(
 		c.req.raw,
 	)) as Partial<UpdateSubscriptionPreferencesRequest>;
@@ -128,7 +129,7 @@ app.patch("/api/subscriptions", async (c) => {
 	return c.json({ ok: true, excludedMatchIds: updated.excludedMatchIds || [] });
 });
 
-app.post("/api/subscriptions/test", async (c) => {
+app.post("/api/subscriptions/test", limitRequestSize, async (c) => {
 	const body = (await readJsonObject(
 		c.req.raw,
 	)) as Partial<TestNotificationRequest>;
@@ -147,7 +148,7 @@ app.post("/api/subscriptions/test", async (c) => {
 	return c.json({ ok: true });
 });
 
-app.delete("/api/subscriptions", async (c) => {
+app.delete("/api/subscriptions", limitRequestSize, async (c) => {
 	const endpoint = optionalString((await readJsonObject(c.req.raw)).endpoint);
 	if (!endpoint) {
 		return c.json({ error: "Subscription endpoint is required" }, 400);

@@ -191,6 +191,24 @@ describe("Worker integration", () => {
 		}
 	});
 
+	test("returns 404 rather than 413 for an unknown subscription path", async () => {
+		const context = createExecutionContext();
+		const response = await worker.fetch(
+			new Request("https://example.com/api/subscriptions/unknown", {
+				method: "POST",
+				headers: {
+					"content-type": "application/json",
+					"content-length": "4097",
+				},
+				body: "{}",
+			}),
+			env,
+			context,
+		);
+		await waitOnExecutionContext(context);
+		expect(response.status).toBe(404);
+	});
+
 	test("serves public status from edge cache without notification retry state", async () => {
 		await env.NOTIFIED_MATCHES.put(
 			"push:state",

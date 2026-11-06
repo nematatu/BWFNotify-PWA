@@ -78,12 +78,14 @@ export function mergeLiveMatches(
 
 	const mergedLive = freshLive.map((fresh): LiveMatch => {
 		const current = currentById.get(fresh.id);
-		return {
+		const merged: LiveMatch = {
 			...current,
 			...fresh,
 			scoreChangedTeam: changedScoreTeam(current, fresh),
-			h2h: fresh.h2h || current?.h2h,
 		};
+		// ライブ応答はH2Hを含まないことがあるため、取得済みの値を引き継ぐ。
+		if (current?.h2h && !fresh.h2h) merged.h2h = current.h2h;
+		return merged;
 	});
 
 	return [
