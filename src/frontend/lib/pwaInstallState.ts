@@ -1,21 +1,40 @@
-import { createMemo, createSignal } from "solid-js";
-import type { InstallGuidance } from "../components/Notifications";
-import { isGoogleApp, isIosDevice, isStandaloneDisplay } from "./utils";
+import { createSignal } from "solid-js";
+import {
+	isGoogleApp,
+	isIosDevice,
+	isMobileBrowser,
+	isStandaloneDisplay,
+} from "./browser";
+
+/** インストール案内の1ステップ目に表示する内容。 */
+export type InstallGuidance = {
+	title: string;
+	description: string;
+	hasAction: boolean;
+};
 
 export interface DeferredInstallPrompt {
 	prompt: () => Promise<void>;
 	userChoice?: Promise<{ outcome: "accepted" | "dismissed" | string }>;
 }
 
-// --- Domain States ---
-export const [installPrompt, setInstallPrompt] =
+// --- 状態 ---
+// 書き換えはこのモジュールの操作関数だけに限り、外部へは読み取り関数だけを公開する。
+const [installPrompt, setInstallPrompt] =
 	createSignal<DeferredInstallPrompt | null>(null);
-export const [installOpen, setInstallOpen] = createSignal(false);
-export const [bannerHidden, setBannerHidden] = createSignal(true);
+const [installOpen, setInstallOpen] = createSignal(false);
+const [bannerHidden, setBannerHidden] = createSignal(true);
+
+export { bannerHidden, installOpen };
 
 export const standalone = () => isStandaloneDisplay();
 
-// --- Domain Actions ---
+/** ホーム画面版でないモバイルブラウザにだけ、追加案内のバナーを出す。 */
+export const showInstallBannerIfNeeded = () => {
+	if (!standalone() && isMobileBrowser()) setBannerHidden(false);
+};
+
+// --- 操作 ---
 export const openInstall = () => {
 	if (standalone()) return;
 	setInstallOpen(true);
@@ -27,9 +46,7 @@ export const closeInstall = () => {
 	document.body.classList.remove("overlay-open");
 };
 
-export const handleInstall = async (
-	dismissBtnRef?: HTMLButtonElement | undefined,
-) => {
+export const handleInstall = async (dismissButton?: HTMLButtonElement) => {
 	const prompt = installPrompt();
 	if (!prompt) return;
 	try {
@@ -38,15 +55,15 @@ export const handleInstall = async (
 		setInstallPrompt(null);
 		if (choice?.outcome === "accepted") {
 			closeInstall();
-		} else if (dismissBtnRef) {
-			dismissBtnRef.focus();
+		} else {
+			dismissButton?.focus();
 		}
-	} catch (e) {
-		console.error("Install prompt error:", e);
+	} catch (error) {
+		console.error("Install prompt error:", error);
 	}
 };
 
-export const guidance = createMemo((): InstallGuidance => {
+export const guidance = (): InstallGuidance => {
 	if (installPrompt()) {
 		return {
 			title: "ホーム画面に追加",
@@ -76,9 +93,9 @@ export const guidance = createMemo((): InstallGuidance => {
 			"メニューの「アプリをインストール」または「ホーム画面に追加」を選びます。",
 		hasAction: false,
 	};
-});
+};
 
-// --- Initialize Event Listeners (Run once) ---
+// --- ブラウザのインストールイベント（読み込み時に一度だけ登録） ---
 if (typeof window !== "undefined") {
 	const onBeforeInstall = (e: Event) => {
 		e.preventDefault();

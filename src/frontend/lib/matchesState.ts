@@ -1,65 +1,78 @@
 import { createSignal } from "solid-js";
 import type { MatchSummary, PublicState, UpcomingTournament } from "../../type";
-import { type PollingMode, pollingMode } from "./pollingPolicy";
+import { api } from "./api";
 import {
-	api,
 	DEFAULT_SORT_ORDER,
 	isValidSortOrder,
 	mergeLiveMatches,
 	type SortOrder,
-} from "./utils";
+} from "./matchList";
+import { type PollingMode, pollingMode } from "./pollingPolicy";
 import { type MainView, preferredInitialView } from "./viewPolicy";
 
 export type { MainView } from "./viewPolicy";
 
+/** ライブ得点（/api/live）の取得間隔。ライブ試合がある間だけ動く。 */
 const LIVE_POLL_MS = 15_000;
+/** 全試合情報（/api/status）の取得間隔。 */
 const FULL_POLL_MS = 2 * 60_000;
+/** この時間操作がなければ取得を止める。 */
 const IDLE_TIMEOUT_MS = 5 * 60_000;
+const ACTIVITY_THROTTLE_MS = 200;
+const SORT_STORAGE_KEY = "bwf-sort-order";
 
 function readSavedSort(): SortOrder | null {
-	const saved = localStorage.getItem("bwf-sort-order");
+	const saved = localStorage.getItem(SORT_STORAGE_KEY);
 	return isValidSortOrder(saved) ? saved : null;
 }
 
-// --- Domain States ---
-export const [matches, setMatches] = createSignal<MatchSummary[]>([]);
-export const [checkedAt, setCheckedAt] = createSignal<string | null>(null);
-export const [recentResults, setRecentResults] = createSignal<MatchSummary[]>(
-	[],
-);
-export const [calendarCheckedAt, setCalendarCheckedAt] = createSignal<
-	string | null
->(null);
-export const [upcomingTournaments, setUpcomingTournaments] = createSignal<
+// --- 状態 ---
+// 書き換えはこのモジュールの操作関数だけに限り、外部へは読み取り関数だけを公開する。
+const [matches, setMatches] = createSignal<MatchSummary[]>([]);
+const [checkedAt, setCheckedAt] = createSignal<string | null>(null);
+const [recentResults, setRecentResults] = createSignal<MatchSummary[]>([]);
+const [upcomingTournaments, setUpcomingTournaments] = createSignal<
 	UpcomingTournament[]
 >([]);
-export const [currentView, setCurrentViewSignal] =
-	createSignal<MainView>("live");
-export const [sortOrder, setSortOrderSignal] = createSignal<SortOrder>(
+const [currentView, setCurrentViewSignal] = createSignal<MainView>("live");
+const [sortOrder, setSortOrderSignal] = createSignal<SortOrder>(
 	readSavedSort() || DEFAULT_SORT_ORDER,
 );
 const [idle, setIdle] = createSignal(false);
 
+export {
+	checkedAt,
+	currentView,
+	matches,
+	recentResults,
+	sortOrder,
+	upcomingTournaments,
+};
+
 let livePromise: Promise<void> | null = null;
 let liveTimer: ReturnType<typeof setTimeout> | null = null;
-let fullTimer: ReturnType<typeof setTimeout> | null = null;
+let fullTimer: ReturnType<typeof setInterval> | null = null;
 let idleTimer: ReturnType<typeof setTimeout> | null = null;
 let currentPollingMode: PollingMode = "paused";
+/** 利用者がタブを選ぶまでは、取得結果に応じて初期タブを選び直す。 */
 let initialViewSelected = false;
+
+const hasLiveMatches = () =>
+	matches().some((match) => match.eventType === "live");
+const pageVisible = () => document.visibilityState === "visible";
 
 export const setCurrentView = (view: MainView) => {
 	initialViewSelected = true;
 	setCurrentViewSignal(view);
 };
 
-// --- Domain Actions ---
+// --- 取得 ---
 export const loadStatus = async () => {
 	try {
 		const state = await api<PublicState>("/api/status");
 		setCheckedAt(state.checkedAt);
 		setMatches(state.matches || []);
 		setRecentResults(state.recentResults || []);
-		setCalendarCheckedAt(state.calendarCheckedAt || null);
 		setUpcomingTournaments(state.upcomingTournaments || []);
 		if (!initialViewSelected) {
 			setCurrentViewSignal(
@@ -72,12 +85,13 @@ export const loadStatus = async () => {
 			initialViewSelected = true;
 		}
 		syncPollingMode();
-	} catch (e) {
-		console.error("Failed to load status:", e);
+	} catch (error) {
+		console.error("Failed to load status:", error);
 	}
 };
 
-export const loadLive = async () => {
+const loadLive = async () => {
+	// 取得中の場合は同じリクエストを共有し、二重に取得しない。
 	if (livePromise) return livePromise;
 	const run = async () => {
 		try {
@@ -86,8 +100,8 @@ export const loadLive = async () => {
 			});
 			setMatches((prev) => mergeLiveMatches(prev, state.matches));
 			syncPollingMode();
-		} catch (e) {
-			console.error("Failed to load live:", e);
+		} catch (error) {
+			console.error("Failed to load live:", error);
 		} finally {
 			livePromise = null;
 		}
@@ -96,24 +110,22 @@ export const loadLive = async () => {
 	return livePromise;
 };
 
-export const refreshAll = async () => {
-	try {
-		await loadStatus();
-		if (matches().some((m) => m.eventType === "live")) {
-			await loadLive();
-		}
-	} catch (e) {
-		console.error("Refresh failed:", e);
-	}
+/** loadStatus・loadLiveはどちらも失敗を記録して握りつぶすため、例外は投げない。 */
+const refreshAll = async () => {
+	await loadStatus();
+	if (hasLiveMatches()) await loadLive();
+};
+
+// --- 定期取得 ---
+
+const clearLiveTimer = () => {
+	if (liveTimer) clearTimeout(liveTimer);
+	liveTimer = null;
 };
 
 const scheduleLive = () => {
-	if (liveTimer) {
-		clearTimeout(liveTimer);
-		liveTimer = null;
-	}
-	if (idle() || document.visibilityState !== "visible") return;
-	if (!matches().some((m) => m.eventType === "live")) return;
+	clearLiveTimer();
+	if (idle() || !pageVisible() || !hasLiveMatches()) return;
 
 	liveTimer = setTimeout(async () => {
 		await loadLive();
@@ -122,21 +134,17 @@ const scheduleLive = () => {
 };
 
 const stopTimers = () => {
-	if (liveTimer) {
-		clearTimeout(liveTimer);
-		liveTimer = null;
-	}
-	if (fullTimer) {
-		clearInterval(fullTimer);
-		fullTimer = null;
-	}
+	clearLiveTimer();
+	if (fullTimer) clearInterval(fullTimer);
+	fullTimer = null;
 };
 
+/** 表示状態・操作状態・ライブ試合の有無から取得モードを決め、変化時だけタイマーを張り直す。 */
 const syncPollingMode = () => {
 	const next = pollingMode({
-		visible: document.visibilityState === "visible",
+		visible: pageVisible(),
 		idle: idle(),
-		hasLiveMatches: matches().some((match) => match.eventType === "live"),
+		hasLiveMatches: hasLiveMatches(),
 	});
 	if (next === currentPollingMode) return;
 
@@ -169,18 +177,18 @@ const resetIdle = () => {
 };
 
 export const setSortOrder = (order: SortOrder) => {
-	localStorage.setItem("bwf-sort-order", order);
+	localStorage.setItem(SORT_STORAGE_KEY, order);
 	setSortOrderSignal(order);
 };
 
-// --- Lifecycle Sync ---
+// --- ライフサイクル ---
 let initialized = false;
 export function initMatchesState() {
 	if (initialized) return;
 	initialized = true;
 
 	const onVisibility = () => {
-		if (document.visibilityState === "visible") {
+		if (pageVisible()) {
 			void refreshAll();
 			startPolling();
 		} else {
@@ -193,34 +201,32 @@ export function initMatchesState() {
 		if (idleThrottle) return;
 		idleThrottle = setTimeout(() => {
 			idleThrottle = null;
-		}, 200);
+		}, ACTIVITY_THROTTLE_MS);
 		resetIdle();
 	};
 
+	const activityEvents = ["mousemove", "click", "keydown", "scroll"] as const;
+	const passiveEvents = new Set(["mousemove", "scroll"]);
 	document.addEventListener("visibilitychange", onVisibility);
-	window.addEventListener("mousemove", onActivity, { passive: true });
-	window.addEventListener("click", onActivity);
-	window.addEventListener("keydown", onActivity);
-	window.addEventListener("scroll", onActivity, { passive: true });
+	for (const type of activityEvents) {
+		window.addEventListener(type, onActivity, {
+			passive: passiveEvents.has(type),
+		});
+	}
 
-	// Initialize
 	const init = async () => {
-		await Promise.all([loadStatus()]);
+		await loadStatus();
 		resetIdle();
-		if (matches().some((m) => m.eventType === "live")) {
-			await loadLive();
-		}
+		if (hasLiveMatches()) await loadLive();
 		startPolling();
 	};
 	void init();
 
-	// Clean up resources on page unload
 	window.addEventListener("beforeunload", () => {
 		document.removeEventListener("visibilitychange", onVisibility);
-		window.removeEventListener("mousemove", onActivity);
-		window.removeEventListener("click", onActivity);
-		window.removeEventListener("keydown", onActivity);
-		window.removeEventListener("scroll", onActivity);
+		for (const type of activityEvents) {
+			window.removeEventListener(type, onActivity);
+		}
 		stopPolling();
 		if (idleTimer) clearTimeout(idleTimer);
 		if (idleThrottle) clearTimeout(idleThrottle);

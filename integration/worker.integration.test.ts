@@ -7,8 +7,9 @@ import { env } from "cloudflare:workers";
 import { afterEach, describe, expect, test } from "vitest";
 import calendarSnapshot from "../config/upcoming-tournaments.json";
 import worker from "../src";
-import { runNotificationCheck, staticTournamentCalendar } from "../src/api/app";
 import { parseTournamentPage } from "../src/api/baj";
+import { runNotificationCheck } from "../src/api/notificationCheck";
+import { staticTournamentCalendar } from "../src/api/tournamentCalendar";
 import type { MatchSummary } from "../src/type";
 
 const liveMatch: MatchSummary = {
@@ -163,6 +164,51 @@ describe("Worker integration", () => {
 		});
 	});
 
+	test("rejects oversized bodies on every subscription route", async () => {
+		const routes = [
+			["POST", "/api/subscriptions"],
+			["PATCH", "/api/subscriptions"],
+			["DELETE", "/api/subscriptions"],
+			["POST", "/api/subscriptions/test"],
+		] as const;
+		for (const [method, path] of routes) {
+			const context = createExecutionContext();
+			const response = await worker.fetch(
+				new Request(`https://example.com${path}`, {
+					method,
+					headers: {
+						"content-type": "application/json",
+						"content-length": "4097",
+					},
+					body: "{}",
+				}),
+				env,
+				context,
+			);
+			await waitOnExecutionContext(context);
+			expect(response.status).toBe(413);
+			expect(response.headers.get("cache-control")).toBe("no-store");
+		}
+	});
+
+	test("returns 404 rather than 413 for an unknown subscription path", async () => {
+		const context = createExecutionContext();
+		const response = await worker.fetch(
+			new Request("https://example.com/api/subscriptions/unknown", {
+				method: "POST",
+				headers: {
+					"content-type": "application/json",
+					"content-length": "4097",
+				},
+				body: "{}",
+			}),
+			env,
+			context,
+		);
+		await waitOnExecutionContext(context);
+		expect(response.status).toBe(404);
+	});
+
 	test("serves public status from edge cache without notification retry state", async () => {
 		await env.NOTIFIED_MATCHES.put(
 			"push:state",
@@ -269,7 +315,7 @@ describe("Worker integration", () => {
 		expect(notificationCalls).toBe(3);
 	});
 
-	test("keeps completed matches for seven days and stores generated calendar data", async () => {
+	test("keeps completed matches for seven days without storing the bundled calendar", async () => {
 		const completed: MatchSummary = {
 			...liveMatch,
 			id: "completed-recent",
@@ -302,9 +348,42 @@ describe("Worker integration", () => {
 			"completed-recent",
 		]);
 		expect(stored?.calendarCheckedAt).toBe(calendarSnapshot.generatedAt);
-		expect(stored?.upcomingTournaments).toHaveLength(
-			staticTournamentCalendar().length,
+		// 大会カレンダーは /api/status が同梱設定から返すため、KVには保存しない。
+		expect(stored).not.toHaveProperty("upcomingTournaments");
+	});
+
+	test("ignores a calendar stored by an older version without forcing a write", async () => {
+		const legacyState = {
+			checkedAt: "2026-07-18T00:00:00.000Z",
+			matches: [liveMatch],
+			recentResults: [],
+			calendarCheckedAt: calendarSnapshot.generatedAt,
+			upcomingTournaments: [{ id: "stale", name: "古い大会" }],
+			historyCheckedAt: "2026-07-18T00:00:00.000Z",
+			notificationAttempts: {},
+			notifiedLiveMatches: { [liveMatch.id]: "2026-07-18T00:00:00.000Z" },
+		};
+		await env.NOTIFIED_MATCHES.put("push:state", JSON.stringify(legacyState));
+
+		const result = await runNotificationCheck(env, {
+			fetchMatches: async () => [liveMatch],
+			fetchHistory: async () => [],
+			sendNotifications: async () => {
+				throw new Error("must not notify an already-notified match");
+			},
+			now: () => new Date("2026-07-18T00:02:00.000Z"),
+		});
+		expect(result).toMatchObject({ newMatches: 0, stateWritten: false });
+
+		const context = createExecutionContext();
+		const response = await worker.fetch(
+			new Request("https://example.com/api/status?legacy=1"),
+			env,
+			context,
 		);
+		await waitOnExecutionContext(context);
+		const body = await response.json<{ upcomingTournaments: unknown[] }>();
+		expect(body.upcomingTournaments).toEqual(staticTournamentCalendar());
 	});
 
 	test("retries only the match whose deliveries all failed", async () => {

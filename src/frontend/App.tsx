@@ -7,27 +7,21 @@ import {
 	NotificationSettings,
 	PermissionOverlay,
 } from "./components/Notifications";
-import { RecentResults, UpcomingSchedule } from "./components/Schedule";
+import { RecentResults } from "./components/RecentResults";
+import { UpcomingSchedule } from "./components/Schedule";
 import { currentView, initMatchesState } from "./lib/matchesState";
 import {
 	initNotifications,
 	permissionBlockedOpen,
 	permissionOpen,
 } from "./lib/pushNotificationState";
-import {
-	installOpen,
-	setBannerHidden,
-	standalone,
-} from "./lib/pwaInstallState";
-import { isMobileBrowser } from "./lib/utils";
+import { installOpen, showInstallBannerIfNeeded } from "./lib/pwaInstallState";
 
 export default function App() {
 	onMount(() => {
 		initMatchesState();
 		void initNotifications();
-		if (!standalone() && isMobileBrowser()) {
-			setBannerHidden(false);
-		}
+		showInstallBannerIfNeeded();
 	});
 
 	return (

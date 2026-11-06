@@ -2,9 +2,10 @@ import { describe, expect, test } from "bun:test";
 import {
 	historyRefreshDue,
 	STATE_MAX_AGE_MS,
+	type StoredState,
 	shouldPersistState,
-} from "../src/api/app";
-import type { MatchSummary, PublicState } from "../src/type";
+} from "../src/api/notificationCheck";
+import type { MatchSummary } from "../src/type";
 
 const match = (score = 10): MatchSummary => ({
 	id: "match-1",
@@ -17,12 +18,11 @@ const match = (score = 10): MatchSummary => ({
 
 describe("KV state persistence", () => {
 	const checkedAt = new Date("2026-07-18T00:00:00.000Z");
-	const previous: PublicState = {
+	const previous: StoredState = {
 		checkedAt: checkedAt.toISOString(),
 		matches: [match()],
 		recentResults: [],
 		calendarCheckedAt: null,
-		upcomingTournaments: [],
 	};
 
 	test("does not rewrite unchanged state every minute", () => {
@@ -98,8 +98,15 @@ describe("match history refresh", () => {
 
 describe("BAJ discovery load", () => {
 	test("keeps BAJ crawling out of the production Worker", async () => {
-		const source = await Bun.file("src/api/app.ts").text();
-		expect(source).not.toContain("fetchUpcomingTournaments");
-		expect(source).toContain("upcoming-tournaments.json");
+		const workerFiles = [...new Bun.Glob("src/api/*.ts").scanSync()].filter(
+			(path) => !path.endsWith("baj.ts"),
+		);
+		for (const path of workerFiles) {
+			expect(await Bun.file(path).text()).not.toContain(
+				"fetchUpcomingTournaments",
+			);
+		}
+		const calendar = await Bun.file("src/api/tournamentCalendar.ts").text();
+		expect(calendar).toContain("upcoming-tournaments.json");
 	});
 });

@@ -1,13 +1,11 @@
 import { BellRing, TriangleAlert } from "lucide-solid";
 import { Show } from "solid-js";
+import { isInAppBrowser } from "../lib/browser";
+import { formatDate } from "../lib/format";
 import { checkedAt } from "../lib/matchesState";
 import { notifError } from "../lib/pushNotificationState";
 import { bannerHidden, openInstall } from "../lib/pwaInstallState";
-import { formatDate, isInAppBrowser } from "../lib/utils";
 
-// ==========================================
-// AppHeader Component
-// ==========================================
 export function AppHeader() {
 	return (
 		<header class="app-header">
@@ -27,9 +25,6 @@ export function AppHeader() {
 	);
 }
 
-// ==========================================
-// AppFooter Component
-// ==========================================
 function GitHubLogo() {
 	return (
 		<svg class="brand-icon" viewBox="0 0 24 24" aria-hidden="true">
@@ -76,9 +71,6 @@ export function AppFooter() {
 	);
 }
 
-// ==========================================
-// PwaBanner Component
-// ==========================================
 export function PwaBanner() {
 	const inApp = isInAppBrowser();
 

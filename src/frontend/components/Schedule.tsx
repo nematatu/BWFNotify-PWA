@@ -7,161 +7,23 @@ import {
 	X,
 } from "lucide-solid";
 import { createEffect, createMemo, createSignal, For, Show } from "solid-js";
-import type {
-	MatchSummary,
-	MatchTeamSummary,
-	UpcomingTournament,
-} from "../../type";
-import { recentResults, upcomingTournaments } from "../lib/matchesState";
-import { orderedResultScores, resultView } from "../lib/resultView";
+import type { UpcomingTournament } from "../../type";
 import {
-	displayRound,
+	type CalendarMonth,
+	type CalendarWeek,
+	calendarMonths,
+	initialMonthIndex,
+	upcomingMonthGroups,
+} from "../lib/calendar";
+import {
+	formatScheduleDate,
 	formatTournamentDate,
 	japanDateKey,
-	proxiedImageUrl,
-} from "../lib/utils";
+	WEEKDAY_LABELS,
+} from "../lib/format";
+import { upcomingTournaments } from "../lib/matchesState";
 
 type ScheduleView = "list" | "calendar";
-
-export function RecentResults() {
-	return (
-		<section
-			class="data-section tab-data-section"
-			aria-labelledby="results-tab"
-			role="tabpanel"
-		>
-			<div class="data-section-heading">
-				<div>
-					<h2 id="results-heading">直近7日間の結果</h2>
-					<p>日本選手が出場した試合</p>
-				</div>
-				<span>{recentResults().length}試合</span>
-			</div>
-			<Show
-				when={recentResults().length > 0}
-				fallback={<p class="data-empty">取得済みの試合結果はありません</p>}
-			>
-				<div class="result-list">
-					<For each={recentResults()}>
-						{(match) => <ResultRow match={match} />}
-					</For>
-				</div>
-			</Show>
-		</section>
-	);
-}
-
-function ResultRow(props: { match: MatchSummary }) {
-	const view = () => resultView(props.match);
-	const leftTeam = () => props.match.teams[view().leftIndex - 1];
-	const rightTeam = () => props.match.teams[view().rightIndex - 1];
-	const resultClass = () =>
-		view().outcome === "win"
-			? "result-win"
-			: view().outcome === "loss"
-				? "result-loss"
-				: view().outcome === "japanese-match"
-					? "result-japanese-match"
-					: "result-unknown";
-	const outcomeLabel = () =>
-		view().outcome === "win"
-			? "WIN"
-			: view().outcome === "loss"
-				? "LOSE"
-				: view().outcome === "japanese-match"
-					? "日本人対決"
-					: "結果未確定";
-	return (
-		<article class={`result-row ${resultClass()}`}>
-			<div class="result-header">
-				<span class="result-outcome">{outcomeLabel()}</span>
-				<div class="result-meta">
-					<span class="result-tournament">{props.match.tournament}</span>
-					<Show when={props.match.round}>
-						<span class="result-round">{displayRound(props.match.round)}</span>
-					</Show>
-					<time datetime={matchDate(props.match)}>
-						{formatTournamentDate(matchDate(props.match))}
-					</time>
-				</div>
-			</div>
-			<div class="result-matchup">
-				<ResultTeam
-					team={leftTeam()}
-					isJapanese={true}
-					teamResult={
-						view().kind === "japanese-match"
-							? teamResult(view().winner, view().leftIndex)
-							: undefined
-					}
-				/>
-				<div class="result-score">
-					<span class="visually-hidden">ゲームスコア</span>
-					<For each={orderedResultScores(props.match, view().leftIndex)}>
-						{(score) => <span>{score}</span>}
-					</For>
-				</div>
-				<ResultTeam
-					team={rightTeam()}
-					isJapanese={view().kind === "japanese-match"}
-					teamResult={
-						view().kind === "japanese-match"
-							? teamResult(view().winner, view().rightIndex)
-							: undefined
-					}
-				/>
-			</div>
-		</article>
-	);
-}
-
-function ResultTeam(props: {
-	team: MatchTeamSummary | undefined;
-	isJapanese: boolean;
-	teamResult?: "WIN" | "LOSE" | "未確定";
-}) {
-	return (
-		<div class={`result-team ${props.isJapanese ? "result-team-japan" : ""}`}>
-			<div class="result-player-photos">
-				<For
-					each={props.team?.players.filter((player) => player.photoUrl) || []}
-				>
-					{(player) => (
-						<img
-							class="result-player-photo"
-							src={proxiedImageUrl(player.photoUrl)}
-							alt={`${player.name}選手`}
-						/>
-					)}
-				</For>
-			</div>
-			<div class="result-team-head">
-				<Show when={props.team?.flagUrl}>
-					<img
-						class="result-flag"
-						src={proxiedImageUrl(props.team?.flagUrl)}
-						alt={props.team?.countryCode || "国旗"}
-					/>
-				</Show>
-				<Show when={props.teamResult}>
-					<span class="team-result">{props.teamResult}</span>
-				</Show>
-			</div>
-			<div class="result-player-names">
-				<For each={props.team?.players || []}>
-					{(player, index) => (
-						<div>
-							<Show when={index() > 0}>
-								<span class="result-name-separator">/</span>
-							</Show>
-							<span>{player.name}</span>
-						</div>
-					)}
-				</For>
-			</div>
-		</div>
-	);
-}
 
 export function UpcomingSchedule() {
 	const [scheduleView, setScheduleView] = createSignal<ScheduleView>("list");
@@ -173,21 +35,17 @@ export function UpcomingSchedule() {
 		setSelectedTournament(tournament);
 		queueMicrotask(() => popover?.showPopover());
 	};
-	const months = createMemo(() => calendarMonths(upcomingTournaments()));
-	const listGroups = createMemo(() =>
-		upcomingListGroups(upcomingTournaments(), japanDateKey()),
+	const months = createMemo(() =>
+		calendarMonths(upcomingTournaments(), japanDateKey()),
 	);
+	const listGroups = createMemo(() =>
+		upcomingMonthGroups(upcomingTournaments(), japanDateKey()),
+	);
+	// 大会データの初回取得後に一度だけ、表示する月を今月へ合わせる。
 	let monthInitialized = false;
 	createEffect(() => {
 		if (monthInitialized || months().length === 0) return;
-		const currentMonth = japanDateKey().slice(0, 7);
-		const currentIndex = months().findIndex(
-			(month) => month.key === currentMonth,
-		);
-		const nextIndex = months().findIndex((month) => month.key > currentMonth);
-		setVisibleMonthIndex(
-			currentIndex >= 0 ? currentIndex : Math.max(0, nextIndex),
-		);
+		setVisibleMonthIndex(initialMonthIndex(months(), japanDateKey()));
 		monthInitialized = true;
 	});
 	const visibleMonth = () =>
@@ -410,77 +268,54 @@ function TournamentLinks(props: {
 }) {
 	return (
 		<nav
-			class={`tournament-links${props.compact ? " compact" : ""}`}
+			class="tournament-links"
+			classList={{ compact: props.compact }}
 			aria-label={`${props.tournament.name}の資料`}
 		>
 			<Show when={props.tournament.bwfUrl}>
-				<a
-					href={props.tournament.bwfUrl}
-					target="_blank"
-					rel="noreferrer"
-					aria-label={`${props.tournament.name}をBWFで開く`}
-					title="BWF大会ページ"
-				>
-					<img src="/view/sources/bwf.svg" alt="" aria-hidden="true" />
-					<SquareArrowOutUpRight
-						class="external-link-mark"
-						aria-hidden="true"
+				{(url) => (
+					<ExternalSourceLink
+						href={url()}
+						icon="/view/sources/bwf.svg"
+						label="BWF大会ページ"
+						ariaLabel={`${props.tournament.name}をBWFで開く`}
 					/>
-					<span class="visually-hidden">BWF大会ページ</span>
-				</a>
+				)}
 			</Show>
 			<Show when={props.tournament.bajUrl}>
-				<a
-					href={props.tournament.bajUrl}
-					target="_blank"
-					rel="noreferrer"
-					aria-label={`${props.tournament.name}を日本バドミントン協会で確認する`}
-					title="日本バドミントン協会"
-				>
-					<img src="/view/sources/baj.svg" alt="" aria-hidden="true" />
-					<SquareArrowOutUpRight
-						class="external-link-mark"
-						aria-hidden="true"
+				{(url) => (
+					<ExternalSourceLink
+						href={url()}
+						icon="/view/sources/baj.svg"
+						label="日本バドミントン協会"
+						ariaLabel={`${props.tournament.name}を日本バドミントン協会で確認する`}
 					/>
-					<span class="visually-hidden">日本バドミントン協会</span>
-				</a>
+				)}
 			</Show>
 		</nav>
 	);
 }
 
-type CalendarMonth = {
-	key: string;
+function ExternalSourceLink(props: {
+	href: string;
+	icon: string;
 	label: string;
-	weeks: CalendarWeek[];
-	tournaments: UpcomingTournament[];
-};
-
-type CalendarDay = {
-	date: string;
-	day: number;
-	inMonth: boolean;
-	active: boolean;
-	today: boolean;
-};
-
-type CalendarSegment = {
-	tournament: UpcomingTournament;
-	startColumn: number;
-	span: number;
-	lane: number;
-	color: number;
-	showLinks: boolean;
-};
-
-type CalendarWeek = {
-	key: string;
-	days: CalendarDay[];
-	segments: CalendarSegment[];
-	laneCount: number;
-};
-
-const WEEKDAYS = ["日", "月", "火", "水", "木", "金", "土"];
+	ariaLabel: string;
+}) {
+	return (
+		<a
+			href={props.href}
+			target="_blank"
+			rel="noreferrer"
+			aria-label={props.ariaLabel}
+			title={props.label}
+		>
+			<img src={props.icon} alt="" aria-hidden="true" />
+			<SquareArrowOutUpRight class="external-link-mark" aria-hidden="true" />
+			<span class="visually-hidden">{props.label}</span>
+		</a>
+	);
+}
 
 function TournamentCalendar(props: {
 	month: CalendarMonth;
@@ -518,7 +353,7 @@ function TournamentCalendar(props: {
 			</header>
 			<div class="month-calendar">
 				<div class="calendar-weekdays" aria-hidden="true">
-					<For each={WEEKDAYS}>{(weekday) => <span>{weekday}</span>}</For>
+					<For each={WEEKDAY_LABELS}>{(weekday) => <span>{weekday}</span>}</For>
 				</div>
 				<For each={props.month.weeks}>
 					{(week) => <CalendarWeekRow week={week} onSelect={props.onSelect} />}
@@ -538,7 +373,12 @@ function CalendarWeekRow(props: {
 			<For each={props.week.days}>
 				{(day, index) => (
 					<div
-						class={`calendar-day${day.inMonth ? "" : " outside-month"}${day.active ? " active" : ""}${day.today ? " today" : ""}`}
+						class="calendar-day"
+						classList={{
+							"outside-month": !day.inMonth,
+							active: day.active,
+							today: day.today,
+						}}
 						style={{
 							"grid-column": index() + 1,
 							"grid-row": `1 / span ${rowCount() + 1}`,
@@ -551,7 +391,8 @@ function CalendarWeekRow(props: {
 			<For each={props.week.segments}>
 				{(segment) => (
 					<div
-						class={`calendar-event calendar-color-${segment.color}${segment.showLinks ? " has-links" : ""}`}
+						class={`calendar-event calendar-color-${segment.color}`}
+						classList={{ "has-links": segment.showLinks }}
 						style={{
 							"grid-column": `${segment.startColumn} / span ${segment.span}`,
 							"grid-row": segment.lane + 2,
@@ -582,194 +423,4 @@ function CalendarWeekRow(props: {
 			</For>
 		</div>
 	);
-}
-
-function calendarMonths(tournaments: UpcomingTournament[]): CalendarMonth[] {
-	const monthKeys = new Set<string>();
-	for (const tournament of tournaments) {
-		let cursor = new Date(`${tournament.startDate}T00:00:00Z`);
-		const end = new Date(`${tournament.endDate}T00:00:00Z`);
-		while (cursor <= end) {
-			monthKeys.add(cursor.toISOString().slice(0, 7));
-			cursor = new Date(
-				Date.UTC(cursor.getUTCFullYear(), cursor.getUTCMonth() + 1, 1),
-			);
-		}
-	}
-
-	return [...monthKeys].sort().map((key) => {
-		const [year, month] = key.split("-").map(Number);
-		const dayCount = new Date(Date.UTC(year, month, 0)).getUTCDate();
-		const monthStart = `${key}-01`;
-		const monthEnd = `${key}-${String(dayCount).padStart(2, "0")}`;
-		const monthTournaments = tournaments.filter(
-			(tournament) =>
-				tournament.startDate <= monthEnd && tournament.endDate >= monthStart,
-		);
-		return {
-			key,
-			year,
-			month,
-			label: `${year}年${month}月`,
-			weeks: monthWeeks(year, month, key, monthTournaments),
-			tournaments: monthTournaments,
-		};
-	});
-}
-
-function upcomingListGroups(tournaments: UpcomingTournament[], today: string) {
-	const groups = new Map<string, UpcomingTournament[]>();
-	for (const tournament of tournaments) {
-		if (tournament.endDate < today) continue;
-		const key = tournament.startDate.slice(0, 7);
-		groups.set(key, [...(groups.get(key) || []), tournament]);
-	}
-	return [...groups.entries()].sort().map(([key, values]) => {
-		const [year, month] = key.split("-").map(Number);
-		return {
-			key,
-			label: `${year}年${month}月`,
-			year,
-			month,
-			tournaments: values.sort((left, right) =>
-				left.startDate.localeCompare(right.startDate),
-			),
-		};
-	});
-}
-
-function monthWeeks(
-	year: number,
-	month: number,
-	monthKey: string,
-	tournaments: UpcomingTournament[],
-): CalendarWeek[] {
-	const today = japanDateKey();
-	const firstDay = new Date(Date.UTC(year, month - 1, 1));
-	const lastDay = new Date(Date.UTC(year, month, 0));
-	const calendarStart = addDays(firstDay, -firstDay.getUTCDay());
-	const calendarEnd = addDays(lastDay, 6 - lastDay.getUTCDay());
-	const calendarEndKey = dateKey(calendarEnd);
-	const lanes = tournamentLanes(tournaments);
-	const weeks: CalendarWeek[] = [];
-
-	for (
-		let weekStart = calendarStart;
-		weekStart <= calendarEnd;
-		weekStart = addDays(weekStart, 7)
-	) {
-		const weekEnd = addDays(weekStart, 6);
-		const weekStartKey = dateKey(weekStart);
-		const weekEndKey = dateKey(weekEnd);
-		const segments = tournaments.flatMap((tournament) => {
-			if (
-				tournament.endDate < weekStartKey ||
-				tournament.startDate > weekEndKey
-			) {
-				return [];
-			}
-			const start = maxDate(tournament.startDate, weekStartKey);
-			const end = minDate(tournament.endDate, weekEndKey);
-			return [
-				{
-					tournament,
-					startColumn: new Date(`${start}T00:00:00Z`).getUTCDay() + 1,
-					span: daysBetween(start, end) + 1,
-					lane: lanes.get(tournament.id) || 0,
-					color: eventColor(tournament.id),
-					showLinks: end === minDate(tournament.endDate, calendarEndKey),
-				},
-			];
-		});
-		const laneCount = segments.reduce(
-			(max, segment) => Math.max(max, segment.lane + 1),
-			0,
-		);
-		weeks.push({
-			key: weekStartKey,
-			days: Array.from({ length: 7 }, (_, offset) => {
-				const date = dateKey(addDays(weekStart, offset));
-				return {
-					date,
-					day: Number(date.slice(-2)),
-					inMonth: date.startsWith(monthKey),
-					active: tournaments.some((tournament) =>
-						isTournamentDay(tournament, date),
-					),
-					today: date === today,
-				};
-			}),
-			segments,
-			laneCount,
-		});
-	}
-	return weeks;
-}
-
-function tournamentLanes(tournaments: UpcomingTournament[]) {
-	const laneEnds: string[] = [];
-	const lanes = new Map<string, number>();
-	for (const tournament of [...tournaments].sort((left, right) =>
-		left.startDate.localeCompare(right.startDate),
-	)) {
-		const freeLane = laneEnds.findIndex((end) => end < tournament.startDate);
-		const lane = freeLane === -1 ? laneEnds.length : freeLane;
-		laneEnds[lane] = tournament.endDate;
-		lanes.set(tournament.id, lane);
-	}
-	return lanes;
-}
-
-function eventColor(id: string) {
-	return (
-		[...id].reduce((sum, character) => sum + character.charCodeAt(0), 0) % 4
-	);
-}
-
-function dateKey(date: Date) {
-	return date.toISOString().slice(0, 10);
-}
-
-function addDays(date: Date, amount: number) {
-	return new Date(
-		Date.UTC(
-			date.getUTCFullYear(),
-			date.getUTCMonth(),
-			date.getUTCDate() + amount,
-		),
-	);
-}
-
-function daysBetween(start: string, end: string) {
-	return Math.round(
-		(Date.parse(`${end}T00:00:00Z`) - Date.parse(`${start}T00:00:00Z`)) /
-			86_400_000,
-	);
-}
-
-function maxDate(left: string, right: string) {
-	return left > right ? left : right;
-}
-
-function minDate(left: string, right: string) {
-	return left < right ? left : right;
-}
-
-function isTournamentDay(tournament: UpcomingTournament, date: string) {
-	return tournament.startDate <= date && tournament.endDate >= date;
-}
-
-function teamResult(winner: 1 | 2 | undefined, team: 1 | 2) {
-	return winner ? (winner === team ? "WIN" : "LOSE") : "未確定";
-}
-
-function matchDate(match: MatchSummary) {
-	return match.tournamentDate || match.startTime?.slice(0, 10);
-}
-
-function formatScheduleDate(value: string) {
-	const [year, month, day] = value.split("-").map(Number);
-	const weekday = ["日", "月", "火", "水", "木", "金", "土"];
-	const weekdayIndex = new Date(Date.UTC(year, month - 1, day)).getUTCDay();
-	return `${month}月${day}日（${weekday[weekdayIndex]}）`;
 }

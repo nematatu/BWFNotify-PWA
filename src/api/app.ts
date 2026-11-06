@@ -1,67 +1,35 @@
-import { type Context, Hono } from "hono";
-import bwfCalendar from "../../config/bwf-calendar-2026.json";
-import calendarSnapshot from "../../config/upcoming-tournaments.json";
+import { type Context, Hono, type MiddlewareHandler } from "hono";
 import type {
-	DeliveryResult,
-	MatchSummary,
 	PublicState,
 	SaveSubscriptionRequest,
 	TestNotificationRequest,
-	UpcomingTournament,
 	UpdateSubscriptionPreferencesRequest,
 } from "../type";
-import { errorMessage, object, optionalString, todayJst } from "../utils";
+import { errorMessage, object, optionalString } from "../utils";
 import { fetchJapaneseMatches } from "./bwf";
 import { fetchBwfImage } from "./media";
+import {
+	runNotificationCheck,
+	STATE_KEY,
+	type StoredState,
+} from "./notificationCheck";
 import {
 	deleteSubscription,
 	isAllowedPushEndpoint,
 	parseExcludedMatchIds,
 	parsePushSubscription,
 	saveSubscription,
-	sendPushNotifications,
 	sendTestNotification,
 	updateSubscriptionExclusions,
 } from "./push";
+import { staticTournamentCalendar } from "./tournamentCalendar";
 import { defaultWorkerCache } from "./workerCache";
 
-const STATE_KEY = "push:state";
 const MAX_REQUEST_BYTES = 4096;
 const STATUS_CACHE_TTL_SECONDS = 30;
 const LIVE_CACHE_TTL_SECONDS = 10;
-const NOTIFICATION_DEDUP_AGE_MS = 30 * 24 * 60 * 60 * 1000;
-export const STATE_MAX_AGE_MS = 30 * 60 * 1000;
-export const MAX_NOTIFICATION_ATTEMPTS = 3;
-type StoredState = PublicState & {
-	calendarAttemptedAt?: string;
-	historyCheckedAt?: string;
-	notificationAttempts?: Record<string, number>;
-	notifiedLiveMatches?: Record<string, string>;
-};
-
-type NotificationCheckDependencies = {
-	fetchMatches: (
-		cache: KVNamespace,
-		knownMatches: MatchSummary[],
-	) => Promise<MatchSummary[]>;
-	fetchHistory: (
-		cache: KVNamespace,
-		knownMatches: MatchSummary[],
-		now: Date,
-	) => Promise<MatchSummary[]>;
-	sendNotifications: (
-		env: Env,
-		matches: MatchSummary[],
-	) => Promise<DeliveryResult>;
-	now: () => Date;
-};
-
-export type NotificationCheckResult = DeliveryResult & {
-	liveMatches: number;
-	scheduledMatches: number;
-	newMatches: number;
-	stateWritten: boolean;
-};
+/** 独自のCache-Controlを返すため、no-storeを付けないAPI。 */
+const CACHEABLE_PATHS = new Set(["/api/media", "/api/status", "/api/live"]);
 
 type AppBindings = { Bindings: Env };
 
@@ -69,15 +37,21 @@ const app = new Hono<AppBindings>();
 
 app.use("/api/*", async (c, next) => {
 	await next();
-	if (
-		c.req.path !== "/api/media" &&
-		c.req.path !== "/api/status" &&
-		c.req.path !== "/api/live"
-	) {
+	if (!CACHEABLE_PATHS.has(c.req.path)) {
 		c.header("Cache-Control", "no-store");
 	}
 	c.header("X-Content-Type-Options", "nosniff");
 });
+
+/** 購読APIの各ルートで、本文を読む前にサイズ上限を確認する。 */
+const limitRequestSize: MiddlewareHandler<AppBindings> = async (c, next) => {
+	if (requestTooLarge(c.req.header("content-length"))) {
+		return c.json({ error: "Request is too large" }, 413);
+	}
+	await next();
+};
+
+// --- 試合情報 ---
 
 app.get("/api/media", (c) => fetchBwfImage(c.req.query("url")));
 
@@ -88,6 +62,7 @@ app.get("/api/config", (c) =>
 	}),
 );
 
+/** Cronが保存した全試合情報。利用者数に比例してKVを読まないようキャッシュする。 */
 app.get("/api/status", (c) =>
 	cachedJson(c, STATUS_CACHE_TTL_SECONDS, async () => {
 		const stored = await c.env.NOTIFIED_MATCHES.get<StoredState>(
@@ -98,25 +73,25 @@ app.get("/api/status", (c) =>
 	}),
 );
 
+/** 画面表示中だけ短い間隔で取得されるライブ得点。KVは使わない。 */
 app.get("/api/live", (c) =>
-	cachedJson(c, LIVE_CACHE_TTL_SECONDS, async () => ({
-		checkedAt: new Date().toISOString(),
-		matches: (
-			await fetchJapaneseMatches(undefined, [], {
-				upstreamCacheTtlSeconds: LIVE_CACHE_TTL_SECONDS,
-			})
-		).filter((match) => match.eventType === "live"),
-	})),
+	cachedJson(c, LIVE_CACHE_TTL_SECONDS, async () => {
+		const matches = await fetchJapaneseMatches(undefined, [], {
+			upstreamCacheTtlSeconds: LIVE_CACHE_TTL_SECONDS,
+		});
+		return {
+			checkedAt: new Date().toISOString(),
+			matches: matches.filter((match) => match.eventType === "live"),
+		};
+	}),
 );
 
-app.post("/api/subscriptions", async (c) => {
-	if (requestTooLarge(c.req.header("content-length"))) {
-		return c.json({ error: "Request is too large" }, 413);
-	}
+// --- Push購読 ---
 
-	const body = object(
-		await readJson(c.req.raw),
-	) as Partial<SaveSubscriptionRequest>;
+app.post("/api/subscriptions", limitRequestSize, async (c) => {
+	const body = (await readJsonObject(
+		c.req.raw,
+	)) as Partial<SaveSubscriptionRequest>;
 	const subscription = parsePushSubscription(body.subscription);
 	if (!subscription) {
 		return c.json({ error: "Invalid push subscription" }, 400);
@@ -133,14 +108,10 @@ app.post("/api/subscriptions", async (c) => {
 	);
 });
 
-app.patch("/api/subscriptions", async (c) => {
-	if (requestTooLarge(c.req.header("content-length"))) {
-		return c.json({ error: "Request is too large" }, 413);
-	}
-
-	const body = object(
-		await readJson(c.req.raw),
-	) as Partial<UpdateSubscriptionPreferencesRequest>;
+app.patch("/api/subscriptions", limitRequestSize, async (c) => {
+	const body = (await readJsonObject(
+		c.req.raw,
+	)) as Partial<UpdateSubscriptionPreferencesRequest>;
 	const endpoint = optionalString(body.endpoint);
 	const excludedMatchIds = parseExcludedMatchIds(body.excludedMatchIds);
 	if (!endpoint || !isAllowedPushEndpoint(endpoint) || !excludedMatchIds) {
@@ -158,14 +129,10 @@ app.patch("/api/subscriptions", async (c) => {
 	return c.json({ ok: true, excludedMatchIds: updated.excludedMatchIds || [] });
 });
 
-app.post("/api/subscriptions/test", async (c) => {
-	if (requestTooLarge(c.req.header("content-length"))) {
-		return c.json({ error: "Request is too large" }, 413);
-	}
-
-	const body = object(
-		await readJson(c.req.raw),
-	) as Partial<TestNotificationRequest>;
+app.post("/api/subscriptions/test", limitRequestSize, async (c) => {
+	const body = (await readJsonObject(
+		c.req.raw,
+	)) as Partial<TestNotificationRequest>;
 	const endpoint = optionalString(body.endpoint);
 	if (!endpoint || !isAllowedPushEndpoint(endpoint)) {
 		return c.json({ error: "Invalid push endpoint" }, 400);
@@ -181,12 +148,8 @@ app.post("/api/subscriptions/test", async (c) => {
 	return c.json({ ok: true });
 });
 
-app.delete("/api/subscriptions", async (c) => {
-	if (requestTooLarge(c.req.header("content-length"))) {
-		return c.json({ error: "Request is too large" }, 413);
-	}
-
-	const endpoint = optionalString(object(await readJson(c.req.raw)).endpoint);
+app.delete("/api/subscriptions", limitRequestSize, async (c) => {
+	const endpoint = optionalString((await readJsonObject(c.req.raw)).endpoint);
 	if (!endpoint) {
 		return c.json({ error: "Subscription endpoint is required" }, 400);
 	}
@@ -224,271 +187,6 @@ export default {
 	},
 } satisfies ExportedHandler<Env>;
 
-export async function runNotificationCheck(
-	env: Env,
-	overrides: Partial<NotificationCheckDependencies> = {},
-): Promise<NotificationCheckResult> {
-	const dependencies: NotificationCheckDependencies = {
-		fetchMatches: fetchJapaneseMatches,
-		fetchHistory: (cache, knownMatches, now) =>
-			fetchJapaneseMatches(cache, knownMatches, {
-				upstreamCacheTtlSeconds: 12 * 60 * 60,
-				enrichHeadToHead: false,
-				dates: recentDates(todayJst(now)),
-			}),
-		sendNotifications: sendPushNotifications,
-		now: () => new Date(),
-		...overrides,
-	};
-	const previous = await env.NOTIFIED_MATCHES.get<StoredState>(
-		STATE_KEY,
-		"json",
-	);
-	const now = dependencies.now();
-	const fetchedMatches = await dependencies.fetchMatches(env.NOTIFIED_MATCHES, [
-		...(previous?.matches || []),
-		...(previous?.recentResults || []),
-	]);
-	const matches = fetchedMatches.filter(
-		(match) => match.eventType !== "completed",
-	);
-	let completed = fetchedMatches.filter(
-		(match) => match.eventType === "completed",
-	);
-	let historyCheckedAt =
-		previous?.historyCheckedAt || previous?.calendarAttemptedAt || null;
-	if (historyRefreshDue(historyCheckedAt, now)) {
-		historyCheckedAt = now.toISOString();
-		const knownMatches = [...matches, ...(previous?.recentResults || [])];
-		try {
-			const history = await dependencies.fetchHistory(
-				env.NOTIFIED_MATCHES,
-				knownMatches,
-				now,
-			);
-			completed = [
-				...completed,
-				...history.filter((match) => match.eventType === "completed"),
-			];
-		} catch (error) {
-			console.error(
-				JSON.stringify({
-					event: "history-refresh-error",
-					error: errorMessage(error),
-				}),
-			);
-		}
-	}
-	const calendarCheckedAt = calendarSnapshot.generatedAt;
-	const upcomingTournaments = staticTournamentCalendar();
-	const recentResults = mergeRecentResults(
-		previous?.recentResults || [],
-		completed,
-		now,
-	);
-	const liveMatches = matches.filter((match) => match.eventType === "live");
-	const newMatches = notificationCandidates(previous, liveMatches);
-	const delivery =
-		newMatches.length > 0
-			? await dependencies.sendNotifications(env, newMatches)
-			: { sent: 0, failed: 0, removed: 0, byMatch: {} };
-	const next: StoredState = {
-		checkedAt: now.toISOString(),
-		matches,
-		recentResults,
-		calendarCheckedAt,
-		upcomingTournaments,
-		historyCheckedAt: historyCheckedAt || undefined,
-	};
-	const notificationAttempts = nextNotificationAttempts(
-		previous,
-		liveMatches,
-		newMatches,
-		delivery,
-	);
-	next.notificationAttempts = notificationAttempts;
-	next.notifiedLiveMatches = nextNotifiedLiveMatches(
-		previous,
-		newMatches,
-		notificationAttempts,
-		now,
-	);
-	const stateWritten = shouldPersistState(previous, next, now);
-	if (stateWritten) {
-		await env.NOTIFIED_MATCHES.put(STATE_KEY, JSON.stringify(next));
-	}
-
-	const result: NotificationCheckResult = {
-		liveMatches: liveMatches.length,
-		scheduledMatches: matches.filter((match) => match.eventType === "scheduled")
-			.length,
-		newMatches: newMatches.length,
-		stateWritten,
-		...delivery,
-	};
-	console.log(JSON.stringify({ event: "notification-check", ...result }));
-	console.log(
-		JSON.stringify({
-			event: "notification-check-detail",
-			previousLiveIds: (previous?.matches || [])
-				.filter((m) => m.eventType === "live")
-				.map((m) => m.id),
-			notifiedLiveMatchIds: Object.keys(previous?.notifiedLiveMatches || {}),
-			notificationAttempts: previous?.notificationAttempts || {},
-			currentLiveIds: liveMatches.map((m) => m.id),
-			candidateIds: newMatches.map((m) => m.id),
-		}),
-	);
-	return result;
-}
-
-export function staticTournamentCalendar(): UpcomingTournament[] {
-	const tournaments = new Map<string, UpcomingTournament>();
-	for (const tournament of bwfCalendar.tournaments) {
-		tournaments.set(tournament.id, tournament);
-	}
-	for (const tournament of calendarSnapshot.tournaments) {
-		tournaments.set(tournament.id, {
-			...tournaments.get(tournament.id),
-			...tournament,
-		});
-	}
-	return [...tournaments.values()].sort((left, right) =>
-		left.startDate.localeCompare(right.startDate),
-	);
-}
-
-export function shouldPersistState(
-	previous: StoredState | null,
-	next: StoredState,
-	now: Date,
-): boolean {
-	if (!previous) {
-		return true;
-	}
-	if (
-		matchStateSignature(previous.matches) !==
-			matchStateSignature(next.matches) ||
-		matchStateSignature(previous.recentResults || []) !==
-			matchStateSignature(next.recentResults || []) ||
-		JSON.stringify(previous.upcomingTournaments || []) !==
-			JSON.stringify(next.upcomingTournaments || []) ||
-		(previous.calendarCheckedAt || null) !== (next.calendarCheckedAt || null) ||
-		(previous.historyCheckedAt || null) !== (next.historyCheckedAt || null) ||
-		JSON.stringify(previous.notificationAttempts || {}) !==
-			JSON.stringify(next.notificationAttempts || {}) ||
-		JSON.stringify(previous.notifiedLiveMatches || {}) !==
-			JSON.stringify(next.notifiedLiveMatches || {})
-	) {
-		return true;
-	}
-	const previousCheck = previous.checkedAt
-		? Date.parse(previous.checkedAt)
-		: Number.NaN;
-	return (
-		!Number.isFinite(previousCheck) ||
-		now.getTime() - previousCheck >= STATE_MAX_AGE_MS
-	);
-}
-
-export function historyRefreshDue(
-	checkedAt: string | null | undefined,
-	now: Date,
-): boolean {
-	const previous = checkedAt ? Date.parse(checkedAt) : Number.NaN;
-	return (
-		!Number.isFinite(previous) ||
-		now.getTime() - previous >= 12 * 60 * 60 * 1000
-	);
-}
-
-function matchStateSignature(matches: MatchSummary[]): string {
-	return JSON.stringify(
-		[...matches].sort((left, right) => left.id.localeCompare(right.id)),
-	);
-}
-
-function notificationCandidates(
-	previous: StoredState | null,
-	liveMatches: MatchSummary[],
-): MatchSummary[] {
-	const previousLiveIds = new Set(
-		(previous?.matches || [])
-			.filter((match) => match.eventType === "live")
-			.map((match) => match.id),
-	);
-	return liveMatches.filter((match) => {
-		const attempts = previous?.notificationAttempts?.[match.id] || 0;
-		return (
-			(attempts > 0 && attempts < MAX_NOTIFICATION_ATTEMPTS) ||
-			(!previousLiveIds.has(match.id) &&
-				!previous?.notifiedLiveMatches?.[match.id])
-		);
-	});
-}
-
-function nextNotificationAttempts(
-	previous: StoredState | null,
-	liveMatches: MatchSummary[],
-	candidates: MatchSummary[],
-	delivery: DeliveryResult,
-): Record<string, number> {
-	const liveIds = new Set(liveMatches.map((match) => match.id));
-	const next = Object.fromEntries(
-		Object.entries(previous?.notificationAttempts || {}).filter(
-			([id, attempts]) =>
-				liveIds.has(id) && attempts > 0 && attempts < MAX_NOTIFICATION_ATTEMPTS,
-		),
-	);
-	for (const match of candidates) {
-		delete next[match.id];
-		const matchDelivery = delivery.byMatch[match.id];
-		if (matchDelivery && matchDelivery.sent === 0 && matchDelivery.failed > 0) {
-			const attempts = (previous?.notificationAttempts?.[match.id] || 0) + 1;
-			if (attempts < MAX_NOTIFICATION_ATTEMPTS) {
-				next[match.id] = attempts;
-			}
-		}
-	}
-	return next;
-}
-
-function nextNotifiedLiveMatches(
-	previous: StoredState | null,
-	candidates: MatchSummary[],
-	notificationAttempts: Record<string, number>,
-	now: Date,
-): Record<string, string> {
-	const cutoff = now.getTime() - NOTIFICATION_DEDUP_AGE_MS;
-	const next = Object.fromEntries(
-		Object.entries(previous?.notifiedLiveMatches || {}).filter(([, value]) => {
-			const timestamp = Date.parse(value);
-			return Number.isFinite(timestamp) && timestamp >= cutoff;
-		}),
-	);
-
-	// Migration: when upgrading from a version without notifiedLiveMatches,
-	// seed the ledger with any matches already live to prevent double-sending.
-	// Skip this block once notifiedLiveMatches exists so that genuinely new
-	// live matches are not silently registered as already-notified.
-	if (!previous?.notifiedLiveMatches) {
-		for (const match of previous?.matches || []) {
-			if (
-				match.eventType === "live" &&
-				!previous?.notificationAttempts?.[match.id]
-			) {
-				next[match.id] = previous?.checkedAt || now.toISOString();
-			}
-		}
-	}
-	for (const match of candidates) {
-		if (!notificationAttempts[match.id]) {
-			next[match.id] = now.toISOString();
-		}
-	}
-	return next;
-}
-
 function publicState(state: StoredState | null): PublicState {
 	return {
 		checkedAt: state?.checkedAt || null,
@@ -501,49 +199,7 @@ function publicState(state: StoredState | null): PublicState {
 	};
 }
 
-export function mergeRecentResults(
-	previous: MatchSummary[],
-	fetched: MatchSummary[],
-	now: Date,
-): MatchSummary[] {
-	const cutoff = now.getTime() - 7 * 24 * 60 * 60 * 1000;
-	const byId = new Map(previous.map((match) => [match.id, match]));
-	for (const match of fetched) {
-		byId.set(match.id, {
-			...byId.get(match.id),
-			...match,
-			completedAt: byId.get(match.id)?.completedAt || now.toISOString(),
-		});
-	}
-	return [...byId.values()]
-		.filter((match) => resultTime(match) >= cutoff)
-		.sort((left, right) => resultTime(right) - resultTime(left));
-}
-
-function resultTime(match: MatchSummary): number {
-	for (const value of [
-		match.startTime,
-		match.tournamentDate,
-		match.completedAt,
-	]) {
-		if (!value) continue;
-		const timestamp = Date.parse(
-			/^\d{4}-\d{2}-\d{2}$/.test(value) ? `${value}T12:00:00+09:00` : value,
-		);
-		if (Number.isFinite(timestamp)) return timestamp;
-	}
-	return 0;
-}
-
-function recentDates(today: string): string[] {
-	const base = new Date(`${today}T12:00:00Z`);
-	return Array.from({ length: 7 }, (_, index) => {
-		const date = new Date(base);
-		date.setUTCDate(base.getUTCDate() - index);
-		return date.toISOString().slice(0, 10);
-	}).reverse();
-}
-
+/** Workerのエッジキャッシュに応答を保存し、TTL内はloadを呼ばずに返す。 */
 async function cachedJson(
 	c: Context<AppBindings>,
 	ttlSeconds: number,
@@ -567,15 +223,18 @@ async function cachedJson(
 	return response;
 }
 
-async function readJson(request: Request): Promise<unknown> {
+/** JSON以外や壊れたJSONは空オブジェクトとして扱い、各ルートの検証で400にする。 */
+async function readJsonObject(
+	request: Request,
+): Promise<Record<string, unknown>> {
 	if (!request.headers.get("content-type")?.includes("application/json")) {
-		return null;
+		return {};
 	}
 
 	try {
-		return await request.json();
+		return object(await request.json());
 	} catch {
-		return null;
+		return {};
 	}
 }
 

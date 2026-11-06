@@ -42,6 +42,33 @@ const JAPANESE_PLAYER_NAMES: Record<string, string> = {
 	"YUGO KOBAYASHI": "小林優吾",
 	"YUICHI SHIMOGAMI": "霜上雄一",
 	"YUSHI TANAKA": "田中湧士",
+	// 日本バドミントン協会の派遣・参加者名簿（2026年11月）で、種目とペアの組み合わせまで一致を確認
+	"HARUKI KAWABE": "川邊悠陽", // 韓国オープン2026 参加者 MD1/XD2
+	"KENTA MATSUKAWA": "松川健大", // 韓国オープン2026 参加者 MD1
+	"KENYA MITSUHASHI": "三橋健也", // 韓国オープン2026 参加者 MD2
+	"KEIICHIRO MATSUI": "松居圭一郎", // 韓国オープン2026 参加者 MD2
+	"TSUBASA YOSHIDA": "吉田翼", // 韓国オープン2026 参加者 MD3
+	"TAKUTO GOTO": "後藤拓人", // 韓国オープン2026 参加者 MD3
+	"SHOGO OGAWA": "小川翔悟", // 韓国オープン2026 参加者 MS1
+	"MINORU KOGA": "古賀穂", // 韓国オープン2026 参加者 MS2
+	"HINA AKECHI": "明地陽菜", // 韓国オープン2026 参加者 WS1
+	"RIRINA HIRAMOTO": "平本梨々菜", // 韓国オープン2026 参加者 WS2/WD1
+	"YUTA WATANABE": "渡辺勇大", // 韓国オープン2026 参加者 XD1
+	"MAYA TAGUCHI": "田口真彩", // 韓国オープン2026 参加者 XD1
+	"KOKONA ISHIKAWA": "石川心菜", // 韓国オープン2026 参加者 XD2
+	"RIKI TAKEI": "武井凜生", // 韓国オープン2026 派遣
+	"YUDAI OKIMOTO": "沖本優大", // 韓国オープン2026 派遣
+	"KAKERU KUMAGAI": "熊谷翔", // 韓国オープン2026 派遣
+	"HIROKI NISHI": "西大輝", // 韓国オープン2026 派遣
+	"HIROKI OKAMURA": "岡村洋輝", // 韓国オープン2026 派遣
+	"KYOHEI YAMASHITA": "山下恭平", // 韓国オープン2026 派遣
+	"HINATA SUZUKI": "鈴木陽向", // 韓国オープン2026 派遣
+	"NAO YAMAKITA": "山北奈緖", // 韓国オープン2026 派遣
+	"NANAKO HARA": "原菜那子", // 韓国オープン2026 派遣
+	"RIKO KIYOSE": "清瀬璃子", // 韓国オープン2026 派遣
+	"REI MIYASHITA": "宮下怜", // 南安中国IC2026 参加者 MS1
+	"MOMOHA NIIMI": "新見桃芭", // 南安中国IC2026 参加者 WD1
+	"MIKOTO AISO": "相磯美心", // 南安中国IC2026 参加者 WD1
 };
 
 const ROMANIZED_NAMES_BY_JAPANESE = Object.entries(

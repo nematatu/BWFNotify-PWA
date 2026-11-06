@@ -1,33 +1,30 @@
-import { createMemo, createSignal } from "solid-js";
+import { createSignal } from "solid-js";
 import type {
 	SaveSubscriptionRequest,
 	SubscriptionResponse,
 	TestNotificationRequest,
 	UpdateSubscriptionPreferencesRequest,
 } from "../../type";
-import { registerServiceWorker } from "./pwa";
-import { openInstall } from "./pwaInstallState";
+import { api, errorMessage } from "./api";
 import {
-	api,
 	base64UrlToBytes,
-	errorMessage,
 	isIosDevice,
 	isStandaloneDisplay,
 	notificationToggleAction,
-} from "./utils";
+} from "./browser";
+import { registerServiceWorker } from "./pwa";
+import { openInstall } from "./pwaInstallState";
 
-// --- Domain States ---
-export const [notifText, setNotifText] = createSignal("確認中");
-export const [notifError, setNotifError] = createSignal(false);
-export const [testDisabled, setTestDisabled] = createSignal(true);
-export const [toggleDisabled, setToggleDisabled] = createSignal(true);
-export const [toggleChecked, setToggleChecked] = createSignal(false);
-export const [excludedIds, setExcludedIds] = createSignal<Set<string>>(
-	new Set(),
-);
-export const [permissionOpen, setPermissionOpen] = createSignal(false);
-export const [permissionBlockedOpen, setPermissionBlockedOpen] =
-	createSignal(false);
+// --- 状態 ---
+// 書き換えはこのモジュールの操作関数だけに限り、外部へは読み取り関数だけを公開する。
+const [notifText, setNotifText] = createSignal("確認中");
+const [notifError, setNotifError] = createSignal(false);
+const [testDisabled, setTestDisabled] = createSignal(true);
+const [toggleDisabled, setToggleDisabled] = createSignal(true);
+const [toggleChecked, setToggleChecked] = createSignal(false);
+const [excludedIds, setExcludedIds] = createSignal<Set<string>>(new Set());
+const [permissionOpen, setPermissionOpen] = createSignal(false);
+const [permissionBlockedOpen, setPermissionBlockedOpen] = createSignal(false);
 const [subscription, setSubscription] = createSignal<PushSubscription | null>(
 	null,
 );
@@ -37,14 +34,32 @@ let vapidKey: string | undefined;
 let preferenceWrite: Promise<void> = Promise.resolve();
 let preferenceVersion = 0;
 
-export const notificationDisabled = createMemo(
-	() =>
-		!(
-			subscription() &&
-			"Notification" in window &&
-			Notification.permission === "granted"
-		),
-);
+export {
+	excludedIds,
+	notifError,
+	notifText,
+	permissionBlockedOpen,
+	permissionOpen,
+	testDisabled,
+	toggleChecked,
+	toggleDisabled,
+};
+
+/** 試合ごとの通知トグルを操作できない状態か（購読がない、または未許可）。 */
+export const notificationDisabled = () =>
+	!(
+		subscription() &&
+		"Notification" in window &&
+		Notification.permission === "granted"
+	);
+
+const setOverlayOpen = (open: boolean) =>
+	document.body.classList.toggle("overlay-open", open);
+
+const disableNotificationControls = () => {
+	setToggleDisabled(true);
+	setTestDisabled(true);
+};
 
 const setStatus = (text: string, isError = false) => {
 	setNotifText(text);
@@ -71,7 +86,7 @@ const saveSubscription = async (sub: PushSubscription) => {
 	);
 };
 
-// --- Domain Actions ---
+// --- 操作 ---
 export const initNotifications = async () => {
 	setStatus("確認中");
 	setToggleDisabled(true);
@@ -83,17 +98,16 @@ export const initNotifications = async () => {
 
 	try {
 		registration = await registerServiceWorker();
+		// 待機中に別の操作で有効化されていても、通知を使えない環境では必ず無効に戻す。
 		if (!registration) {
 			setStatus("開発環境: 通知は無効化されています");
-			setToggleDisabled(true);
-			setTestDisabled(true);
+			disableNotificationControls();
 			return;
 		}
 
 		if (!("pushManager" in registration) || !("Notification" in window)) {
 			setStatus("ホーム画面版で通知を利用できます");
-			setToggleDisabled(true);
-			setTestDisabled(true);
+			disableNotificationControls();
 			return;
 		}
 
@@ -113,12 +127,12 @@ export const initNotifications = async () => {
 			setStatus("オフ");
 		}
 		setToggleDisabled(false);
-	} catch (e) {
-		setStatus(errorMessage(e), true);
+	} catch (error) {
+		setStatus(errorMessage(error), true);
 	}
 };
 
-export const updateSubscription = async (enabled: boolean) => {
+const updateSubscription = async (enabled: boolean) => {
 	if (!registration || !vapidKey) return;
 	setToggleDisabled(true);
 	setTestDisabled(true);
@@ -147,8 +161,8 @@ export const updateSubscription = async (enabled: boolean) => {
 			setTestDisabled(true);
 			setStatus("オフ");
 		}
-	} catch (e) {
-		setStatus(errorMessage(e), true);
+	} catch (error) {
+		setStatus(errorMessage(error), true);
 		setToggleChecked(false);
 	} finally {
 		setToggleDisabled(false);
@@ -166,13 +180,18 @@ export const sendTest = async () => {
 			body: JSON.stringify(request),
 		});
 		setStatus("テスト通知を送信しました");
-	} catch (e) {
-		setStatus(errorMessage(e), true);
+	} catch (error) {
+		setStatus(errorMessage(error), true);
 	} finally {
 		setTestDisabled(false);
 	}
 };
 
+/**
+ * 試合ごとの通知除外を保存する。画面は即時に更新し、保存は直列化する。
+ * 連続操作では最後の操作の結果だけを画面へ反映し、失敗時は購読を再保存して
+ * サーバー側の除外設定と画面を揃える。
+ */
 export const updateMatchNotif = async (matchId: string, enabled: boolean) => {
 	const sub = subscription();
 	if (!sub) return;
@@ -196,32 +215,32 @@ export const updateMatchNotif = async (matchId: string, enabled: boolean) => {
 				if (version === preferenceVersion) {
 					setExcludedIds(new Set(saved.excludedMatchIds));
 				}
-			} catch (e) {
+			} catch (error) {
 				if (version === preferenceVersion) {
-					setStatus(errorMessage(e), true);
+					setStatus(errorMessage(error), true);
 					await saveSubscription(sub);
 				}
-				throw e;
+				throw error;
 			}
 		});
 	await preferenceWrite.catch(() => undefined);
 };
 
-export const onToggleClick = (e: Event) => {
+export const onToggleClick = (event: Event) => {
 	const action = notificationToggleAction(
 		Notification.permission,
 		isIosDevice(),
 		isStandaloneDisplay(),
 	);
 	if (action === "install") {
-		e.preventDefault();
+		event.preventDefault();
 		openInstall();
 		return;
 	}
 	if (action === "blocked") {
-		e.preventDefault();
+		event.preventDefault();
 		setPermissionBlockedOpen(true);
-		document.body.classList.add("overlay-open");
+		setOverlayOpen(true);
 		return;
 	}
 	if (
@@ -229,19 +248,19 @@ export const onToggleClick = (e: Event) => {
 		"Notification" in window &&
 		Notification.permission === "default"
 	) {
-		e.preventDefault();
+		event.preventDefault();
 		setPermissionOpen(true);
-		document.body.classList.add("overlay-open");
+		setOverlayOpen(true);
 	}
 };
 
-export const onToggleChange = (e: Event) => {
-	void updateSubscription((e.target as HTMLInputElement).checked);
+export const onToggleChange = (event: Event) => {
+	void updateSubscription((event.target as HTMLInputElement).checked);
 };
 
-export const closePermission = () => {
+const closePermission = () => {
 	setPermissionOpen(false);
-	document.body.classList.remove("overlay-open");
+	setOverlayOpen(false);
 };
 
 export const confirmPermission = () => {
@@ -257,7 +276,7 @@ export const cancelPermission = () => {
 
 export const closeBlockedPermission = () => {
 	setPermissionBlockedOpen(false);
-	document.body.classList.remove("overlay-open");
+	setOverlayOpen(false);
 };
 
 export const retryNotificationPermission = () => {

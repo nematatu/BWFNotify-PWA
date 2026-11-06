@@ -1,25 +1,34 @@
 import { describe, expect, test } from "bun:test";
-import { pollingMode } from "../src/frontend/lib/pollingPolicy.ts";
-import {
-	orderedResultScores,
-	resultView,
-} from "../src/frontend/lib/resultView.ts";
+import { notificationToggleAction } from "../src/frontend/lib/browser.ts";
 import {
 	displayCourt,
 	displayRound,
 	displayTournamentCategory,
 	formatMatchTime,
 	japanDateKey,
-	mergeLiveMatches,
-	notificationToggleAction,
 	playerInitial,
 	previousGameScoreline,
-	proxiedImageUrl,
-	safeHttpsUrl,
-	sortedMatches,
 	teamLabel,
+} from "../src/frontend/lib/format.ts";
+import {
+	mergeLiveMatches,
+	sortedMatches,
 	tournamentGroups,
-} from "../src/frontend/lib/utils.ts";
+} from "../src/frontend/lib/matchList.ts";
+import {
+	proxiedImageUrl,
+	resizedBwfImageUrl,
+	safeHttpsUrl,
+} from "../src/frontend/lib/media.ts";
+import { pollingMode } from "../src/frontend/lib/pollingPolicy.ts";
+import {
+	countOutcomes,
+	filterResults,
+	gamesWon,
+	groupResultsByDay,
+	orderedGameScores,
+	resultView,
+} from "../src/frontend/lib/resultView.ts";
 import { preferredInitialView } from "../src/frontend/lib/viewPolicy.ts";
 
 describe("notification toggle policy", () => {
@@ -107,7 +116,7 @@ describe("completed match perspective", () => {
 			outcome: "loss",
 		});
 		expect(
-			orderedResultScores(
+			orderedGameScores(
 				match(
 					[],
 					[
@@ -117,7 +126,10 @@ describe("completed match perspective", () => {
 				),
 				view.leftIndex,
 			),
-		).toEqual(["18 - 21", "16 - 21"]);
+		).toEqual([
+			{ left: 18, right: 21 },
+			{ left: 16, right: 21 },
+		]);
 	});
 
 	test("does not assign one overall Japanese result to a Japanese matchup", () => {
@@ -227,6 +239,73 @@ describe("previous match scores", () => {
 });
 
 // ---------------------------------------------------------------------------
+// Japanese-side result summary
+// ---------------------------------------------------------------------------
+describe("Japanese-side result summary", () => {
+	const player = (isJapanese) => ({ name: "x", isJapanese });
+	const result = (id, japaneseIndex, scores) => ({
+		id,
+		teams:
+			japaneseIndex === 1
+				? [{ players: [player(true)] }, { players: [player(false)] }]
+				: [{ players: [player(false)] }, { players: [player(true)] }],
+		scores: scores.map(([team1, team2], index) => ({
+			game: index + 1,
+			team1,
+			team2,
+		})),
+	});
+	const win = result("win", 2, [
+		[18, 21],
+		[21, 19],
+		[15, 21],
+	]);
+	const loss = result("loss", 1, [
+		[14, 21],
+		[24, 26],
+	]);
+
+	test("counts games from the Japanese side", () => {
+		expect(gamesWon(win, 2)).toEqual({ left: 2, right: 1 });
+		expect(gamesWon(loss, 1)).toEqual({ left: 0, right: 2 });
+	});
+
+	test("tallies and filters wins and losses of Japanese players", () => {
+		expect(countOutcomes([win, loss, win])).toEqual({ win: 2, loss: 1 });
+		expect(filterResults([win, loss], "win").map((m) => m.id)).toEqual(["win"]);
+		expect(filterResults([win, loss], "loss").map((m) => m.id)).toEqual([
+			"loss",
+		]);
+		expect(filterResults([win, loss], "all")).toHaveLength(2);
+	});
+});
+
+// ---------------------------------------------------------------------------
+// results grouped by day
+// ---------------------------------------------------------------------------
+describe("results grouped by day", () => {
+	test("groups by date, newest day first, keeping order within a day", () => {
+		const days = groupResultsByDay([
+			{ id: "a", tournamentDate: "2026-11-05" },
+			{ id: "b", startTime: "2026-11-06T03:00:00Z" },
+			{ id: "c", tournamentDate: "2026-11-05" },
+			{ id: "d" },
+			{ id: "e", tournamentDate: "2026-11-06" },
+		]);
+		expect(days.map((day) => day.date)).toEqual([
+			"2026-11-06",
+			"2026-11-05",
+			undefined,
+		]);
+		expect(days.map((day) => day.matches.map((match) => match.id))).toEqual([
+			["b", "e"],
+			["a", "c"],
+			["d"],
+		]);
+	});
+});
+
+// ---------------------------------------------------------------------------
 // live score updates
 // ---------------------------------------------------------------------------
 describe("live score updates", () => {
@@ -252,6 +331,14 @@ describe("live score updates", () => {
 		expect(merged[0].scores[0].team1).toBe(11);
 		expect(merged[0].h2h).toEqual({ team1Wins: 2, team2Wins: 1 });
 		expect(merged[0].scoreChangedTeam).toBe(1);
+	});
+
+	test("does not add an H2H key when neither response has one", () => {
+		const [merged] = mergeLiveMatches(
+			[{ id: "live", eventType: "live", scores: [] }],
+			[{ id: "live", eventType: "live", scores: [] }],
+		);
+		expect("h2h" in merged).toBe(false);
 	});
 
 	test("removes a live match when it is no longer returned", () => {
@@ -355,6 +442,59 @@ describe("media utilities", () => {
 		expect(proxiedImageUrl(undefined)).toBe("");
 	});
 
+	// URLの形は公開中の /api/status が返した実データに合わせている。
+	test("requests BWF images at the displayed size", () => {
+		const base = "https://img.bwfbadminton.com/image/upload";
+		expect(
+			resizedBwfImageUrl(
+				`${base}/v1590501423/assets/players/thumbnail/39276.jpg`,
+				"photo",
+			),
+		).toBe(
+			`${base}/c_fill,g_face,w_144,h_144,q_auto/v1590501423/assets/players/thumbnail/39276.jpg`,
+		);
+		expect(
+			resizedBwfImageUrl(
+				`${base}/v2/assets/flag-circle-svg-custom/JPN.png`,
+				"flag",
+			),
+		).toBe(
+			`${base}/c_limit,w_96,q_auto/v2/assets/flag-circle-svg-custom/JPN.png`,
+		);
+		expect(
+			resizedBwfImageUrl(
+				`${base}/assets/players/thumbnail/profile_male.jpg`,
+				"photo",
+			),
+		).toBe(
+			`${base}/c_fill,g_face,w_144,h_144,q_auto/assets/players/thumbnail/profile_male.jpg`,
+		);
+	});
+
+	test("leaves already-transformed and non-BWF image URLs unchanged", () => {
+		const named =
+			"https://img.bwfbadminton.com/image/upload/t_Fansite_Homepage_Tourament_Header_big/v1/assets/tournaments/header/A.png";
+		expect(resizedBwfImageUrl(named, "logo")).toBe(named);
+		expect(
+			resizedBwfImageUrl(
+				"https://extranet.bwfbadminton.com/images/a.jpg",
+				"logo",
+			),
+		).toBe("https://extranet.bwfbadminton.com/images/a.jpg");
+		expect(resizedBwfImageUrl("not a url", "photo")).toBe("not a url");
+	});
+
+	test("proxies the resized image URL when a kind is given", () => {
+		expect(
+			proxiedImageUrl(
+				"http://img.bwfbadminton.com/image/upload/v1/assets/players/thumbnail/1.jpg",
+				"photo",
+			),
+		).toBe(
+			`/api/media?url=${encodeURIComponent("https://img.bwfbadminton.com/image/upload/c_fill,g_face,w_144,h_144,q_auto/v1/assets/players/thumbnail/1.jpg")}`,
+		);
+	});
+
 	test("safeHttpsUrl upgrades HTTP to HTTPS", () => {
 		expect(safeHttpsUrl("http://example.com/img.png")).toBe(
 			"https://example.com/img.png",
@@ -370,13 +510,30 @@ describe("media utilities", () => {
 // static assets and configuration
 // ---------------------------------------------------------------------------
 describe("page structure", () => {
-	test("uses square cards without decorative partial color borders", async () => {
+	test("draws cards with one thin border and no partial color borders", async () => {
 		const css = await Bun.file("src/frontend/app.css").text();
-		expect(css).toContain(
-			".match {\n\tmargin-bottom: 18px;\n\tborder: 1px solid #bcbcbc;\n\tborder-radius: 0;",
-		);
+		const cardRule = css.match(/\n\.match \{([^}]+)\}/)?.[1] || "";
+		expect(cardRule).toContain("border: 1px solid var(--color-line);");
 		expect(css).not.toContain(".live-match {");
-		expect(css).not.toContain("border-top: 4px solid #d71920");
+		expect(css).not.toMatch(/border-(top|left|right|bottom): [2-9]px solid/);
+	});
+
+	test("uses only the defined type scale and two font weights", async () => {
+		const css = await Bun.file("src/frontend/app.css").text();
+		const weights = new Set(
+			[...css.matchAll(/font-weight: ([^;]+);/g)].map((match) => match[1]),
+		);
+		expect([...weights].sort()).toEqual([
+			"var(--weight-bold)",
+			"var(--weight-regular)",
+		]);
+		// 文字サイズはトークン経由だけ（数値の直接指定はトークン定義とスコアの微調整に限る）
+		const rawSizes = [...css.matchAll(/font-size: (\d+px);/g)].map(
+			(match) => match[1],
+		);
+		expect(rawSizes.every((size) => ["24px", "28px"].includes(size))).toBe(
+			true,
+		);
 	});
 
 	test("avoids decorative shadows and badge styling", async () => {

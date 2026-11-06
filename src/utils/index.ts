@@ -34,3 +34,13 @@ export function adjacentDates(date: string): string[] {
 export function errorMessage(error: unknown): string {
 	return error instanceof Error ? error.message : String(error);
 }
+
+export function optionalNumber(value: unknown): number | undefined {
+	return typeof value === "number" && Number.isFinite(value)
+		? value
+		: undefined;
+}
+
+export function isPresent<T>(value: T | null | undefined): value is T {
+	return value != null;
+}

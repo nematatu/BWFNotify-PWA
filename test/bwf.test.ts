@@ -294,8 +294,58 @@ describe("Japanese player dictionary", () => {
 		["Miki KANEHIRO", "金廣美希"],
 		["Aya TAMAKI", "玉木亜弥"],
 		["Hina OSAWA", "大澤陽奈"],
+		// BWFの表記どおり（名 + 大文字の姓）で引けること
+		["Haruki KAWABE", "川邊悠陽"],
+		["Kenta MATSUKAWA", "松川健大"],
+		["Kenya MITSUHASHI", "三橋健也"],
+		["Keiichiro MATSUI", "松居圭一郎"],
+		["Tsubasa YOSHIDA", "吉田翼"],
+		["Takuto GOTO", "後藤拓人"],
+		["Shogo OGAWA", "小川翔悟"],
+		["Minoru KOGA", "古賀穂"],
+		["Hina AKECHI", "明地陽菜"],
+		["Ririna HIRAMOTO", "平本梨々菜"],
+		["Yuta WATANABE", "渡辺勇大"],
+		["Maya TAGUCHI", "田口真彩"],
+		["Kokona ISHIKAWA", "石川心菜"],
+		["Riki TAKEI", "武井凜生"],
+		["Yudai OKIMOTO", "沖本優大"],
+		["Kakeru KUMAGAI", "熊谷翔"],
+		["Hiroki NISHI", "西大輝"],
+		["Hiroki OKAMURA", "岡村洋輝"],
+		["Kyohei YAMASHITA", "山下恭平"],
+		["Hinata SUZUKI", "鈴木陽向"],
+		["Nao YAMAKITA", "山北奈緖"],
+		["Nanako HARA", "原菜那子"],
+		["Riko KIYOSE", "清瀬璃子"],
+		["Rei MIYASHITA", "宮下怜"],
+		["Momoha NIIMI", "新見桃芭"],
+		["Mikoto AISO", "相磯美心"],
 	] as const)("maps %s to %s", (source, expected) => {
 		expect(japanesePlayerName(source)).toBe(expected);
+	});
+
+	test("shows newly added players in Japanese in match data from BWF", () => {
+		const [match] = extractJapaneseMatches([
+			{
+				id: "korea-ws",
+				matchStatus: "N",
+				team1: {
+					countryCode: "JPN",
+					players: [
+						{ id: "1", nameDisplay: "Hina AKECHI", countryCode: "JPN" },
+					],
+				},
+				team2: {
+					countryCode: "KOR",
+					players: [
+						{ id: "2", nameDisplay: "AN Se Young", countryCode: "KOR" },
+					],
+				},
+			},
+		]);
+		expect(match?.teams[0]?.players[0]?.name).toBe("明地陽菜");
+		expect(match?.teams[1]?.players[0]?.name).toBe("AN Se Young");
 	});
 
 	test("keeps romanized aliases for upstream matching", () => {
