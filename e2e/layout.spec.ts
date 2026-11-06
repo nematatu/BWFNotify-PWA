@@ -1091,6 +1091,23 @@ test("production build keeps its manifest and service worker", async ({
 		.toBe(true);
 });
 
+test("Worker Previews show that notifications are unavailable", async ({
+	page,
+}) => {
+	await preparePage(page);
+	await page.route("**/api/config", (route) =>
+		route.fulfill({
+			json: { targetCountry: "JPN", notificationsAvailable: false },
+		}),
+	);
+	await page.reload();
+	await expect(page.locator("#notification-status")).toHaveText(
+		"プレビューでは通知を使えません",
+	);
+	await expect(page.locator("#notification-toggle")).toBeDisabled();
+	await expect(page.locator("#test-notification-button")).toBeDisabled();
+});
+
 test("blocked notification permission keeps the toggle actionable", async ({
 	page,
 }) => {

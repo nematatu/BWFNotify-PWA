@@ -111,7 +111,16 @@ export const initNotifications = async () => {
 			return;
 		}
 
-		const cfg = await api<{ vapidPublicKey?: string }>("/api/config");
+		const cfg = await api<{
+			vapidPublicKey?: string;
+			notificationsAvailable?: boolean;
+		}>("/api/config");
+		// Pull Requestごとのプレビュー環境では通知を使わない（本番の購読データを書き換えないため）
+		if (cfg.notificationsAvailable === false) {
+			setStatus("プレビューでは通知を使えません");
+			disableNotificationControls();
+			return;
+		}
 		vapidKey = cfg.vapidPublicKey;
 		const sub = await registration.pushManager.getSubscription();
 		setSubscription(sub);

@@ -165,7 +165,13 @@ OGP画像は `public/pwa/og-image.png` の1200x630画像です。HTMLの寸法�
 
 ## プレビュー
 
-`wrangler.jsonc` の `preview_urls` を有効にしており、Pull Requestごとに Cloudflare Workers Builds がプレビューURLを発行します。プレビューは本番と同じKVを使うため、プレビュー上で通知の購読・除外を操作すると本番の購読データに書き込まれます。表示の確認だけに使ってください。
+Pull Requestごとの確認には [Worker Previews](https://developers.cloudflare.com/workers/previews/) を使います。`main` 以外のブランチへのpushで Workers Builds が `npx wrangler preview` を実行し、Pull Requestのコメントにプレビューの URL を載せます（Wrangler 4.135.0 以上が必要）。
+
+- プレビューは本番の設定を引き継がず、`wrangler.jsonc` の `previews` ブロックの設定で動きます
+- 実データで画面を確認できるよう、プレビューは本番と同じKVを読みます。`APP_ENV=preview` のときは購読API（`/api/subscriptions*`）が403を返し、`/api/config` が `notificationsAvailable: false` を返すため、画面は「プレビューでは通知を使えません」と表示し、本番の購読データへは書き込みません
+- Cron（2分ごとの定期処理）はプレビューでは動きません（Cloudflareの仕様）。プレビューの試合情報は、本番のCronがKVに保存したものです
+- 本番で必須のシークレット（`VAPID_*`）は、ダッシュボードの Previews Base に別途設定します。プレビューでは通知を使わないため、値は本番と異なっていても構いません
+- Version URL（`preview_urls`）は使わないため無効にしています
 
 ## 開発と検証
 

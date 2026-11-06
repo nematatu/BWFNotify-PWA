@@ -43,6 +43,22 @@ app.use("/api/*", async (c, next) => {
 	c.header("X-Content-Type-Options", "nosniff");
 });
 
+/**
+ * Worker Previews（Pull Requestごとの確認用環境）か。
+ * プレビューは本番と同じKVを読むため、購読データへの書き込みを止める。
+ */
+export function isPreview(env: Env): boolean {
+	return String(env.APP_ENV) === "preview";
+}
+
+/** プレビューでは購読APIを使えなくし、本番の購読データを書き換えない。 */
+app.use("/api/subscriptions/*", async (c, next) => {
+	if (isPreview(c.env)) {
+		return c.json({ error: "Notifications are disabled in previews" }, 403);
+	}
+	await next();
+});
+
 /** 購読APIの各ルートで、本文を読む前にサイズ上限を確認する。 */
 const limitRequestSize: MiddlewareHandler<AppBindings> = async (c, next) => {
 	if (requestTooLarge(c.req.header("content-length"))) {
@@ -57,8 +73,9 @@ app.get("/api/media", (c) => fetchBwfImage(c.req.query("url")));
 
 app.get("/api/config", (c) =>
 	c.json({
-		vapidPublicKey: c.env.VAPID_PUBLIC_KEY,
+		vapidPublicKey: isPreview(c.env) ? undefined : c.env.VAPID_PUBLIC_KEY,
 		targetCountry: "JPN",
+		notificationsAvailable: !isPreview(c.env),
 	}),
 );
 
