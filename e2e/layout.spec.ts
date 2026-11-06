@@ -669,6 +669,37 @@ for (const viewport of [
 		).toBeLessThan(1);
 		expect(resultAlignment.scorePaddingTop).toBeLessThan(20);
 		await expect(page.locator(".result-details")).toHaveCount(0);
+		// 左右のチームで、写真・国旗・名前の高さ位置が一致する（日本人選手側が2行になっても）
+		const rowOffsets = await resultRows.evaluateAll((rows) =>
+			rows.flatMap((row) => {
+				const teams = row.querySelectorAll(".result-team");
+				return [
+					".result-player-photos",
+					".result-team-head",
+					".result-player-names",
+				].map((selector) =>
+					Math.abs(
+						(teams[0]?.querySelector(selector)?.getBoundingClientRect().top ??
+							0) -
+							(teams[1]?.querySelector(selector)?.getBoundingClientRect().top ??
+								0),
+					),
+				);
+			}),
+		);
+		expect(Math.max(...rowOffsets)).toBeLessThan(1);
+		// カード内の各行（帯・大会名・対戦）は同じ左端から始まる
+		const leftEdges = await resultRows.first().evaluate((row) => {
+			const left = (selector: string) =>
+				row.querySelector(selector)?.firstElementChild?.getBoundingClientRect()
+					.left ?? Number.NaN;
+			return [
+				left(".result-header"),
+				left(".result-meta"),
+				left(".result-matchup"),
+			];
+		});
+		expect(Math.max(...leftEdges) - Math.min(...leftEdges)).toBeLessThan(1);
 		if (process.env.CAPTURE_LAYOUT === "1") {
 			await page.screenshot({
 				path: `/tmp/bwfnotify-results-${viewport.name}.png`,

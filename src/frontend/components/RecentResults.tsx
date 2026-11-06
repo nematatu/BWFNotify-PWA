@@ -131,12 +131,13 @@ function ResultRow(props: { match: MatchSummary }) {
 						{games().left}-{games().right}
 					</span>
 				</Show>
-				<div class="result-meta">
-					<span class="result-tournament">{props.match.tournament}</span>
-					<Show when={props.match.round}>
-						<span class="result-round">{displayRound(props.match.round)}</span>
-					</Show>
-				</div>
+			</div>
+			{/* 大会名とラウンドは帯の下に置き、カードの中身と左端をそろえる */}
+			<div class="result-meta">
+				<span class="result-tournament">{props.match.tournament}</span>
+				<Show when={props.match.round}>
+					<span class="result-round">{displayRound(props.match.round)}</span>
+				</Show>
 			</div>
 			<div class="result-matchup">
 				<ResultTeam
