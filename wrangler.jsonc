@@ -3,7 +3,7 @@
 	"name": "bwfnotify-pwa",
 	"main": "src/index.ts",
 	"workers_dev": true,
-	"preview_urls": true,
+	"preview_urls": false,
 	"compatibility_date": "2026-07-17",
 	"compatibility_flags": ["nodejs_compat"],
 	"assets": {
@@ -24,10 +24,24 @@
 	"secrets": {
 		"required": ["VAPID_PUBLIC_KEY", "VAPID_PRIVATE_KEY", "VAPID_SUBJECT"]
 	},
+	"vars": {
+		"APP_ENV": "production"
+	},
 	"kv_namespaces": [
 		{
 			"binding": "NOTIFIED_MATCHES",
 			"id": "2099ab6e1ad94bfea30573265cd4d75e"
 		}
-	]
+	],
+	"previews": {
+		"vars": {
+			"APP_ENV": "preview"
+		},
+		"kv_namespaces": [
+			{
+				"binding": "NOTIFIED_MATCHES",
+				"id": "2099ab6e1ad94bfea30573265cd4d75e"
+			}
+		]
+	}
 }

@@ -164,6 +164,65 @@ describe("Worker integration", () => {
 		});
 	});
 
+	test("disables notification writes in Worker Previews that share the production KV", async () => {
+		const previewEnv = { ...env, APP_ENV: "preview" } as unknown as Env;
+		const request = (path: string, init?: RequestInit) =>
+			worker.fetch(
+				new Request(`https://example.com${path}`, init),
+				previewEnv,
+				createExecutionContext(),
+			);
+
+		const config = await request("/api/config");
+		expect(await config.json()).toEqual({
+			targetCountry: "JPN",
+			notificationsAvailable: false,
+		});
+
+		const routes = [
+			["POST", "/api/subscriptions"],
+			["PATCH", "/api/subscriptions"],
+			["DELETE", "/api/subscriptions"],
+			["POST", "/api/subscriptions/test"],
+		] as const;
+		for (const [method, path] of routes) {
+			const response = await request(path, {
+				method,
+				headers: { "content-type": "application/json" },
+				body: JSON.stringify({
+					subscription: {
+						endpoint: "https://fcm.googleapis.com/fcm/send/preview",
+						keys: {
+							p256dh: "B".repeat(87),
+							auth: "A".repeat(22),
+						},
+					},
+					endpoint: "https://fcm.googleapis.com/fcm/send/preview",
+					excludedMatchIds: [],
+				}),
+			});
+			expect(response.status).toBe(403);
+		}
+		// 購読データ（push:subscription:*）は1件も書き込まれていない
+		const stored = await env.NOTIFIED_MATCHES.list({
+			prefix: "push:subscription:",
+		});
+		expect(stored.keys).toHaveLength(0);
+	});
+
+	test("keeps notifications available in production", async () => {
+		const context = createExecutionContext();
+		const response = await worker.fetch(
+			new Request("https://example.com/api/config"),
+			env,
+			context,
+		);
+		await waitOnExecutionContext(context);
+		expect(await response.json()).toMatchObject({
+			notificationsAvailable: true,
+		});
+	});
+
 	test("rejects oversized bodies on every subscription route", async () => {
 		const routes = [
 			["POST", "/api/subscriptions"],
