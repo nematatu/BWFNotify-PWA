@@ -163,6 +163,10 @@ BWFはローマ字表記（例: `Hina AKECHI`）で返すため、`src/config/ja
 
 OGP画像は `public/pwa/og-image.png` の1200x630画像です。HTMLの寸法指定と実ファイル寸法を単体テストで確認します。
 
+## プレビュー
+
+`wrangler.jsonc` の `preview_urls` を有効にしており、Pull Requestごとに Cloudflare Workers Builds がプレビューURLを発行します。プレビューは本番と同じKVを使うため、プレビュー上で通知の購読・除外を操作すると本番の購読データに書き込まれます。表示の確認だけに使ってください。
+
 ## 開発と検証
 
 `bun run dev` はViteと開発API用Wranglerを同じ親プロセスで管理します。Worker起動後にscheduled処理を1回実行し、画面はlocalhost:5173、APIはlocalhost:8787で提供します。片方の異常終了またはCtrl+Cで両方を停止します。
