@@ -22,6 +22,7 @@ import {
 } from "../src/frontend/lib/media.ts";
 import { pollingMode } from "../src/frontend/lib/pollingPolicy.ts";
 import {
+	groupResultsByDay,
 	orderedResultScores,
 	resultView,
 } from "../src/frontend/lib/resultView.ts";
@@ -228,6 +229,31 @@ describe("previous match scores", () => {
 		expect(
 			previousGameScoreline([{ team1: 21, team2: 18 }, { team1: 15 }]),
 		).toBe("21-18");
+	});
+});
+
+// ---------------------------------------------------------------------------
+// results grouped by day
+// ---------------------------------------------------------------------------
+describe("results grouped by day", () => {
+	test("groups by date, newest day first, keeping order within a day", () => {
+		const days = groupResultsByDay([
+			{ id: "a", tournamentDate: "2026-11-05" },
+			{ id: "b", startTime: "2026-11-06T03:00:00Z" },
+			{ id: "c", tournamentDate: "2026-11-05" },
+			{ id: "d" },
+			{ id: "e", tournamentDate: "2026-11-06" },
+		]);
+		expect(days.map((day) => day.date)).toEqual([
+			"2026-11-06",
+			"2026-11-05",
+			undefined,
+		]);
+		expect(days.map((day) => day.matches.map((match) => match.id))).toEqual([
+			["b", "e"],
+			["a", "c"],
+			["d"],
+		]);
 	});
 });
 

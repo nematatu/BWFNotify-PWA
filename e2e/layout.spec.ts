@@ -452,7 +452,34 @@ for (const viewport of [
 		);
 		await expect(page.locator(".score-updated")).toHaveCount(1);
 		await expect(page.locator(".score-updated strong")).toHaveText("12");
-		await expect(page.locator(".h2h-scoreline strong")).toHaveText("3勝 - 1勝");
+		await expect(page.locator(".h2h-scoreline .h2h-wins")).toHaveText([
+			"3勝",
+			"1勝",
+		]);
+		// 勝ち数は、それぞれのチームの真下（チームの横幅の中）にある
+		const h2hAlignment = await page.evaluate(() => {
+			const card = document.querySelector(".live-match");
+			const box = (selector: string, index = 0) =>
+				card?.querySelectorAll(selector)[index]?.getBoundingClientRect();
+			const center = (rect?: DOMRect) =>
+				rect ? rect.left + rect.width / 2 : Number.NaN;
+			const left = box(".team-left");
+			const right = box(".team-right");
+			return {
+				leftWins: center(box(".h2h-wins", 0)),
+				rightWins: center(box(".h2h-wins", 1)),
+				left: [left?.left ?? 0, left?.right ?? 0],
+				right: [right?.left ?? 0, right?.right ?? 0],
+			};
+		});
+		expect(h2hAlignment.leftWins).toBeGreaterThan(h2hAlignment.left[0]);
+		expect(h2hAlignment.leftWins).toBeLessThan(h2hAlignment.left[1]);
+		expect(h2hAlignment.rightWins).toBeGreaterThan(h2hAlignment.right[0]);
+		expect(h2hAlignment.rightWins).toBeLessThan(h2hAlignment.right[1]);
+		await expect(page.locator(".current-game")).toContainText("ゲーム");
+		await expect(page.locator(".game-score span").first()).toHaveText(
+			"第1ゲーム",
+		);
 		await page.locator(".h2h-scoreline").click();
 		await expect(page.locator(".previous-winner")).toHaveText(
 			"JIA Yi Fan / ZHANG Shu Xian 勝利",
@@ -467,6 +494,12 @@ for (const viewport of [
 		await page.getByRole("tab", { name: /結果/ }).click();
 		const resultRows = page.locator(".result-row");
 		await expect(resultRows).toHaveCount(3);
+		// 試合結果は日付ごとにまとめ、新しい日付から並べる
+		await expect(page.locator(".result-day-heading time")).toHaveText([
+			"7月17日（金）",
+			"7月16日（木）",
+			"7月15日（水）",
+		]);
 		await expect(resultRows.nth(0)).toHaveClass(/result-win/);
 		await expect(resultRows.nth(0)).toHaveCSS("background-image", "none");
 		await expect(resultRows.nth(0)).toHaveCSS(
@@ -509,10 +542,10 @@ for (const viewport of [
 		await expect(resultRows.nth(0).locator(".result-meta")).toContainText(
 			"準々決勝",
 		);
+		// 日付は日付見出しに出すため、各行には大会名とラウンドだけを出す
 		await expect(resultRows.nth(0).locator(".result-meta > *")).toHaveText([
 			"DAIHATSU Japan Open 2026",
 			"準々決勝",
-			"2026/07/17",
 		]);
 		await expect(resultRows.nth(1).locator(".result-meta")).toContainText(
 			"ベスト16",

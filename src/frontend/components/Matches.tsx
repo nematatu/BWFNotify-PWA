@@ -356,7 +356,7 @@ export function MatchCard(props: {
 					<For each={scores()}>
 						{(game) => (
 							<div class="game-score">
-								<span>SET {game.game}</span>
+								<span>第{game.game}ゲーム</span>
 								<strong>
 									{game.team1} - {game.team2}
 								</strong>
@@ -464,7 +464,7 @@ function CurrentScore(props: { match: LiveMatch }) {
 	const currentGame = () => props.match.scores.at(-1);
 	return (
 		<>
-			<span class="current-game">GAME {props.match.scores.length}</span>
+			<span class="current-game">第{props.match.scores.length}ゲーム</span>
 			<div class="current-score">
 				<ScoreSide
 					team={1}
@@ -521,11 +521,21 @@ function HeadToHead(props: { match: MatchSummary }) {
 
 	return (
 		<details class="h2h">
+			{/* 勝ち数は、それぞれの選手の真下に置いて誰の成績か分かるようにする */}
 			<summary class="h2h-scoreline">
-				<span>対戦成績</span>
-				<strong>
-					{h2h()?.team1Wins ?? 0}勝 - {h2h()?.team2Wins ?? 0}勝
+				<strong class="h2h-wins" aria-hidden="true">
+					{h2h()?.team1Wins ?? 0}勝
 				</strong>
+				<span class="h2h-label" aria-hidden="true">
+					対戦成績
+				</span>
+				<strong class="h2h-wins" aria-hidden="true">
+					{h2h()?.team2Wins ?? 0}勝
+				</strong>
+				<span class="visually-hidden">
+					対戦成績 {teamLabel(props.match.teams[0])} {h2h()?.team1Wins ?? 0}
+					勝、{teamLabel(props.match.teams[1])} {h2h()?.team2Wins ?? 0}勝
+				</span>
 			</summary>
 			<Show when={previous()}>
 				<div class="previous-meeting">

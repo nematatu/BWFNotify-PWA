@@ -53,3 +53,29 @@ function winnerTeam(match: MatchSummary): 1 | 2 | undefined {
 	}
 	return team1 > team2 ? 1 : team2 > team1 ? 2 : undefined;
 }
+
+/** 試合の日付（大会の現地日付、なければ開始時刻の日付）。 */
+export function resultDate(match: MatchSummary): string | undefined {
+	return match.tournamentDate || match.startTime?.slice(0, 10);
+}
+
+export type ResultDay = { date: string | undefined; matches: MatchSummary[] };
+
+/**
+ * 試合結果を日付ごとにまとめる。新しい日付を先にし、同じ日の中は元の順序を保つ。
+ * 日付が分からない試合は最後にまとめる。
+ */
+export function groupResultsByDay(matches: MatchSummary[]): ResultDay[] {
+	const days = new Map<string | undefined, MatchSummary[]>();
+	for (const match of matches) {
+		const date = resultDate(match);
+		days.set(date, [...(days.get(date) || []), match]);
+	}
+	return [...days.entries()]
+		.map(([date, dayMatches]) => ({ date, matches: dayMatches }))
+		.sort((left, right) => {
+			if (!left.date) return 1;
+			if (!right.date) return -1;
+			return right.date.localeCompare(left.date);
+		});
+}

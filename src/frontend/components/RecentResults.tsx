@@ -1,9 +1,10 @@
 import { For, Show } from "solid-js";
 import type { MatchSummary, MatchTeamSummary } from "../../type";
-import { displayRound, formatTournamentDate } from "../lib/format";
+import { displayRound, formatScheduleDate } from "../lib/format";
 import { recentResults } from "../lib/matchesState";
 import { proxiedImageUrl } from "../lib/media";
 import {
+	groupResultsByDay,
 	orderedResultScores,
 	type ResultView,
 	resultView,
@@ -39,11 +40,25 @@ export function RecentResults() {
 				when={recentResults().length > 0}
 				fallback={<p class="data-empty">取得済みの試合結果はありません</p>}
 			>
-				<div class="result-list">
-					<For each={recentResults()}>
-						{(match) => <ResultRow match={match} />}
-					</For>
-				</div>
+				<For each={groupResultsByDay(recentResults())}>
+					{(day) => (
+						<section class="result-day">
+							<h3 class="result-day-heading">
+								<Show when={day.date} fallback="日付不明">
+									{(date) => (
+										<time datetime={date()}>{formatScheduleDate(date())}</time>
+									)}
+								</Show>
+								<span>{day.matches.length}試合</span>
+							</h3>
+							<div class="result-list">
+								<For each={day.matches}>
+									{(match) => <ResultRow match={match} />}
+								</For>
+							</div>
+						</section>
+					)}
+				</For>
 			</Show>
 		</section>
 	);
@@ -57,7 +72,6 @@ function ResultRow(props: { match: MatchSummary }) {
 	/** 日本人対決のときだけ、各チームに勝敗を表示する。 */
 	const resultOf = (index: 1 | 2) =>
 		isJapaneseMatch() ? teamResult(view().winner, index) : undefined;
-	const date = () => matchDate(props.match);
 
 	return (
 		<article class={`result-row ${outcome().className}`}>
@@ -68,7 +82,6 @@ function ResultRow(props: { match: MatchSummary }) {
 					<Show when={props.match.round}>
 						<span class="result-round">{displayRound(props.match.round)}</span>
 					</Show>
-					<time datetime={date()}>{formatTournamentDate(date())}</time>
 				</div>
 			</div>
 			<div class="result-matchup">
@@ -147,8 +160,4 @@ function ResultTeam(props: {
 function teamResult(winner: 1 | 2 | undefined, team: 1 | 2): TeamResult {
 	if (!winner) return "未確定";
 	return winner === team ? "WIN" : "LOSE";
-}
-
-function matchDate(match: MatchSummary) {
-	return match.tournamentDate || match.startTime?.slice(0, 10);
 }
