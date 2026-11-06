@@ -46,6 +46,8 @@ const [sortOrder, setSortOrderSignal] = createSignal<SortOrder>(
 const [idle, setIdle] = createSignal(false);
 /** 試合情報を一度でも表示できたか（保存データまたは最新の取得）。未取得の間は「読み込み中」を出す。 */
 const [statusLoaded, setStatusLoaded] = createSignal(false);
+/** 直近の試合情報の取得に失敗したか。表示できる情報がないときは、読み込み中ではなく失敗を伝える。 */
+const [statusFailed, setStatusFailed] = createSignal(false);
 
 export {
 	checkedAt,
@@ -53,6 +55,7 @@ export {
 	matches,
 	recentResults,
 	sortOrder,
+	statusFailed,
 	statusLoaded,
 	upcomingTournaments,
 };
@@ -111,10 +114,12 @@ export const loadStatus = async () => {
 		// 初回は index.html の preload で取得済みの応答が使われる
 		const state = await api<PublicState>("/api/status");
 		applyStatus(state, true);
+		setStatusFailed(false);
 		syncPollingMode();
 		// 約150KBの保存は描画を待たせるため、画面を描き終えたあとの空き時間に行う
 		whenIdle(() => writeCachedStatus(browserStorage(), state));
 	} catch (error) {
+		setStatusFailed(true);
 		console.error("Failed to load status:", error);
 	}
 };

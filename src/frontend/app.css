@@ -505,6 +505,11 @@ main {
 	text-align: center;
 }
 
+.empty-state-retry {
+	margin-top: var(--space-3);
+	color: var(--color-accent);
+}
+
 /* 大会名順のときの大会見出し */
 .tournament-group {
 	display: grid;

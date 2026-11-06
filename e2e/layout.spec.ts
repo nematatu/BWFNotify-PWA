@@ -1091,6 +1091,33 @@ test("production build keeps its manifest and service worker", async ({
 		.toBe(true);
 });
 
+test("a failed first load shows a retry instead of loading forever", async ({
+	page,
+}) => {
+	await preparePage(page);
+	let failStatus = true;
+	await page.route("**/api/status", (route) =>
+		failStatus
+			? route.fulfill({ status: 500, json: { error: "Internal server error" } })
+			: route.fulfill({
+					json: {
+						checkedAt: "2026-07-18T09:00:00.000Z",
+						matches: [singlesMatch],
+					},
+				}),
+	);
+	// 保存済みの試合情報がない初回訪問を再現する
+	await page.evaluate(() => localStorage.clear());
+	await page.reload();
+	await expect(page.locator("#match-list [role=alert]")).toContainText(
+		"試合情報を取得できませんでした",
+	);
+	await expect(page.locator("[aria-busy=true]")).toHaveCount(0);
+	failStatus = false;
+	await page.locator("#match-list .empty-state-retry").click();
+	await expect(page.locator(".match")).toHaveCount(1);
+});
+
 test("Worker Previews show that notifications are unavailable", async ({
 	page,
 }) => {
