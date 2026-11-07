@@ -149,9 +149,8 @@ function ResultRow(props: { match: MatchSummary }) {
 				<ResultTeam
 					team={teamAt(view().leftIndex)}
 					isJapanese={true}
-					wonJapaneseMatch={
-						isJapaneseMatch() && view().winner === view().leftIndex
-					}
+					won={view().winner === view().leftIndex}
+					showWinLabel={isJapaneseMatch()}
 				/>
 				<div class="result-score">
 					<span class="visually-hidden">ゲームスコア</span>
@@ -172,9 +171,8 @@ function ResultRow(props: { match: MatchSummary }) {
 				<ResultTeam
 					team={teamAt(view().rightIndex)}
 					isJapanese={isJapaneseMatch()}
-					wonJapaneseMatch={
-						isJapaneseMatch() && view().winner === view().rightIndex
-					}
+					won={view().winner === view().rightIndex}
+					showWinLabel={isJapaneseMatch()}
 				/>
 			</div>
 		</article>
@@ -184,14 +182,20 @@ function ResultRow(props: { match: MatchSummary }) {
 function ResultTeam(props: {
 	team: MatchTeamSummary | undefined;
 	isJapanese: boolean;
+	/** この側が勝ったか */
+	won: boolean;
 	/** 日本人対決のときだけ、勝った側に「勝ち」の印を付ける */
-	wonJapaneseMatch: boolean;
+	showWinLabel: boolean;
 }) {
 	const players = () => props.team?.players || [];
 	return (
 		<div
 			class="result-team"
-			classList={{ "result-team-japan": props.isJapanese }}
+			classList={{
+				"result-team-japan": props.isJapanese,
+				// 勝った日本人選手の欄だけ背景色を付ける。負けた試合では付けない
+				"result-team-japan-won": props.isJapanese && props.won,
+			}}
 		>
 			<div class="result-player-photos">
 				<For each={players().filter((player) => player.photoUrl)}>
@@ -229,7 +233,7 @@ function ResultTeam(props: {
 					)}
 				</For>
 			</div>
-			<Show when={props.wonJapaneseMatch}>
+			<Show when={props.showWinLabel && props.won}>
 				<span class="team-result">勝ち</span>
 			</Show>
 		</div>

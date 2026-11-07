@@ -43,3 +43,12 @@ export const base64UrlToBytes = (value: string) => {
 	const base64 = (value + padding).replace(/-/g, "+").replace(/_/g, "/");
 	return Uint8Array.from(atob(base64), (char) => char.charCodeAt(0));
 };
+
+/** 描画や操作を待たせないよう、ブラウザの空き時間に処理する。 */
+export const whenIdle = (task: () => void) => {
+	if ("requestIdleCallback" in window) {
+		window.requestIdleCallback(task, { timeout: 2000 });
+	} else {
+		setTimeout(task, 1000);
+	}
+};
