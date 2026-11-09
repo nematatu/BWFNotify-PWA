@@ -1,33 +1,6 @@
 {
-	"generatedAt": "2026-11-08T10:26:54.420Z",
+	"generatedAt": "2026-11-09T11:38:10.933Z",
 	"tournaments": [
-		{
-			"id": "2026-11-03:韓国オープン2026",
-			"name": "韓国オープン2026",
-			"startDate": "2026-11-03",
-			"endDate": "2026-11-08",
-			"grade": "Super 500",
-			"bwfUrl": "https://bwfworldtour.bwfbadminton.com/tournament/5597/yeosu-victor-korea-open-2026/overview/",
-			"bajUrl": "https://www.badminton.or.jp/storage/conventions/pdf/1276/send_out_20261030160049.pdf"
-		},
-		{
-			"id": "2026-11-03:テランガーナインドインターナショナルチャレンジ2026",
-			"name": "テランガーナインドインターナショナルチャレンジ2026",
-			"startDate": "2026-11-03",
-			"endDate": "2026-11-08",
-			"grade": "インターナショナルチャレンジ",
-			"bwfUrl": "https://bwfbadminton.com/tournament/5315/telangana-india-international-challenge-2026/info",
-			"bajUrl": "https://www.badminton.or.jp/storage/conventions/pdf/1406/contestant_20261001131433.pdf"
-		},
-		{
-			"id": "2026-11-03:南安中国インターナショナルチャレンジ2026",
-			"name": "南安中国インターナショナルチャレンジ2026",
-			"startDate": "2026-11-03",
-			"endDate": "2026-11-08",
-			"grade": "インターナショナルチャレンジ",
-			"bwfUrl": "https://bwfbadminton.com/tournament/5853/wang-wenjiao-cup-nanan-china-international-challenge-2026/info",
-			"bajUrl": "https://www.badminton.or.jp/storage/conventions/pdf/1408/contestant_20261001132210.pdf"
-		},
 		{
 			"id": "2026-11-08:熊本マスターズジャパン2026",
 			"name": "熊本マスターズジャパン2026",
@@ -70,6 +43,33 @@
 			"endDate": "2026-11-22",
 			"bwfUrl": "https://bwfbadminton.com/tournament/5774/li-ning-pathumthani-junior-international-challenge-2026/results/",
 			"bajUrl": "https://www.badminton.or.jp/storage/conventions/pdf/1402/contestant_20261016092655.pdf"
+		},
+		{
+			"id": "2026-11-17:香港オープン2026",
+			"name": "香港オープン2026",
+			"startDate": "2026-11-17",
+			"endDate": "2026-11-22",
+			"grade": "Super 500",
+			"bwfUrl": "https://bwfworldtour.bwfbadminton.com/tournament/5218/li-ning-hong-kong-open-2026/overview/",
+			"bajUrl": "https://www.badminton.or.jp/storage/conventions/pdf/1277/send_out_20261105145827.pdf"
+		},
+		{
+			"id": "2026-11-17:ジョクジャカルタインターナショナルチャレンジ2026",
+			"name": "ジョクジャカルタインターナショナルチャレンジ2026",
+			"startDate": "2026-11-17",
+			"endDate": "2026-11-22",
+			"grade": "インターナショナルチャレンジ",
+			"bwfUrl": "https://bwfbadminton.com/tournament/5576/polytron-yogyakarta-international-challenge-2026/results/",
+			"bajUrl": "https://www.badminton.or.jp/storage/conventions/pdf/1403/contestant_20261016094524.pdf"
+		},
+		{
+			"id": "2026-11-24:シドモディインドインターナショナル2026",
+			"name": "シドモディインドインターナショナル2026",
+			"startDate": "2026-11-24",
+			"endDate": "2026-11-29",
+			"grade": "Super 300",
+			"bwfUrl": "https://bwfworldtour.bwfbadminton.com/tournament/5274/syed-modi-india-international-2026/results/2026-11-24",
+			"bajUrl": "https://www.badminton.or.jp/storage/conventions/pdf/1404/contestant_20261016094425.pdf"
 		}
 	]
 }
