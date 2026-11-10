@@ -69,7 +69,13 @@ const limitRequestSize: MiddlewareHandler<AppBindings> = async (c, next) => {
 
 // --- 試合情報 ---
 
-app.get("/api/media", (c) => fetchBwfImage(c.req.query("url")));
+app.get("/api/media", (c) =>
+	fetchBwfImage(c.req.query("url"), {
+		cache: defaultWorkerCache(),
+		waitUntil: (promise) => c.executionCtx.waitUntil(promise),
+		cacheKey: c.req.url,
+	}),
+);
 
 app.get("/api/config", (c) =>
 	c.json({
