@@ -337,6 +337,20 @@ main {
 	padding-top: var(--space-5);
 }
 
+/* タブの中身。非表示のタブは描画しない */
+.view-panel[hidden] {
+	display: none;
+}
+
+/* 対応ブラウザでは、非表示のタブの描画結果を保持したまま隠す。
+   再表示するときにレイアウトを計算し直さないため、タブの切り替えが速くなる */
+@supports (content-visibility: hidden) {
+	.view-panel[hidden] {
+		display: block;
+		content-visibility: hidden;
+	}
+}
+
 .match-toolbar {
 	display: flex;
 	align-items: center;
@@ -802,9 +816,10 @@ main {
 	font-weight: var(--weight-bold);
 }
 
-/* 日本人選手の欄は背景色で示し、カードのどちら側かをひと目で分かるようにする */
+/* 日本人選手の欄は背景色で示し、カードのどちら側かをひと目で分かるようにする。
+   結果では、勝った日本人選手の欄だけに付ける */
 .japanese-team,
-.result-team-japan {
+.result-team-japan-won {
 	border-radius: var(--radius-md);
 	background: var(--color-japan);
 }

@@ -558,6 +558,21 @@ for (const viewport of [
 		}
 		// 日本人対決以外では、海外選手が勝っても印を付けない（勝敗は日本人側の帯で示す）
 		await expect(resultRows.nth(1).locator(".team-result")).toHaveCount(0);
+		// 黄色の背景は勝った日本人選手の欄だけに付け、負けた試合では付けない
+		await expect(resultRows.nth(0).locator(".result-team-japan")).toHaveCSS(
+			"background-color",
+			japanPanel,
+		);
+		await expect(resultRows.nth(1).locator(".result-team-japan")).not.toHaveCSS(
+			"background-color",
+			japanPanel,
+		);
+		await expect(
+			resultRows.nth(2).locator(".result-team-japan-won"),
+		).toHaveCount(1);
+		await expect(
+			resultRows.nth(2).locator(".result-team-japan-won .team-result"),
+		).toHaveText("勝ち");
 		// 集計と絞り込み
 		await expect(page.locator(".result-total-win")).toHaveText("1勝");
 		await expect(page.locator(".result-total-loss")).toHaveText("1敗");
@@ -1000,6 +1015,33 @@ test("opens results when there are no live or scheduled matches", async ({
 
 	await page.getByRole("tab", { name: "大会 1" }).click();
 	await expect(page.locator(".upcoming-row")).toHaveCount(1);
+});
+
+test("switching tabs reuses the rendered results instead of rebuilding them", async ({
+	page,
+}) => {
+	await preparePage(page);
+	await page.goto("/");
+	await page.getByRole("tab", { name: /結果/ }).click();
+	const firstRow = page.locator(".result-row").first();
+	await expect(firstRow).toBeVisible();
+	// 作り直されると、この印は消える
+	await firstRow.evaluate((row) => {
+		row.dataset.marker = "kept";
+	});
+
+	await page.getByRole("tab", { name: /ライブ/ }).click();
+	// 隠したタブは見えず、場所も取らない
+	await expect(firstRow).toBeHidden();
+	await expect(page.locator(".live-match").first()).toBeVisible();
+	const hiddenPanelHeight = await page
+		.locator(".view-panel", { has: page.locator(".result-row") })
+		.evaluate((panel) => panel.getBoundingClientRect().height);
+	expect(hiddenPanelHeight).toBe(0);
+
+	await page.getByRole("tab", { name: /結果/ }).click();
+	await expect(firstRow).toBeVisible();
+	await expect(firstRow).toHaveAttribute("data-marker", "kept");
 });
 
 test("match information hierarchy prioritizes actions and matchup", async ({

@@ -1,6 +1,7 @@
 import { createSignal } from "solid-js";
 import type { MatchSummary, PublicState, UpcomingTournament } from "../../type";
 import { api } from "./api";
+import { whenIdle } from "./browser";
 import {
 	DEFAULT_SORT_ORDER,
 	isValidSortOrder,
@@ -78,14 +79,6 @@ export const setCurrentView = (view: MainView) => {
 };
 
 // --- 取得 ---
-
-const whenIdle = (task: () => void) => {
-	if ("requestIdleCallback" in window) {
-		window.requestIdleCallback(task, { timeout: 2000 });
-	} else {
-		setTimeout(task, 1000);
-	}
-};
 
 /**
  * 試合情報を画面へ反映する。`fresh` が false（前回の保存データ）の場合は、
