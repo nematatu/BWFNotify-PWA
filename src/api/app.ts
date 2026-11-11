@@ -96,16 +96,39 @@ app.get("/api/status", (c) =>
 	}),
 );
 
-/** 画面表示中だけ短い間隔で取得されるライブ得点。KVは使わない。 */
+/**
+ * 画面表示中だけ短い間隔で取得されるライブ得点。
+ * BWFから取れないときはエラーにせず、Cronが保存した直近（最大2分前）のライブ試合を返す。
+ */
 app.get("/api/live", (c) =>
 	cachedJson(c, LIVE_CACHE_TTL_SECONDS, async () => {
-		const matches = await fetchJapaneseMatches(undefined, [], {
-			upstreamCacheTtlSeconds: LIVE_CACHE_TTL_SECONDS,
-		});
-		return {
-			checkedAt: new Date().toISOString(),
-			matches: matches.filter((match) => match.eventType === "live"),
-		};
+		try {
+			// 上流のキャッシュ指定は付けず、Cronと同じ取り方にする（応答は cachedJson が10秒キャッシュする）
+			const matches = await fetchJapaneseMatches();
+			return {
+				checkedAt: new Date().toISOString(),
+				source: "bwf",
+				matches: matches.filter((match) => match.eventType === "live"),
+			};
+		} catch (error) {
+			console.error(
+				JSON.stringify({
+					event: "live-fetch-error",
+					error: errorMessage(error),
+				}),
+			);
+			const stored = await c.env.NOTIFIED_MATCHES.get<StoredState>(
+				STATE_KEY,
+				"json",
+			);
+			return {
+				checkedAt: stored?.checkedAt || null,
+				source: "saved",
+				matches: (Array.isArray(stored?.matches) ? stored.matches : []).filter(
+					(match) => match.eventType === "live",
+				),
+			};
+		}
 	}),
 );
 

@@ -4,7 +4,7 @@ import {
 	waitOnExecutionContext,
 } from "cloudflare:test";
 import { env } from "cloudflare:workers";
-import { afterEach, describe, expect, test } from "vitest";
+import { afterEach, describe, expect, test, vi } from "vitest";
 import calendarSnapshot from "../config/upcoming-tournaments.json";
 import worker from "../src";
 import { parseTournamentPage } from "../src/api/baj";
@@ -328,6 +328,41 @@ describe("Worker integration", () => {
 		expect(response.headers.get("X-BWF-Cache")).toBe("HIT");
 		expect(response.headers.get("Cache-Control")).toBe("public, max-age=10");
 		expect(await response.json()).toEqual(body);
+	});
+
+	test("falls back to the saved live matches when BWF cannot be reached", async () => {
+		await env.NOTIFIED_MATCHES.put(
+			"push:state",
+			JSON.stringify({
+				checkedAt: "2026-07-18T00:00:00.000Z",
+				matches: [
+					liveMatch,
+					{ ...liveMatch, id: "next-1", eventType: "scheduled" },
+				],
+			}),
+		);
+		// BWFが確認画面（403）を返す状況
+		const fetchSpy = vi
+			.spyOn(globalThis, "fetch")
+			.mockResolvedValue(new Response("blocked", { status: 403 }));
+		try {
+			const context = createExecutionContext();
+			const response = await worker.fetch(
+				new Request("https://example.com/api/live"),
+				env,
+				context,
+			);
+			await waitOnExecutionContext(context);
+
+			expect(response.status).toBe(200);
+			expect(await response.json()).toEqual({
+				checkedAt: "2026-07-18T00:00:00.000Z",
+				source: "saved",
+				matches: [liveMatch],
+			});
+		} finally {
+			fetchSpy.mockRestore();
+		}
 	});
 
 	test("skips unchanged per-minute writes and keeps a bounded retry count", async () => {
