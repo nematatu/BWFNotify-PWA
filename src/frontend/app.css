@@ -71,6 +71,11 @@
 	box-sizing: border-box;
 }
 
+/* ダブルタップでの拡大を待たず、タップにすぐ反応させる（ピンチでの拡大はできる） */
+html {
+	touch-action: manipulation;
+}
+
 body {
 	margin: 0;
 	background: var(--color-page);
@@ -334,6 +339,7 @@ main {
    タブと並び替え
    ========================================================================== */
 .matches {
+	position: relative;
 	padding-top: var(--space-5);
 }
 
@@ -348,6 +354,17 @@ main {
 	.view-panel[hidden] {
 		display: block;
 		content-visibility: hidden;
+	}
+
+	/* 隠したタブを、見えないまま一度だけ配置するとき（viewPanels.ts） */
+	.view-panel.view-panel-prerender[hidden] {
+		position: absolute;
+		top: 0;
+		right: 0;
+		left: 0;
+		visibility: hidden;
+		content-visibility: visible;
+		pointer-events: none;
 	}
 }
 
@@ -524,22 +541,23 @@ main {
 	color: var(--color-accent);
 }
 
-/* 大会名順のときの大会見出し */
-.tournament-group {
-	display: grid;
-	gap: var(--space-3);
-}
-
-.tournament-group + .tournament-group {
-	margin-top: var(--space-5);
-}
-
 .tournament-heading {
 	display: flex;
 	align-items: center;
 	gap: var(--space-3);
 	padding-bottom: var(--space-3);
 	border-bottom: 1px solid var(--color-line);
+}
+
+/* 大会名順: 大会見出しとカードを1本の並びに置く。見出しは1行全体を使い、
+   見出しとカードの間は12px、大会と大会の間は36px（一覧の間隔16px + 20px）にする */
+.match-list.tournament-order > .tournament-heading {
+	grid-column: 1 / -1;
+	margin-bottom: calc(var(--space-3) - var(--space-4));
+}
+
+.match-list.tournament-order > .tournament-heading:not(:first-child) {
+	margin-top: var(--space-5);
 }
 
 .tournament-heading h2 {
@@ -569,12 +587,6 @@ main {
 	color: var(--color-text-tertiary);
 	background: var(--color-surface-sunken);
 	font-size: var(--text-xs);
-}
-
-.tournament-matches {
-	display: grid;
-	gap: var(--space-4);
-	min-width: 0;
 }
 
 /* ==========================================================================
@@ -774,7 +786,7 @@ main {
 	object-fit: contain;
 }
 
-/* 選手名は1人1行。区切りの「/」は読み上げ用に残し、画面には出さない */
+/* 選手名は1人1行。ペアの区切り（「、」）は読み上げ用に残し、画面には出さない */
 .player-names {
 	display: grid;
 	grid-row: 3;
@@ -1062,6 +1074,59 @@ main {
 /* ==========================================================================
    試合結果
    ========================================================================== */
+
+/* 今日の成績（大会ごと）。周りの文字と同じ大きさ・色で控えめに出す */
+.today-records {
+	margin-top: var(--space-4);
+}
+
+.today-records-heading {
+	color: var(--color-text-secondary);
+	font-size: var(--text-sm);
+	font-weight: var(--weight-regular);
+}
+
+.today-records-list {
+	margin: var(--space-1) 0 0;
+	padding: 0;
+	list-style: none;
+}
+
+.today-records-list li {
+	display: flex;
+	align-items: baseline;
+	justify-content: space-between;
+	gap: var(--space-3);
+	padding: var(--space-2) 0;
+	border-bottom: 1px solid var(--color-line);
+	font-size: var(--text-sm);
+}
+
+.today-record-tournament {
+	min-width: 0;
+	color: var(--color-text);
+}
+
+.today-record-result,
+.today-record-remaining {
+	flex-shrink: 0;
+	font-variant-numeric: tabular-nums;
+	white-space: nowrap;
+}
+
+.today-record-result {
+	color: var(--color-text);
+}
+
+.today-record-remaining {
+	color: var(--color-text-secondary);
+}
+
+/* 絞り込みで隠した日付と試合 */
+.result-day[hidden],
+.result-row[hidden] {
+	display: none;
+}
 
 /* 日本人選手の勝敗の集計と、勝ち・負けの絞り込み */
 .result-summary {
@@ -2142,11 +2207,12 @@ button.upcoming-main:focus-visible {
 /* 広い画面: 一覧を複数列にする */
 @media (min-width: 900px) {
 	.match-list.time-grid,
-	.tournament-matches {
+	.match-list.tournament-order {
 		grid-template-columns: repeat(auto-fit, minmax(420px, 1fr));
 	}
 
-	:is(.match-list.time-grid, .tournament-matches) > .match:only-child {
+	.match-list.time-grid > .match:only-child,
+	.match-list.tournament-order > .match.match-alone {
 		width: min(100%, 760px);
 		grid-column: 1 / -1;
 		justify-self: center;

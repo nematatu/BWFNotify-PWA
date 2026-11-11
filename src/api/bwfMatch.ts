@@ -158,7 +158,7 @@ function toTeamSummary(team: BwfTeam | undefined): MatchTeamSummary | null {
 }
 
 function teamName(team: MatchTeamSummary): string {
-	return team.players.map((player) => player.name).join(" / ");
+	return team.players.map((player) => player.name).join("・");
 }
 
 function teamIsJapanese(team: MatchTeamSummary): boolean {

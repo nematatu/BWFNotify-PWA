@@ -28,6 +28,7 @@ import {
 	groupResultsByDay,
 	orderedGameScores,
 	resultView,
+	todayTournamentRecords,
 } from "../src/frontend/lib/resultView.ts";
 import { preferredInitialView } from "../src/frontend/lib/viewPolicy.ts";
 
@@ -281,6 +282,85 @@ describe("Japanese-side result summary", () => {
 });
 
 // ---------------------------------------------------------------------------
+// today's record per tournament
+// ---------------------------------------------------------------------------
+describe("today's record per tournament", () => {
+	const player = (isJapanese) => ({ name: "x", isJapanese });
+	const match = (id, tournament, date, outcome) => ({
+		id,
+		tournament,
+		tournamentDate: date,
+		teams:
+			outcome === "japanese-match"
+				? [{ players: [player(true)] }, { players: [player(true)] }]
+				: [{ players: [player(true)] }, { players: [player(false)] }],
+		scores:
+			outcome === "win" || outcome === "japanese-match"
+				? [
+						{ game: 1, team1: 21, team2: 10 },
+						{ game: 2, team1: 21, team2: 10 },
+					]
+				: outcome === "loss"
+					? [
+							{ game: 1, team1: 10, team2: 21 },
+							{ game: 2, team1: 10, team2: 21 },
+						]
+					: [],
+	});
+	const today = "2026-11-11";
+
+	test("shows wins and losses when every match of the day is finished", () => {
+		const results = [
+			match("1", "Kumamoto", today, "win"),
+			match("2", "Kumamoto", today, "loss"),
+			match("3", "Kumamoto", today, "win"),
+			// 日本人対決は勝ち負けに数えない
+			match("4", "Kumamoto", today, "japanese-match"),
+			// 前日の試合は数えない
+			match("5", "Kumamoto", "2026-11-10", "win"),
+		];
+		expect(todayTournamentRecords(results, [], today)).toEqual([
+			{ tournament: "Kumamoto", win: 2, loss: 1, remaining: 0 },
+		]);
+	});
+
+	test("counts remaining matches per tournament and orders by name", () => {
+		const results = [match("1", "Kumamoto", today, "win")];
+		const current = [
+			match("2", "Kumamoto", today, "live"),
+			match("3", "Kumamoto", today, "scheduled"),
+			match("4", "Kaohsiung", today, "scheduled"),
+			// 明日の試合は数えない
+			match("5", "Kaohsiung", "2026-11-12", "scheduled"),
+			// 結果に入った試合は、残りとして二重に数えない
+			match("1", "Kumamoto", today, "live"),
+		];
+		expect(todayTournamentRecords(results, current, today)).toEqual([
+			{ tournament: "Kaohsiung", win: 0, loss: 0, remaining: 1 },
+			{ tournament: "Kumamoto", win: 1, loss: 0, remaining: 2 },
+		]);
+	});
+
+	test("uses the date in Japan, not the venue's local date", () => {
+		// 欧州で現地 11/11 の夜（UTC 16:00）に始まった試合は、日本では 11/12 の 1:00
+		const overseas = {
+			...match("1", "Europe", "2026-11-11", "win"),
+			startTime: "2026-11-11 16:00:00",
+		};
+		expect(todayTournamentRecords([overseas], [], "2026-11-12")).toEqual([
+			{ tournament: "Europe", win: 1, loss: 0, remaining: 0 },
+		]);
+		expect(todayTournamentRecords([overseas], [], "2026-11-11")).toEqual([]);
+	});
+
+	test("is empty when there are no matches today", () => {
+		expect(
+			todayTournamentRecords([match("1", "A", "2026-11-10", "win")], [], today),
+		).toEqual([]);
+	});
+});
+
+// ---------------------------------------------------------------------------
 // results grouped by day
 // ---------------------------------------------------------------------------
 describe("results grouped by day", () => {
@@ -423,9 +503,7 @@ describe("format utilities", () => {
 	});
 
 	test("teamLabel joins player names or shows fallback", () => {
-		expect(teamLabel({ players: [{ name: "A" }, { name: "B" }] })).toBe(
-			"A / B",
-		);
+		expect(teamLabel({ players: [{ name: "A" }, { name: "B" }] })).toBe("A・B");
 		expect(teamLabel(undefined)).toBe("選手不明");
 	});
 });

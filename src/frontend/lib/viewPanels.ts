@@ -46,6 +46,22 @@ const prepareNextPanel = () => {
 	if (!next) return;
 	whenIdle(() => {
 		mount([next]);
-		prepareNextPanel();
+		// 作った画面の配置も空き時間に計算しておく。隠したままでは配置が計算されず、
+		// 初めて開いたときに配置の計算で待たされるため
+		whenIdle(() => {
+			layoutHiddenPanel(next);
+			prepareNextPanel();
+		});
 	});
+};
+
+/** 隠したタブを、見えないまま一度だけ配置する。配置の結果は隠した後も保持される。 */
+const layoutHiddenPanel = (panel: Panel) => {
+	const element = document.querySelector<HTMLElement>(
+		`.view-panel[data-panel="${panel}"]`,
+	);
+	if (!element?.hidden) return;
+	element.classList.add("view-panel-prerender");
+	void element.offsetHeight;
+	element.classList.remove("view-panel-prerender");
 };
