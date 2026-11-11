@@ -69,6 +69,36 @@ const JAPANESE_PLAYER_NAMES: Record<string, string> = {
 	"REI MIYASHITA": "宮下怜", // 南安中国IC2026 参加者 MS1
 	"MOMOHA NIIMI": "新見桃芭", // 南安中国IC2026 参加者 WD1
 	"MIKOTO AISO": "相磯美心", // 南安中国IC2026 参加者 WD1
+	// 熊本マスターズジャパン2026 参加者（contestant_20261110151603.pdf）
+	"RIKU HATANO": "秦野陸", // MS2
+	"YUZUNO WATANABE": "渡邉柚乃", // WS1
+	"NOZOMI OKUHARA": "奥原希望", // WS2
+	"NATSUKI NIDAIRA": "仁平菜月", // WS3
+	"ASUKA TAKAHASHI": "髙橋明日香", // WS5
+	"HARUNA KONISHI": "小西春七", // WS7、WD4（石川心菜と組む）
+	"NIINA MATSUTA": "松田仁衣菜", // WS9
+	"SAYAKA HIROTA": "廣田彩花", // WD2（櫻本絢子と組む）
+	"AYAKO SAKURAMOTO": "櫻本絢子", // WD2
+	"YUMI TANABE": "田邉裕美", // WD3（五十嵐有紗と組む）
+	"AN UESUGI": "上杉杏", // WD6（古根川美桜と組む）
+	"MIO KONEGAWA": "古根川美桜", // WD6
+	"MAO YAMAKITA": "山北眞緒", // XD2（緑川大輝と組む）
+	// 熊本マスターズジャパン2026 派遣（send_out_20261106152258.pdf）。WDで2人が組む
+	"MIYU TAKAHASHI": "髙橋美優",
+	"SUMIRE NAKADE": "中出すみれ",
+	// カオシュンマスターズ2026 参加者（contestant_20261001131919.pdf）
+	"KOSUKE MASUMOTO": "増本康祐", // MS4
+	"SHUNTARO MEZAKI": "目崎駿太郎", // MD2（奥優汰と組む）
+	"YUTA OKU": "奥優汰", // MD2
+	"YUDAI NAGAFUCHI": "永渕雄大", // MD3（安保武輝と組む）
+	"KOTA OGAWA": "小川航汰", // MD4（川島直也と組む）
+	"NAOYA KAWASHIMA": "川島直也", // MD4
+	"KEITA YASUDA": "家壽多慶太", // XD1（新見桃芭と組む）
+	// アイルランドオープン2026 要項・参加者（guidelines_20261001155724.pdf）
+	"NANAMI SOMEYA": "染谷菜々美", // WS1
+	"SHIORI EBIHARA": "海老原詩織", // WS2
+	"SUZUKI MIZUI": "水井寿々妃", // WS3
+	"MIHANE ENDO": "遠藤美羽", // WS5
 };
 
 const ROMANIZED_NAMES_BY_JAPANESE = Object.entries(
