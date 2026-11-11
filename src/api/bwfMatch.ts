@@ -85,6 +85,9 @@ export function eventType(match: BwfMatch): EventType {
 	) {
 		return "completed";
 	}
+	// BWFは、ゲーム間のインターバルなどで状態を「開始前」に戻して返すことがある。
+	// 得点が始まっていて決着していない試合は、状態の値にかかわらず進行中とみなす
+	if (hasStarted(match.score)) return "live";
 	if (
 		statuses.some((status) =>
 			["n", "s", "not started", "scheduled", "none"].includes(status),
@@ -93,6 +96,13 @@ export function eventType(match: BwfMatch): EventType {
 		return "scheduled";
 	}
 	return "unknown";
+}
+
+/** 1点でも入ったゲームがある、または2ゲーム目以降に進んでいるか。 */
+function hasStarted(scores?: BwfGameScore[]): boolean {
+	return (scores || []).some(
+		(score) => score.home > 0 || score.away > 0 || score.set > 1,
+	);
 }
 
 function isMatchCompleted(scores?: BwfGameScore[]): boolean {
