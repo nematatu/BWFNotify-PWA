@@ -98,6 +98,46 @@ describe("eventType", () => {
 			},
 			"live",
 		],
+		// BWFが状態を「開始前」で返しても、得点が始まっていて決着していなければ進行中とみなす
+		// （2026-11-11 熊本マスターズ R32、第3ゲーム開始前のインターバルで実際に起きた）
+		[
+			{
+				id: "1",
+				matchStatusValue: "Not Started",
+				score: [
+					{ set: 1, home: 21, away: 18 },
+					{ set: 2, home: 18, away: 21 },
+					{ set: 3, home: 0, away: 0 },
+				],
+			},
+			"live",
+		],
+		[
+			{
+				id: "1",
+				matchStatus: "N",
+				score: [{ set: 1, home: 3, away: 1 }],
+			},
+			"live",
+		],
+		// 0-0 の第1ゲームだけなら、まだ開始前
+		[
+			{
+				id: "1",
+				matchStatus: "N",
+				score: [{ set: 1, home: 0, away: 0 }],
+			},
+			"scheduled",
+		],
+		// 終了の状態が付いていれば、途中棄権などで決着していなくても完了とみなす
+		[
+			{
+				id: "1",
+				matchStatus: "F",
+				score: [{ set: 1, home: 11, away: 5 }],
+			},
+			"completed",
+		],
 	] as const)("classifies %o as %s", (match, expected) => {
 		expect(eventType(match)).toBe(expected);
 	});
