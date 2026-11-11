@@ -624,6 +624,39 @@ describe("page structure", () => {
 		);
 	});
 
+	test("keeps text colors readable on white and sunken backgrounds", async () => {
+		const css = await Bun.file("src/frontend/app.css").text();
+		const token = (name) =>
+			css.match(new RegExp(`--${name}: (#[0-9a-f]{6})`))?.[1];
+		const luminance = (hex) => {
+			const [r, g, b] = [1, 3, 5].map((index) => {
+				const value = Number.parseInt(hex.slice(index, index + 2), 16) / 255;
+				return value <= 0.03928
+					? value / 12.92
+					: ((value + 0.055) / 1.055) ** 2.4;
+			});
+			return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+		};
+		const contrast = (left, right) => {
+			const [light, dark] = [luminance(left), luminance(right)].sort(
+				(a, b) => b - a,
+			);
+			return (light + 0.05) / (dark + 0.05);
+		};
+		// 小さな文字にも使うため、WCAG AA の 4.5:1 以上にする
+		for (const text of [
+			"color-text",
+			"color-text-secondary",
+			"color-text-tertiary",
+		]) {
+			for (const background of ["color-surface", "color-surface-sunken"]) {
+				expect(contrast(token(text), token(background))).toBeGreaterThanOrEqual(
+					4.5,
+				);
+			}
+		}
+	});
+
 	test("avoids decorative shadows and badge styling", async () => {
 		const css = await Bun.file("src/frontend/app.css").text();
 		expect(css).not.toContain("box-shadow");
@@ -660,7 +693,7 @@ describe("page structure", () => {
 		const css = await Bun.file("src/frontend/app.css").text();
 		const headers = await Bun.file("public/_headers").text();
 		expect(html).toContain(
-			"https://fonts.googleapis.com/css2?family=LINE+Seed+JP:wght@400;700;800&display=swap",
+			"https://fonts.googleapis.com/css2?family=LINE+Seed+JP:wght@400;700&display=swap",
 		);
 		expect(css).toContain('"LINE Seed JP", -apple-system');
 		expect(headers).toContain("font-src https://fonts.gstatic.com");

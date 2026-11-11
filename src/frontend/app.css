@@ -24,7 +24,7 @@
 	/* 色: 中立色 */
 	--color-text: #1b1f24;
 	--color-text-secondary: #4d5661;
-	--color-text-tertiary: #7b8591;
+	--color-text-tertiary: #646d79; /* 白で5.2:1、薄い灰の背景で4.8:1（WCAG AA 4.5:1以上） */
 	--color-line: #e2e5e9;
 	--color-line-strong: #c9ced4;
 	--color-page: #f4f5f7;

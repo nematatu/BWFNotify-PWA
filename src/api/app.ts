@@ -28,6 +28,11 @@ import { defaultWorkerCache } from "./workerCache";
 const MAX_REQUEST_BYTES = 4096;
 const STATUS_CACHE_TTL_SECONDS = 30;
 const LIVE_CACHE_TTL_SECONDS = 10;
+/**
+ * BWFから取れず保存データを返したときのキャッシュ時間。保存データはCronが2分ごとに
+ * 更新するだけなので、短い間隔でBWFへの失敗する取得を繰り返さない。
+ */
+const LIVE_FALLBACK_CACHE_TTL_SECONDS = 60;
 /** 独自のCache-Controlを返すため、no-storeを付けないAPI。 */
 const CACHEABLE_PATHS = new Set(["/api/media", "/api/status", "/api/live"]);
 
@@ -101,7 +106,7 @@ app.get("/api/status", (c) =>
  * BWFから取れないときはエラーにせず、Cronが保存した直近（最大2分前）のライブ試合を返す。
  */
 app.get("/api/live", (c) =>
-	cachedJson(c, LIVE_CACHE_TTL_SECONDS, async () => {
+	cachedJson(c, liveCacheTtl, async () => {
 		try {
 			// 上流のキャッシュ指定は付けず、Cronと同じ取り方にする（応答は cachedJson が10秒キャッシュする）
 			const matches = await fetchJapaneseMatches();
@@ -246,9 +251,16 @@ function publicState(state: StoredState | null): PublicState {
 }
 
 /** Workerのエッジキャッシュに応答を保存し、TTL内はloadを呼ばずに返す。 */
+/** BWFから取れたライブ得点は10秒、保存データで返したときは60秒キャッシュする。 */
+function liveCacheTtl(body: unknown): number {
+	return object(body).source === "saved"
+		? LIVE_FALLBACK_CACHE_TTL_SECONDS
+		: LIVE_CACHE_TTL_SECONDS;
+}
+
 async function cachedJson(
 	c: Context<AppBindings>,
-	ttlSeconds: number,
+	ttlSeconds: number | ((body: unknown) => number),
 	load: () => Promise<unknown>,
 ): Promise<Response> {
 	const cacheUrl = new URL(c.req.url);
@@ -262,8 +274,10 @@ async function cachedJson(
 		return response;
 	}
 
-	const response = c.json(await load());
-	response.headers.set("Cache-Control", `public, max-age=${ttlSeconds}`);
+	const body = await load();
+	const ttl = typeof ttlSeconds === "function" ? ttlSeconds(body) : ttlSeconds;
+	const response = c.json(body);
+	response.headers.set("Cache-Control", `public, max-age=${ttl}`);
 	response.headers.set("X-BWF-Cache", "MISS");
 	c.executionCtx.waitUntil(cache.put(cacheKey, response.clone()));
 	return response;
