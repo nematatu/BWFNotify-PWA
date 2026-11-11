@@ -58,37 +58,37 @@ export async function fetchJapaneseMatches(
 		await fetchBwfJson(BWF_LIVE_URL, options.upstreamCacheTtlSeconds),
 		dates,
 	);
-	const matches: BwfMatch[] = [];
-	let successfulDayRequests = 0;
-
-	for (const tournament of tournaments) {
-		for (const date of dates) {
-			try {
-				const payload = await fetchBwfJson(
-					dayMatchesUrl(tournament.code, date),
-					options.upstreamCacheTtlSeconds,
-				);
-				successfulDayRequests += 1;
-				matches.push(
-					...array(payload)
+	// 大会×日付の取得は互いに依存しないため同時に行い、待ち時間を1回分にする。
+	// 結果は大会・日付の順に並べ直し、直列取得していたときと同じ順序を保つ。
+	const dayResults = await Promise.all(
+		tournaments.flatMap((tournament) =>
+			dates.map(async (date) => {
+				try {
+					const payload = await fetchBwfJson(
+						dayMatchesUrl(tournament.code, date),
+						options.upstreamCacheTtlSeconds,
+					);
+					return array(payload)
 						.map((value) => parseMatch(value, tournament))
-						.filter(isPresent),
-				);
-			} catch (error) {
-				console.error(
-					JSON.stringify({
-						event: "bwf-day-matches-error",
-						tournamentCode: tournament.code,
-						date,
-						error: errorMessage(error),
-					}),
-				);
-			}
-		}
-	}
-	if (successfulDayRequests === 0) {
+						.filter(isPresent);
+				} catch (error) {
+					console.error(
+						JSON.stringify({
+							event: "bwf-day-matches-error",
+							tournamentCode: tournament.code,
+							date,
+							error: errorMessage(error),
+						}),
+					);
+					return null;
+				}
+			}),
+		),
+	);
+	if (!dayResults.some((result) => result !== null)) {
 		throw new Error("BWF day matches are unavailable");
 	}
+	const matches: BwfMatch[] = dayResults.flatMap((result) => result || []);
 
 	const extracted = extractJapaneseMatches(matches);
 	const completed = extracted.filter(
