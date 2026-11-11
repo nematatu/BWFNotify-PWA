@@ -78,7 +78,7 @@ export const playerInitial = (name: string) => {
 };
 
 export const teamLabel = (team: { players?: { name: string }[] } | undefined) =>
-	team?.players?.map((player) => player.name).join(" / ") || "選手不明";
+	team?.players?.map((player) => player.name).join("・") || "選手不明";
 
 export const displayRound = (round?: string) =>
 	round ? ROUND_LABELS[round] || round : "";

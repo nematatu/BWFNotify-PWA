@@ -1,7 +1,7 @@
 import { createMemo, createSignal, For, Show } from "solid-js";
 import type { MatchSummary, MatchTeamSummary } from "../../type";
-import { displayRound, formatScheduleDate } from "../lib/format";
-import { recentResults } from "../lib/matchesState";
+import { displayRound, formatScheduleDate, japanDateKey } from "../lib/format";
+import { matches, recentResults } from "../lib/matchesState";
 import { proxiedImageUrl } from "../lib/media";
 import {
 	countOutcomes,
@@ -12,6 +12,7 @@ import {
 	type ResultFilter,
 	type ResultView,
 	resultView,
+	todayTournamentRecords,
 } from "../lib/resultView";
 import { EmptyState } from "./EmptyState";
 
@@ -35,9 +36,11 @@ const FILTERS: Array<{ value: ResultFilter; label: string }> = [
 export function RecentResults() {
 	const [filter, setFilter] = createSignal<ResultFilter>("all");
 	const totals = createMemo(() => countOutcomes(recentResults()));
-	const days = createMemo(() =>
-		groupResultsByDay(filterResults(recentResults(), filter())),
-	);
+	// 絞り込みでは行を作り直さず、該当しない行を隠すだけにする（スマホでの切り替えを速くするため）
+	const days = createMemo(() => groupResultsByDay(recentResults()));
+	const matchesFilter = (match: MatchSummary) =>
+		filter() === "all" || resultView(match).outcome === filter();
+	const hasVisibleRows = () => recentResults().some(matchesFilter);
 
 	return (
 		<section
@@ -52,6 +55,7 @@ export function RecentResults() {
 				</div>
 				<span>{recentResults().length}試合</span>
 			</div>
+			<TodayRecords />
 			<Show
 				when={recentResults().length > 0}
 				fallback={
@@ -83,43 +87,84 @@ export function RecentResults() {
 						</For>
 					</fieldset>
 				</div>
-				<Show
-					when={days().length > 0}
-					fallback={<p class="data-empty">該当する試合はありません</p>}
-				>
-					<For each={days()}>
-						{(day) => {
-							const dayTotals = () => countOutcomes(day.matches);
-							return (
-								<section class="result-day">
-									<h3 class="result-day-heading">
-										<Show when={day.date} fallback="日付不明">
-											{(date) => (
-												<time datetime={date()}>
-													{formatScheduleDate(date())}
-												</time>
-											)}
-										</Show>
-										<span class="result-day-totals">
-											{dayTotals().win}勝 {dayTotals().loss}敗
-										</span>
-									</h3>
-									<div class="result-list">
-										<For each={day.matches}>
-											{(match) => <ResultRow match={match} />}
-										</For>
-									</div>
-								</section>
-							);
-						}}
-					</For>
+				<Show when={!hasVisibleRows()}>
+					<p class="data-empty">該当する試合はありません</p>
 				</Show>
+				<For each={days()}>
+					{(day) => {
+						const dayTotals = () =>
+							countOutcomes(filterResults(day.matches, filter()));
+						return (
+							<section
+								class="result-day"
+								hidden={!day.matches.some(matchesFilter)}
+							>
+								<h3 class="result-day-heading">
+									<Show when={day.date} fallback="日付不明">
+										{(date) => (
+											<time datetime={date()}>
+												{formatScheduleDate(date())}
+											</time>
+										)}
+									</Show>
+									<span class="result-day-totals">
+										{dayTotals().win}勝 {dayTotals().loss}敗
+									</span>
+								</h3>
+								<div class="result-list">
+									<For each={day.matches}>
+										{(match) => (
+											<ResultRow match={match} hidden={!matchesFilter(match)} />
+										)}
+									</For>
+								</div>
+							</section>
+						);
+					}}
+				</For>
 			</Show>
 		</section>
 	);
 }
 
-function ResultRow(props: { match: MatchSummary }) {
+/** 今日の日本人選手の成績を大会ごとに出す。終わっていない大会は残りの試合数を出す。 */
+function TodayRecords() {
+	const records = createMemo(() =>
+		todayTournamentRecords(recentResults(), matches(), japanDateKey()),
+	);
+	return (
+		<Show when={records().length > 0}>
+			<section class="today-records" aria-labelledby="today-records-heading">
+				<h3 id="today-records-heading" class="today-records-heading">
+					今日の成績
+				</h3>
+				<ul class="today-records-list">
+					<For each={records()}>
+						{(record) => (
+							<li>
+								<span class="today-record-tournament">{record.tournament}</span>
+								<Show
+									when={record.remaining === 0}
+									fallback={
+										<span class="today-record-remaining">
+											残り{record.remaining}試合
+										</span>
+									}
+								>
+									<span class="today-record-result">
+										{record.win}勝{record.loss}敗
+									</span>
+								</Show>
+							</li>
+						)}
+					</For>
+				</ul>
+			</section>
+		</Show>
+	);
+}
+
+function ResultRow(props: { match: MatchSummary; hidden: boolean }) {
 	const view = () => resultView(props.match);
 	const outcome = () => OUTCOME_DISPLAY[view().outcome];
 	const games = () => gamesWon(props.match, view().leftIndex);
@@ -127,7 +172,7 @@ function ResultRow(props: { match: MatchSummary }) {
 	const teamAt = (index: 1 | 2) => props.match.teams[index - 1];
 
 	return (
-		<article class={`result-row ${outcome().className}`}>
+		<article class={`result-row ${outcome().className}`} hidden={props.hidden}>
 			{/* 日本人選手側から見た勝敗を、カード上部の帯で示す */}
 			<div class="result-header">
 				<span class="result-outcome">{outcome().label}</span>
@@ -226,7 +271,7 @@ function ResultTeam(props: {
 					{(player, index) => (
 						<div>
 							<Show when={index() > 0}>
-								<span class="result-name-separator">/</span>
+								<span class="result-name-separator">、</span>
 							</Show>
 							<span>{player.name}</span>
 						</div>

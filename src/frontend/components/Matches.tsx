@@ -37,6 +37,7 @@ import {
 	type LiveMatch,
 	type SortOrder,
 	sortedMatches,
+	type TournamentGroup,
 	tournamentGroups,
 } from "../lib/matchList";
 import { proxiedImageUrl } from "../lib/media";
@@ -209,18 +210,55 @@ export function MatchList(props: { eventType: "live" | "scheduled" }) {
 		matches().filter((match) => match.eventType === props.eventType),
 	);
 	const isTournamentOrder = () => sortOrder() === "tournament";
-	// 表示しない並び方の分は計算しない
-	const sorted = createMemo(() =>
-		isTournamentOrder() ? [] : sortedMatches(visibleMatches(), sortOrder()),
-	);
+	// 並び方を変えてもカードを作り直さないよう、カードと大会見出しを1本の並びにする。
+	// 見出しは大会名ごとに同じオブジェクトを使い回す
+	const headings = new Map<string, TournamentHeadingEntry>();
+	const headingFor = (group: TournamentGroup) => {
+		const first = group.matches[0];
+		const cached = headings.get(group.name);
+		if (
+			cached &&
+			cached.logoUrl === first?.tournamentLogoUrl &&
+			cached.category === first?.tournamentCategory
+		) {
+			return cached;
+		}
+		const entry: TournamentHeadingEntry = {
+			heading: true,
+			name: group.name,
+			logoUrl: first?.tournamentLogoUrl,
+			category: first?.tournamentCategory,
+		};
+		headings.set(group.name, entry);
+		return entry;
+	};
 	const groups = createMemo(() =>
 		isTournamentOrder() ? tournamentGroups(visibleMatches()) : [],
+	);
+	const entries = createMemo<Array<LiveMatch | TournamentHeadingEntry>>(() =>
+		isTournamentOrder()
+			? groups().flatMap(
+					(group): Array<LiveMatch | TournamentHeadingEntry> => [
+						headingFor(group),
+						...group.matches,
+					],
+				)
+			: sortedMatches(visibleMatches(), sortOrder()),
+	);
+	/** 大会名順で、その大会の試合が1件だけのカード（広い画面で中央に置く） */
+	const aloneIds = createMemo(
+		() =>
+			new Set(
+				groups()
+					.filter((group) => group.matches.length === 1)
+					.map((group) => group.matches[0].id),
+			),
 	);
 
 	return (
 		<div
 			id={`${props.eventType}-list`}
-			class={`match-list ${isTournamentOrder() ? "" : "time-grid"}`}
+			class={`match-list ${isTournamentOrder() ? "tournament-order" : "time-grid"}`}
 			role="tabpanel"
 			aria-labelledby={`${props.eventType}-tab`}
 			aria-live="polite"
@@ -231,35 +269,34 @@ export function MatchList(props: { eventType: "live" | "scheduled" }) {
 					<EmptyState class="empty-state" message="対象の試合はありません" />
 				}
 			>
-				<Show
-					when={isTournamentOrder()}
-					fallback={
-						<For each={sorted()}>
-							{(match) => <MatchCard match={match} showTournament={true} />}
-						</For>
+				<For each={entries()}>
+					{(entry) =>
+						"heading" in entry ? (
+							<TournamentHeading
+								name={entry.name}
+								logoUrl={entry.logoUrl}
+								category={entry.category}
+							/>
+						) : (
+							<MatchCard
+								match={entry}
+								showTournament={!isTournamentOrder()}
+								alone={aloneIds().has(entry.id)}
+							/>
+						)
 					}
-				>
-					<For each={groups()}>
-						{(group) => (
-							<div class="tournament-group">
-								<TournamentHeading
-									name={group.name}
-									logoUrl={group.matches[0]?.tournamentLogoUrl}
-									category={group.matches[0]?.tournamentCategory}
-								/>
-								<div class="tournament-matches">
-									<For each={group.matches}>
-										{(match) => <MatchCard match={match} />}
-									</For>
-								</div>
-							</div>
-						)}
-					</For>
-				</Show>
+				</For>
 			</Show>
 		</div>
 	);
 }
+
+type TournamentHeadingEntry = {
+	heading: true;
+	name: string;
+	logoUrl?: string;
+	category?: string;
+};
 
 function TournamentHeading(props: {
 	name: string;
@@ -295,12 +332,17 @@ function TournamentHeading(props: {
 export function MatchCard(props: {
 	match: LiveMatch;
 	showTournament?: boolean;
+	/** 大会名順で、その大会の試合がこのカードだけか */
+	alone?: boolean;
 }) {
 	const scores = () => props.match.scores;
 	const isLive = () => props.match.eventType === "live";
 
 	return (
-		<div class={`match ${isLive() ? "live-match" : "scheduled-match"}`}>
+		<div
+			class={`match ${isLive() ? "live-match" : "scheduled-match"}`}
+			classList={{ "match-alone": props.alone }}
+		>
 			<div class="match-primary-row">
 				<div class="match-state">
 					<Show
@@ -456,7 +498,7 @@ export function TeamBlock(props: {
 					{(player, index) => (
 						<>
 							<Show when={index() > 0}>
-								<span class="player-separator"> / </span>
+								<span class="player-separator">、</span>
 							</Show>
 							<span
 								class={`player-name ${player.isJapanese ? "japanese-player" : ""}`}

@@ -80,7 +80,11 @@ export default function App() {
 function ViewPanel(props: { panel: Panel; children: JSX.Element }) {
 	return (
 		<Show when={isPanelMounted(props.panel)}>
-			<div class="view-panel" hidden={!isPanelVisible(props.panel)}>
+			<div
+				class="view-panel"
+				data-panel={props.panel}
+				hidden={!isPanelVisible(props.panel)}
+			>
 				{props.children}
 			</div>
 		</Show>

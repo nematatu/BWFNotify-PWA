@@ -491,7 +491,7 @@ for (const viewport of [
 		);
 		await page.locator(".h2h-scoreline").click();
 		await expect(page.locator(".previous-winner")).toHaveText(
-			"JIA Yi Fan / ZHANG Shu Xian 勝利",
+			"JIA Yi Fan・ZHANG Shu Xian 勝利",
 		);
 		await expect(page.locator(".previous-scoreline")).toHaveText(
 			"18-21 / 16-21",
@@ -577,10 +577,12 @@ for (const viewport of [
 		await expect(page.locator(".result-total-win")).toHaveText("1勝");
 		await expect(page.locator(".result-total-loss")).toHaveText("1敗");
 		await page.getByRole("button", { name: "負け", exact: true }).click();
-		await expect(resultRows).toHaveCount(1);
-		await expect(resultRows.first()).toHaveClass(/result-loss/);
+		// 絞り込みでは行を作り直さず、該当しない行を隠す
+		const visibleRows = page.locator(".result-row:visible");
+		await expect(visibleRows).toHaveCount(1);
+		await expect(visibleRows.first()).toHaveClass(/result-loss/);
 		await page.getByRole("button", { name: "すべて" }).click();
-		await expect(resultRows).toHaveCount(3);
+		await expect(visibleRows).toHaveCount(3);
 		// 各ゲームで勝った側の得点だけを太字にする
 		await expect(
 			resultRows.nth(0).locator(".result-game").first().locator(".game-won"),
@@ -608,7 +610,12 @@ for (const viewport of [
 		await expect(doublesNames).toContainText("福島由紀");
 		await expect(doublesNames).toContainText("松本麻佑");
 		await expect(doublesNames.locator(".result-name-separator")).toHaveText(
-			"/",
+			"、",
+		);
+		// ペアの区切りは読み上げ用で、画面には出さない
+		await expect(doublesNames.locator(".result-name-separator")).toHaveCSS(
+			"position",
+			"absolute",
 		);
 		await expect(doublesNames).toHaveCSS("white-space", "normal");
 		await expect(resultRows.nth(1).locator(".result-player-photo")).toHaveCount(
@@ -957,7 +964,7 @@ test("wide: match cards use multiple columns in both sort modes", async ({
 	}
 	await sortOptions.getByRole("option", { name: "大会名順" }).click();
 	const groupedCards = page.locator(
-		".view-panel:not([hidden]) .tournament-matches > .match",
+		".view-panel:not([hidden]) .match-list.tournament-order > .match",
 	);
 	await expect(groupedCards).toHaveCount(3);
 	const groupedPositions = await groupedCards.evaluateAll((cards) =>
@@ -1046,6 +1053,122 @@ test("switching tabs reuses the rendered results instead of rebuilding them", as
 	await page.getByRole("tab", { name: /結果/ }).click();
 	await expect(firstRow).toBeVisible();
 	await expect(firstRow).toHaveAttribute("data-marker", "kept");
+});
+
+test("filters, sorting and refreshes reuse the rendered cards", async ({
+	page,
+}) => {
+	await preparePage(page);
+	const markFirst = (selector: string) =>
+		page
+			.locator(selector)
+			.first()
+			.evaluate((element) => {
+				element.dataset.marker = "kept";
+			});
+
+	// 勝ち・負けの絞り込みは、行を作り直さず隠すだけにする
+	await page.getByRole("tab", { name: /結果/ }).click();
+	await markFirst(".result-row.result-win");
+	await page.getByRole("button", { name: "負け", exact: true }).click();
+	await expect(page.locator(".result-row.result-win").first()).toBeHidden();
+	await expect(page.locator(".result-row:visible")).toHaveCount(1);
+	await page.getByRole("button", { name: "すべて" }).click();
+	await expect(page.locator(".result-row.result-win").first()).toHaveAttribute(
+		"data-marker",
+		"kept",
+	);
+
+	// 並び方を変えても、試合カードは作り直さない
+	await page.getByRole("tab", { name: /このあと/ }).click();
+	await markFirst(".view-panel:not([hidden]) .match");
+	const markedCard = page.locator('.match[data-marker="kept"]');
+	await page.getByRole("button", { name: /ソート順/ }).click();
+	await page.getByRole("option", { name: "大会名順" }).click();
+	await expect(
+		page.locator(".view-panel:not([hidden]) .tournament-heading").first(),
+	).toBeVisible();
+	await expect(markedCard).toHaveCount(1);
+	await page.getByRole("button", { name: /ソート順/ }).click();
+	await page.getByRole("option", { name: "時間が早い順" }).click();
+	await expect(markedCard).toHaveCount(1);
+
+	// 内容が変わらない定期更新では、試合カードも結果の行も作り直さない
+	await page.getByRole("button", { name: "再読み込み" }).click();
+	await expect(page.locator(".view-panel:not([hidden]) .match")).toHaveCount(3);
+	await expect(markedCard).toHaveCount(1);
+	await expect(page.locator('.result-row[data-marker="kept"]')).toHaveCount(1);
+});
+
+test("results show today's record per tournament", async ({ page }) => {
+	await page.clock.install({ time: new Date("2026-11-11T05:00:00.000Z") });
+	await page.route("**/api/config", (route) =>
+		route.fulfill({ json: { vapidPublicKey: "" } }),
+	);
+	await page.route("**/api/media?**", (route) =>
+		route.fulfill({
+			body: Buffer.from(pixel, "base64"),
+			contentType: "image/png",
+		}),
+	);
+	const today = "2026-11-11";
+	const lost = {
+		...completedDoublesLoss,
+		id: "today-loss",
+		tournament: "A Open",
+		tournamentDate: today,
+	};
+	await page.route("**/api/status", (route) =>
+		route.fulfill({
+			json: {
+				checkedAt: "2026-11-11T05:00:00.000Z",
+				matches: [
+					{
+						...singlesMatch,
+						id: "b-next",
+						tournament: "B Open",
+						tournamentDate: today,
+					},
+					// 明日の試合は数えない
+					{
+						...secondSinglesMatch,
+						id: "a-tomorrow",
+						tournament: "A Open",
+						tournamentDate: "2026-11-12",
+					},
+				],
+				recentResults: [
+					{
+						...completedMatch,
+						id: "today-win",
+						tournament: "A Open",
+						tournamentDate: today,
+					},
+					lost,
+					{
+						...completedMatch,
+						id: "b-win",
+						tournament: "B Open",
+						tournamentDate: today,
+					},
+				],
+				calendarCheckedAt: null,
+				upcomingTournaments: [],
+			},
+		}),
+	);
+	await page.route("**/api/live", (route) =>
+		route.fulfill({ json: { checkedAt: null, matches: [] } }),
+	);
+	await page.goto("/");
+	await page.getByRole("tab", { name: /結果/ }).click();
+
+	const records = page.locator(".today-records-list li");
+	// 今日の試合が全部終わった大会は勝敗、終わっていない大会は残りの試合数
+	await expect(records).toHaveText(["A Open1勝1敗", "B Open残り1試合"]);
+	// 周りの文字と同じ大きさ・太さで、目立たせすぎない
+	await expect(records.first()).toHaveCSS("font-weight", "400");
+	await expect(page.locator(".today-records-heading")).toHaveText("今日の成績");
 });
 
 test("match information hierarchy prioritizes actions and matchup", async ({

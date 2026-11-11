@@ -112,3 +112,49 @@ export function filterResults(
 	if (filter === "all") return matches;
 	return matches.filter((match) => resultView(match).outcome === filter);
 }
+
+export type TodayTournamentRecord = {
+	tournament: string;
+	win: number;
+	loss: number;
+	/** まだ終わっていない（ライブ中・これからの）今日の試合数 */
+	remaining: number;
+};
+
+/**
+ * 今日の日本人選手の成績を大会ごとにまとめる。
+ * 終わった試合は日本人選手側から見た勝ち・負けを数え（日本人対決は数えない）、
+ * 終わっていない試合は残りの試合数として数える。大会名の順に並べる。
+ */
+export function todayTournamentRecords(
+	results: MatchSummary[],
+	current: MatchSummary[],
+	today: string,
+): TodayTournamentRecord[] {
+	const records = new Map<string, TodayTournamentRecord>();
+	const recordFor = (tournament: string) => {
+		let record = records.get(tournament);
+		if (!record) {
+			record = { tournament, win: 0, loss: 0, remaining: 0 };
+			records.set(tournament, record);
+		}
+		return record;
+	};
+
+	const finishedIds = new Set<string>();
+	for (const match of results) {
+		if (resultDate(match) !== today) continue;
+		finishedIds.add(match.id);
+		const record = recordFor(match.tournament);
+		const { outcome } = resultView(match);
+		if (outcome === "win") record.win += 1;
+		if (outcome === "loss") record.loss += 1;
+	}
+	for (const match of current) {
+		if (resultDate(match) !== today || finishedIds.has(match.id)) continue;
+		recordFor(match.tournament).remaining += 1;
+	}
+	return [...records.values()].sort((left, right) =>
+		left.tournament.localeCompare(right.tournament),
+	);
+}

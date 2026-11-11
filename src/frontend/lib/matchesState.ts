@@ -9,6 +9,7 @@ import {
 	type SortOrder,
 } from "./matchList";
 import { type PollingMode, pollingMode } from "./pollingPolicy";
+import { reuseUnchanged } from "./stableItems";
 import {
 	browserStorage,
 	readCachedStatus,
@@ -86,9 +87,14 @@ export const setCurrentView = (view: MainView) => {
  */
 const applyStatus = (state: PublicState, fresh: boolean) => {
 	setCheckedAt(state.checkedAt);
-	setMatches(state.matches || []);
-	setRecentResults(state.recentResults || []);
-	setUpcomingTournaments(state.upcomingTournaments || []);
+	// 内容が変わっていない試合は前回のオブジェクトを使い、カードを作り直さない
+	setMatches((previous) => reuseUnchanged(previous, state.matches || []));
+	setRecentResults((previous) =>
+		reuseUnchanged(previous, state.recentResults || []),
+	);
+	setUpcomingTournaments((previous) =>
+		reuseUnchanged(previous, state.upcomingTournaments || []),
+	);
 	setStatusLoaded(true);
 	if (!initialViewSelected) {
 		setCurrentViewSignal(
@@ -125,7 +131,9 @@ const loadLive = async () => {
 			const state = await api<PublicState>("/api/live", {
 				cache: "no-store",
 			});
-			setMatches((prev) => mergeLiveMatches(prev, state.matches));
+			setMatches((prev) =>
+				reuseUnchanged(prev, mergeLiveMatches(prev, state.matches)),
+			);
 			syncPollingMode();
 		} catch (error) {
 			console.error("Failed to load live:", error);
