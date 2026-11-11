@@ -214,9 +214,6 @@ function tokenColor(page: Page, token: string) {
 
 async function preparePage(page: Page) {
 	await page.clock.install({ time: new Date("2026-07-18T09:00:00.000Z") });
-	await page.addInitScript(() => {
-		localStorage.setItem("bwf-sort-order", "time-asc");
-	});
 	await page.route("https://img.bwfbadminton.com/**", (route) => {
 		const code = route
 			.request()
@@ -992,6 +989,63 @@ test("wide: match cards use multiple columns in both sort modes", async ({
 	}
 });
 
+test("always starts in time order and stays inside a 320px screen", async ({
+	page,
+}) => {
+	// 以前の版で大会名順を選んで保存していても、開いたときは時間が早い順から始める
+	await page.addInitScript(() => {
+		localStorage.setItem("bwf-sort-order", "tournament");
+		// 状態の文が最も長くなる「通知がブロックされています」で確かめる
+		Object.defineProperty(Notification, "permission", { get: () => "denied" });
+	});
+	await page.setViewportSize({ width: 320, height: 800 });
+	await preparePage(page);
+	await page.getByRole("tab", { name: /このあと/ }).click();
+	await expect(
+		page.getByRole("button", { name: "ソート順: 時間が早い順" }),
+	).toBeVisible();
+
+	// 通知欄のテスト通知とトグルが画面からはみ出さない
+	await expect(page.locator("#notification-status")).toHaveText(
+		"通知がブロックされています",
+	);
+	const switchBox = await page
+		.locator(".notification-settings .switch")
+		.boundingBox();
+	const panelBox = await page.locator(".notification-settings").boundingBox();
+	expect((switchBox?.x || 0) + (switchBox?.width || 0)).toBeLessThanOrEqual(
+		(panelBox?.x || 0) + (panelBox?.width || 0),
+	);
+	expect(
+		await page.evaluate(
+			() => document.documentElement.scrollWidth <= window.innerWidth,
+		),
+	).toBe(true);
+
+	// 大会名順のカードは、ラウンドとコートを開始時刻と同じ左端から始める
+	await page.getByRole("button", { name: /ソート順/ }).click();
+	await page.getByRole("option", { name: "大会名順" }).click();
+	const card = page.locator(".view-panel:not([hidden]) .match").first();
+	const [timeLeft, metaLeft] = await Promise.all([
+		card
+			.locator(".match-time")
+			.evaluate((el) => el.getBoundingClientRect().left),
+		card
+			.locator(".match-meta")
+			.evaluate((el) => el.getBoundingClientRect().left),
+	]);
+	expect(Math.abs(timeLeft - metaLeft)).toBeLessThan(1);
+
+	// 開催期間の「〜」は終了日と同じ行に置く
+	await page.getByRole("tab", { name: /大会/ }).click();
+	const tilde = page.locator(".tournament-period-end").first();
+	const lines = await tilde.evaluate((el) => {
+		const [mark, end] = el.children;
+		return [mark.getBoundingClientRect().top, end.getBoundingClientRect().top];
+	});
+	expect(Math.abs(lines[0] - lines[1])).toBeLessThan(4);
+});
+
 test("opens results when there are no live or scheduled matches", async ({
 	page,
 }) => {
@@ -1171,7 +1225,13 @@ test("results show today's record per tournament", async ({ page }) => {
 
 	const records = page.locator(".today-records-list li");
 	// 今日の試合が全部終わった大会は勝敗、終わっていない大会は残りの試合数
-	await expect(records).toHaveText(["A Open1勝1敗", "B Open残り1試合"]);
+	// 終わっていない大会は、その時点の勝敗と残りの試合数を出す
+	await expect(records).toHaveText(["A Open1勝1敗", "B Open1勝0敗残り1試合"]);
+	// 勝ち・負けの色は上の集計と同じにする
+	await expect(records.first().locator(".today-record-win")).toHaveCSS(
+		"color",
+		await tokenColor(page, "--color-win"),
+	);
 	// 周りの文字と同じ大きさ・太さで、目立たせすぎない
 	await expect(records.first()).toHaveCSS("font-weight", "400");
 	await expect(page.locator(".today-records-heading")).toHaveText("今日の成績");
@@ -1181,6 +1241,7 @@ test("results show today's record per tournament", async ({ page }) => {
 	await page.evaluate(() =>
 		document.dispatchEvent(new Event("visibilitychange")),
 	);
+	// まだ終わった試合がない大会は、残りの試合数だけを出す
 	await expect(records).toHaveText(["A Open残り1試合"]);
 });
 

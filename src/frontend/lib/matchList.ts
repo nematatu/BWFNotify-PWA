@@ -3,18 +3,10 @@ import type { MatchSummary } from "../../type";
 // --- 並び替え ---
 
 export type SortOrder = "time-asc" | "time-desc" | "tournament";
-export const SORT_OPTIONS: SortOrder[] = [
-	"time-asc",
-	"time-desc",
-	"tournament",
-];
 export const DEFAULT_SORT_ORDER: SortOrder = "time-asc";
 
 /** 開始時刻がない試合を末尾へ回すための番兵。 */
 const NO_START_TIME = "￿";
-
-export const isValidSortOrder = (value: unknown): value is SortOrder =>
-	SORT_OPTIONS.includes(value as SortOrder);
 
 export const sortedMatches = (
 	matches: MatchSummary[],
