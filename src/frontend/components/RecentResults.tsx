@@ -145,18 +145,22 @@ function TodayRecords() {
 						{(record) => (
 							<li>
 								<span class="today-record-tournament">{record.tournament}</span>
-								<Show
-									when={record.remaining === 0}
-									fallback={
+								{/* 終わった試合の勝敗と、終わっていなければ残りの試合数 */}
+								<span class="today-record-score">
+									<Show
+										when={
+											record.win + record.loss > 0 || record.remaining === 0
+										}
+									>
+										<span class="today-record-win">{record.win}勝</span>
+										<span class="today-record-loss">{record.loss}敗</span>
+									</Show>
+									<Show when={record.remaining > 0}>
 										<span class="today-record-remaining">
 											残り{record.remaining}試合
 										</span>
-									}
-								>
-									<span class="today-record-result">
-										{record.win}勝{record.loss}敗
-									</span>
-								</Show>
+									</Show>
+								</span>
 							</li>
 						)}
 					</For>

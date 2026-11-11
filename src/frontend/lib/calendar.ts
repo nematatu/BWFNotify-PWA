@@ -19,9 +19,12 @@ export type CalendarSegment = {
 	/** 重なった大会を縦にずらすための段番号 */
 	lane: number;
 	color: number;
-	/** 帯の最後の週にだけ外部リンクを表示する */
+	/** 外部リンクを出す帯か（大会ごとに1つ。placeTournamentLinks で決める） */
 	showLinks: boolean;
 };
+
+/** 外部リンク（ロゴ）を帯に出す最小の日数。これより短い帯は大会名だけを出す */
+const MIN_SPAN_FOR_LINKS = 3;
 
 export type CalendarWeek = {
 	key: string;
@@ -125,7 +128,6 @@ function monthWeeks(
 	const lastDay = new Date(Date.UTC(year, month, 0));
 	const calendarStart = addDays(firstDay, -firstDay.getUTCDay());
 	const calendarEnd = addDays(lastDay, 6 - lastDay.getUTCDay());
-	const calendarEndKey = dateKey(calendarEnd);
 	const lanes = tournamentLanes(tournaments);
 	const weeks: CalendarWeek[] = [];
 
@@ -151,7 +153,8 @@ function monthWeeks(
 					span: daysBetween(start, end) + 1,
 					lane: lanes.get(tournament.id) || 0,
 					color: eventColor(tournament.id),
-					showLinks: end === minDate(tournament.endDate, calendarEndKey),
+					// どの帯に出すかは、すべての週を作った後で決める（placeTournamentLinks）
+					showLinks: false,
 				};
 			});
 		const days = Array.from({ length: 7 }, (_, offset): CalendarDay => {
@@ -173,7 +176,26 @@ function monthWeeks(
 			laneCount: Math.max(0, ...segments.map((segment) => segment.lane + 1)),
 		});
 	}
+	placeTournamentLinks(weeks);
 	return weeks;
+}
+
+/**
+ * 外部リンク（ロゴ）は、大会ごとに1つの帯にだけ出す。
+ * 基本は最後の帯だが、週の始まりにはみ出しただけの短い帯ではロゴが大会名に重なって
+ * 読めなくなるため、十分に長い帯のうち最後のものに出す。長い帯がなければ出さない
+ * （リンクは大会の詳細から開ける）。
+ */
+function placeTournamentLinks(weeks: CalendarWeek[]) {
+	const target = new Map<string, CalendarSegment>();
+	for (const week of weeks) {
+		for (const segment of week.segments) {
+			if (segment.span >= MIN_SPAN_FOR_LINKS) {
+				target.set(segment.tournament.id, segment);
+			}
+		}
+	}
+	for (const segment of target.values()) segment.showLinks = true;
 }
 
 /** 期間が重ならない大会を同じ段へ詰め、重なる大会は下の段へ置く。 */

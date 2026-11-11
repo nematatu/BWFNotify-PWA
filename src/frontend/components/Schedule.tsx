@@ -255,10 +255,13 @@ function TournamentPeriod(props: {
 					<time datetime={props.startDate}>
 						{formatScheduleDate(props.startDate)}
 					</time>
-					<span aria-hidden="true">〜</span>
-					<time datetime={props.endDate}>
-						{formatScheduleDate(props.endDate)}
-					</time>
+					{/* 「〜」だけが行末に残らないよう、終了日と一緒に折り返す */}
+					<span class="tournament-period-end">
+						<span aria-hidden="true">〜</span>
+						<time datetime={props.endDate}>
+							{formatScheduleDate(props.endDate)}
+						</time>
+					</span>
 				</span>
 			</span>
 		</p>

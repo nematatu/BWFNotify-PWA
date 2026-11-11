@@ -179,7 +179,8 @@ main {
 .result-day-heading span,
 .upcoming-grade,
 .upcoming-month-group > header,
-.tournament-period-dates time {
+.tournament-period-dates time,
+.tournament-period-end {
 	white-space: nowrap;
 }
 
@@ -252,6 +253,12 @@ main {
 	background: var(--color-surface-sunken);
 }
 
+/* 状態の文が長くても、右のボタンとトグルを画面内に収める */
+.notification-settings > div:first-child {
+	flex: 1 1 auto;
+	min-width: 0;
+}
+
 .notification-settings h2 {
 	font-size: var(--text-md);
 	font-weight: var(--weight-bold);
@@ -265,6 +272,8 @@ main {
 
 #notification-status.error {
 	color: var(--color-error);
+	/* URLを含む長いエラー文でも、欄からはみ出さずに折り返す */
+	overflow-wrap: anywhere;
 }
 
 .notification-controls {
@@ -1087,6 +1096,8 @@ main {
 }
 
 .today-records-list {
+	/* 広い画面でも大会名と成績が離れすぎないようにする */
+	max-width: 640px;
 	margin: var(--space-1) 0 0;
 	padding: 0;
 	list-style: none;
@@ -1107,15 +1118,22 @@ main {
 	color: var(--color-text);
 }
 
-.today-record-result,
-.today-record-remaining {
+/* 勝ち・負けの色は、上の集計（◯勝◯敗）と同じにする。太字にはしない */
+.today-record-score {
+	display: flex;
 	flex-shrink: 0;
+	align-items: baseline;
+	gap: var(--space-2);
 	font-variant-numeric: tabular-nums;
 	white-space: nowrap;
 }
 
-.today-record-result {
-	color: var(--color-text);
+.today-record-win {
+	color: var(--color-win);
+}
+
+.today-record-loss {
+	color: var(--color-loss);
 }
 
 .today-record-remaining {
@@ -1607,6 +1625,11 @@ button.upcoming-main:focus-visible {
 	flex-wrap: wrap;
 	gap: 0 var(--space-1);
 	font-variant-numeric: tabular-nums;
+}
+
+.tournament-period-end {
+	display: inline-flex;
+	gap: var(--space-1);
 }
 
 /* 外部リンク（BWF・協会） */
@@ -2298,6 +2321,11 @@ button.upcoming-main:focus-visible {
 		grid-column: 2;
 	}
 
+	/* 大会名を出さないカード（大会名順）では、ラウンドとコートを左端から始める */
+	.match-header > .match-meta:first-child {
+		grid-column: 1 / -1;
+	}
+
 	.match-notification-control > span:first-child {
 		display: none;
 	}
@@ -2422,5 +2450,19 @@ button.upcoming-main:focus-visible {
 
 	.brand-lockup p {
 		display: none;
+	}
+
+	/* 通知欄: 状態の文・テスト通知・トグルを1行に収める */
+	.notification-settings {
+		gap: var(--space-2);
+		padding-inline: var(--space-3);
+	}
+
+	.notification-controls {
+		gap: var(--space-2);
+	}
+
+	#test-notification-button {
+		padding-inline: var(--space-2);
 	}
 }

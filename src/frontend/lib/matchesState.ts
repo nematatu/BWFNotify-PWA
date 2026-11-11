@@ -4,7 +4,6 @@ import { api } from "./api";
 import { whenIdle } from "./browser";
 import {
 	DEFAULT_SORT_ORDER,
-	isValidSortOrder,
 	mergeLiveMatches,
 	type SortOrder,
 } from "./matchList";
@@ -26,12 +25,8 @@ const FULL_POLL_MS = 2 * 60_000;
 /** この時間操作がなければ取得を止める。 */
 const IDLE_TIMEOUT_MS = 5 * 60_000;
 const ACTIVITY_THROTTLE_MS = 200;
-const SORT_STORAGE_KEY = "bwf-sort-order";
-
-function readSavedSort(): SortOrder | null {
-	const saved = localStorage.getItem(SORT_STORAGE_KEY);
-	return isValidSortOrder(saved) ? saved : null;
-}
+/** 以前は並び順を端末に保存していた。開くたびに「時間が早い順」から始めるため、残っていれば消す */
+const LEGACY_SORT_STORAGE_KEY = "bwf-sort-order";
 
 // --- 状態 ---
 // 書き換えはこのモジュールの操作関数だけに限り、外部へは読み取り関数だけを公開する。
@@ -42,9 +37,9 @@ const [upcomingTournaments, setUpcomingTournaments] = createSignal<
 	UpcomingTournament[]
 >([]);
 const [currentView, setCurrentViewSignal] = createSignal<MainView>("live");
-const [sortOrder, setSortOrderSignal] = createSignal<SortOrder>(
-	readSavedSort() || DEFAULT_SORT_ORDER,
-);
+/** 並び順。開いたときは常に「時間が早い順」から始める */
+const [sortOrder, setSortOrderSignal] =
+	createSignal<SortOrder>(DEFAULT_SORT_ORDER);
 const [idle, setIdle] = createSignal(false);
 /** 試合情報を一度でも表示できたか（保存データまたは最新の取得）。未取得の間は「読み込み中」を出す。 */
 const [statusLoaded, setStatusLoaded] = createSignal(false);
@@ -212,7 +207,6 @@ const resetIdle = () => {
 };
 
 export const setSortOrder = (order: SortOrder) => {
-	localStorage.setItem(SORT_STORAGE_KEY, order);
 	setSortOrderSignal(order);
 };
 
@@ -221,6 +215,11 @@ let initialized = false;
 export function initMatchesState() {
 	if (initialized) return;
 	initialized = true;
+	try {
+		localStorage.removeItem(LEGACY_SORT_STORAGE_KEY);
+	} catch {
+		// 保存領域が使えない環境では何もしない
+	}
 
 	const onVisibility = () => {
 		if (pageVisible()) {
