@@ -341,6 +341,18 @@ describe("today's record per tournament", () => {
 		]);
 	});
 
+	test("uses the date in Japan, not the venue's local date", () => {
+		// 欧州で現地 11/11 の夜（UTC 16:00）に始まった試合は、日本では 11/12 の 1:00
+		const overseas = {
+			...match("1", "Europe", "2026-11-11", "win"),
+			startTime: "2026-11-11 16:00:00",
+		};
+		expect(todayTournamentRecords([overseas], [], "2026-11-12")).toEqual([
+			{ tournament: "Europe", win: 1, loss: 0, remaining: 0 },
+		]);
+		expect(todayTournamentRecords([overseas], [], "2026-11-11")).toEqual([]);
+	});
+
 	test("is empty when there are no matches today", () => {
 		expect(
 			todayTournamentRecords([match("1", "A", "2026-11-10", "win")], [], today),

@@ -1101,6 +1101,7 @@ test("filters, sorting and refreshes reuse the rendered cards", async ({
 });
 
 test("results show today's record per tournament", async ({ page }) => {
+	// 日本時間 2026-11-11 14:00
 	await page.clock.install({ time: new Date("2026-11-11T05:00:00.000Z") });
 	await page.route("**/api/config", (route) =>
 		route.fulfill({ json: { vapidPublicKey: "" } }),
@@ -1111,13 +1112,8 @@ test("results show today's record per tournament", async ({ page }) => {
 			contentType: "image/png",
 		}),
 	);
-	const today = "2026-11-11";
-	const lost = {
-		...completedDoublesLoss,
-		id: "today-loss",
-		tournament: "A Open",
-		tournamentDate: today,
-	};
+	// 今日かどうかは、開始時刻を日本時間に直した日付で決める
+	const today = { tournamentDate: "2026-11-11" };
 	await page.route("**/api/status", (route) =>
 		route.fulfill({
 			json: {
@@ -1125,31 +1121,41 @@ test("results show today's record per tournament", async ({ page }) => {
 				matches: [
 					{
 						...singlesMatch,
+						...today,
 						id: "b-next",
 						tournament: "B Open",
-						tournamentDate: today,
+						startTime: "2026-11-11 07:00:00",
 					},
-					// 明日の試合は数えない
+					// 日本時間で明日（11/12 12:00）の試合は、今日の分に数えない
 					{
 						...secondSinglesMatch,
 						id: "a-tomorrow",
 						tournament: "A Open",
 						tournamentDate: "2026-11-12",
+						startTime: "2026-11-12 03:00:00",
 					},
 				],
 				recentResults: [
 					{
 						...completedMatch,
+						...today,
 						id: "today-win",
 						tournament: "A Open",
-						tournamentDate: today,
+						startTime: "2026-11-11 01:00:00",
 					},
-					lost,
+					{
+						...completedDoublesLoss,
+						...today,
+						id: "today-loss",
+						tournament: "A Open",
+						startTime: "2026-11-11 02:00:00",
+					},
 					{
 						...completedMatch,
+						...today,
 						id: "b-win",
 						tournament: "B Open",
-						tournamentDate: today,
+						startTime: "2026-11-11 03:00:00",
 					},
 				],
 				calendarCheckedAt: null,
@@ -1169,6 +1175,13 @@ test("results show today's record per tournament", async ({ page }) => {
 	// 周りの文字と同じ大きさ・太さで、目立たせすぎない
 	await expect(records.first()).toHaveCSS("font-weight", "400");
 	await expect(page.locator(".today-records-heading")).toHaveText("今日の成績");
+
+	// 開いたまま翌朝（日本時間 11/12 9:00）に画面へ戻ると、その日の分に切り替わる
+	await page.clock.setSystemTime(new Date("2026-11-12T00:00:00.000Z"));
+	await page.evaluate(() =>
+		document.dispatchEvent(new Event("visibilitychange")),
+	);
+	await expect(records).toHaveText(["A Open残り1試合"]);
 });
 
 test("match information hierarchy prioritizes actions and matchup", async ({

@@ -36,10 +36,17 @@ export const formatDate = (value: string) => {
 /** BWFの `YYYY-MM-DD HH:mm:ss`（UTC）とISO形式の両方を表示用に整形する。 */
 export const formatMatchTime = (value: string | undefined) => {
 	if (!value) return "時刻未定";
+	const date = parseMatchTime(value);
+	return date ? DATE_TIME_FORMAT.format(date) : value;
+};
+
+/** BWFの `YYYY-MM-DD HH:mm:ss`（UTC）とISO形式の開始時刻を読む。読めなければ undefined。 */
+export function parseMatchTime(value: string | undefined): Date | undefined {
+	if (!value) return undefined;
 	const isBwfUtc = /^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/.test(value);
 	const date = new Date(isBwfUtc ? `${value.replace(" ", "T")}Z` : value);
-	return Number.isNaN(date.getTime()) ? value : DATE_TIME_FORMAT.format(date);
-};
+	return Number.isNaN(date.getTime()) ? undefined : date;
+}
 
 export const formatTournamentDate = (value: string | undefined) => {
 	if (!value) return "";

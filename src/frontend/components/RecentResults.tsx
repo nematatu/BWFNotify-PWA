@@ -1,6 +1,7 @@
 import { createMemo, createSignal, For, Show } from "solid-js";
 import type { MatchSummary, MatchTeamSummary } from "../../type";
-import { displayRound, formatScheduleDate, japanDateKey } from "../lib/format";
+import { displayRound, formatScheduleDate } from "../lib/format";
+import { createJapanToday } from "../lib/japanToday";
 import { matches, recentResults } from "../lib/matchesState";
 import { proxiedImageUrl } from "../lib/media";
 import {
@@ -129,8 +130,9 @@ export function RecentResults() {
 
 /** 今日の日本人選手の成績を大会ごとに出す。終わっていない大会は残りの試合数を出す。 */
 function TodayRecords() {
+	const today = createJapanToday();
 	const records = createMemo(() =>
-		todayTournamentRecords(recentResults(), matches(), japanDateKey()),
+		todayTournamentRecords(recentResults(), matches(), today()),
 	);
 	return (
 		<Show when={records().length > 0}>
