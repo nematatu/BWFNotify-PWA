@@ -922,7 +922,9 @@ test("wide: match cards use multiple columns in both sort modes", async ({
 	await preparePage(page);
 	await page.getByRole("tab", { name: /このあと/ }).click();
 
-	const timeCards = page.locator(".match-list.time-grid > .match");
+	const timeCards = page.locator(
+		".view-panel:not([hidden]) .match-list.time-grid > .match",
+	);
 	await expect(timeCards).toHaveCount(3);
 	const timePositions = await timeCards.evaluateAll((cards) =>
 		cards.map((card) => {
@@ -954,7 +956,9 @@ test("wide: match cards use multiple columns in both sort modes", async ({
 		});
 	}
 	await sortOptions.getByRole("option", { name: "大会名順" }).click();
-	const groupedCards = page.locator(".tournament-matches > .match");
+	const groupedCards = page.locator(
+		".view-panel:not([hidden]) .tournament-matches > .match",
+	);
 	await expect(groupedCards).toHaveCount(3);
 	const groupedPositions = await groupedCards.evaluateAll((cards) =>
 		cards.map((card) => {
@@ -1151,12 +1155,14 @@ test("a failed first load shows a retry instead of loading forever", async ({
 	// 保存済みの試合情報がない初回訪問を再現する
 	await page.evaluate(() => localStorage.clear());
 	await page.reload();
-	await expect(page.locator("#match-list [role=alert]")).toContainText(
-		"試合情報を取得できませんでした",
-	);
+	await expect(
+		page.locator(".view-panel:not([hidden]) .match-list [role=alert]"),
+	).toContainText("試合情報を取得できませんでした");
 	await expect(page.locator("[aria-busy=true]")).toHaveCount(0);
 	failStatus = false;
-	await page.locator("#match-list .empty-state-retry").click();
+	await page
+		.locator(".view-panel:not([hidden]) .match-list .empty-state-retry")
+		.click();
 	await expect(page.locator(".match")).toHaveCount(1);
 });
 

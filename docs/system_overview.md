@@ -45,7 +45,7 @@ Cloudflare Cron（2分間隔）
 | `/api/live` | 15秒ごと | ライブ中の試合があるときだけ |
 | `/api/config` | 起動時1回 | 通知設定の初期化 |
 | `/api/subscriptions*` | 利用者の操作時だけ | 通知のオン・オフ、試合ごとの除外、テスト通知 |
-| `/api/media` | 画像ごとに1回（ブラウザが1日保持） | 画面内に入った画像だけ（lazy） |
+| `/api/media` | 画像ごとに1回（ブラウザが7日保持） | 画面内に入った画像だけ（lazy） |
 
 ### 3. Worker API: `src/api/app.ts`
 
@@ -53,7 +53,7 @@ Cloudflare Cron（2分間隔）
 |---|---|---|
 | `/api/status` | KV get `push:state` 1回 | Cloudflareのデータセンターごとに30秒。利用者数が増えてもKV読み取りは増えない |
 | `/api/live` | **Cronと同じ全件取得**（BWF 1 + T × 3日） | データセンターごとに10秒。BWFへの各リクエストもCloudflareで10秒保持 |
-| `/api/media` | BWF画像を1枚取得 | Worker側の明示的なキャッシュ設定なし（ブラウザに1日保持させる） |
+| `/api/media` | BWF画像を1枚取得 | データセンターごとに7日。Worker経由のBWF取得は1枚約3〜4秒かかるため、取得済みの画像はエッジから返す（`X-BWF-Cache: HIT`） |
 | `/api/subscriptions*` | KV get / put / delete 各1回程度 | なし |
 
 ### 既知の課題
@@ -78,7 +78,7 @@ Cloudflare Cron（2分間隔）
 - `src/frontend/lib/pushNotificationState.ts`: Push購読と試合別除外設定
 - `src/frontend/lib/matchList.ts`: 試合の並び替え、大会別グループ化、ライブ得点の反映
 - `src/frontend/lib/calendar.ts`: 大会カレンダーの月・週・帯の計算（純粋関数）
-- `src/frontend/lib/viewPanels.ts`: タブの中身の作成と表示切り替え。一度作ったタブは作り直さず隠すだけにし（`content-visibility: hidden`）、最初の画面を描いた後の空き時間に残りのタブも作っておく。結果タブは試合数が多く、切り替えのたびに作り直すと表示まで待たされるため
+- `src/frontend/lib/viewPanels.ts`: タブの中身の作成と表示切り替え。一度作ったタブは作り直さず隠すだけにし（`content-visibility: hidden`）、最初の画面を描いた後の空き時間に残りのタブも作っておく。結果タブは試合数が多く、切り替えのたびに作り直すと表示まで待たされるため。「ライブ」と「このあと」も別々の画面として持ち、行き来しても試合カードを作り直さない
 - `src/frontend/lib/format.ts`: 日付、ラウンド、コート、スコアの表示整形
 - `src/frontend/lib/browser.ts`: 端末・ブラウザ判定と通知トグルの動作判定
 - `src/frontend/lib/api.ts`, `media.ts`: API呼び出しと画像中継URL

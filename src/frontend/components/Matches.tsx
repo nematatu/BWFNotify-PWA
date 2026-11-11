@@ -200,20 +200,29 @@ function SortControl() {
 
 // --- 試合一覧 ---
 
-export function MatchList() {
+/**
+ * 「ライブ」または「このあと」の試合一覧。タブごとに1つずつ置き、
+ * タブを切り替えても作り直さずに隠すだけにする。
+ */
+export function MatchList(props: { eventType: "live" | "scheduled" }) {
 	const visibleMatches = createMemo(() =>
-		matches().filter((match) => match.eventType === currentView()),
+		matches().filter((match) => match.eventType === props.eventType),
 	);
-	const sorted = createMemo(() => sortedMatches(visibleMatches(), sortOrder()));
-	const groups = createMemo(() => tournamentGroups(visibleMatches()));
 	const isTournamentOrder = () => sortOrder() === "tournament";
+	// 表示しない並び方の分は計算しない
+	const sorted = createMemo(() =>
+		isTournamentOrder() ? [] : sortedMatches(visibleMatches(), sortOrder()),
+	);
+	const groups = createMemo(() =>
+		isTournamentOrder() ? tournamentGroups(visibleMatches()) : [],
+	);
 
 	return (
 		<div
-			id="match-list"
+			id={`${props.eventType}-list`}
 			class={`match-list ${isTournamentOrder() ? "" : "time-grid"}`}
 			role="tabpanel"
-			aria-labelledby={`${currentView()}-tab`}
+			aria-labelledby={`${props.eventType}-tab`}
 			aria-live="polite"
 		>
 			<Show

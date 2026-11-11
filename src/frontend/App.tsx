@@ -42,8 +42,11 @@ export default function App() {
 						試合
 					</h2>
 					<MatchToolbar />
-					<ViewPanel panel="matches">
-						<MatchList />
+					<ViewPanel panel="live">
+						<MatchList eventType="live" />
+					</ViewPanel>
+					<ViewPanel panel="scheduled">
+						<MatchList eventType="scheduled" />
 					</ViewPanel>
 					<ViewPanel panel="results">
 						<RecentResults />
