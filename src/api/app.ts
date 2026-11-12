@@ -207,6 +207,9 @@ app.delete("/api/subscriptions", limitRequestSize, async (c) => {
 app.notFound((c) => c.json({ error: "Not found" }, 404));
 
 app.onError((error, c) => {
+	if (error instanceof RequestTooLargeError) {
+		return c.json({ error: "Request is too large" }, 413);
+	}
 	console.error(
 		JSON.stringify({
 			event: "api-error",
@@ -269,7 +272,13 @@ async function cachedJson(
 	return response;
 }
 
-/** JSON以外や壊れたJSONは空オブジェクトとして扱い、各ルートの検証で400にする。 */
+/** 本文が上限を超えたことを示す。onErrorで413に変換する。 */
+class RequestTooLargeError extends Error {}
+
+/**
+ * JSON以外や壊れたJSONは空オブジェクトとして扱い、各ルートの検証で400にする。
+ * Content-Lengthのない分割送信でも、読み込んだ量が上限を超えた時点で打ち切る。
+ */
 async function readJsonObject(
 	request: Request,
 ): Promise<Record<string, unknown>> {
@@ -277,11 +286,39 @@ async function readJsonObject(
 		return {};
 	}
 
+	const text = await readBodyText(request, MAX_REQUEST_BYTES);
 	try {
-		return object(await request.json());
+		return object(JSON.parse(text));
 	} catch {
 		return {};
 	}
+}
+
+async function readBodyText(
+	request: Request,
+	maxBytes: number,
+): Promise<string> {
+	if (!request.body) return "";
+	const reader = request.body.getReader();
+	const chunks: Uint8Array[] = [];
+	let size = 0;
+	for (;;) {
+		const { done, value } = await reader.read();
+		if (done) break;
+		size += value.byteLength;
+		if (size > maxBytes) {
+			await reader.cancel().catch(() => undefined);
+			throw new RequestTooLargeError();
+		}
+		chunks.push(value);
+	}
+	const bytes = new Uint8Array(size);
+	let offset = 0;
+	for (const chunk of chunks) {
+		bytes.set(chunk, offset);
+		offset += chunk.byteLength;
+	}
+	return new TextDecoder().decode(bytes);
 }
 
 function requestTooLarge(contentLength: string | undefined): boolean {
