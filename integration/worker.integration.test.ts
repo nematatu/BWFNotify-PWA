@@ -250,6 +250,66 @@ describe("Worker integration", () => {
 		}
 	});
 
+	test("rejects oversized bodies sent without content-length", async () => {
+		const routes = [
+			["POST", "/api/subscriptions"],
+			["PATCH", "/api/subscriptions"],
+			["DELETE", "/api/subscriptions"],
+			["POST", "/api/subscriptions/test"],
+		] as const;
+		for (const [method, path] of routes) {
+			const chunk = new TextEncoder().encode(" ".repeat(1024));
+			let sent = 0;
+			// 1KBずつ5回送り、合計で上限の4KBを超える分割送信。
+			const body = new ReadableStream<Uint8Array>({
+				pull(controller) {
+					if (sent >= 5) {
+						controller.close();
+						return;
+					}
+					sent += 1;
+					controller.enqueue(chunk);
+				},
+			});
+			const request = new Request(`https://example.com${path}`, {
+				method,
+				headers: { "content-type": "application/json" },
+				body,
+			});
+			expect(request.headers.get("content-length")).toBeNull();
+
+			const context = createExecutionContext();
+			const response = await worker.fetch(request, env, context);
+			await waitOnExecutionContext(context);
+			expect(response.status).toBe(413);
+			expect(response.headers.get("cache-control")).toBe("no-store");
+		}
+	});
+
+	test("still accepts a small body sent without content-length", async () => {
+		const context = createExecutionContext();
+		const response = await worker.fetch(
+			new Request("https://example.com/api/subscriptions", {
+				method: "DELETE",
+				headers: { "content-type": "application/json" },
+				body: new ReadableStream<Uint8Array>({
+					start(controller) {
+						controller.enqueue(
+							new TextEncoder().encode(
+								JSON.stringify({ endpoint: "https://fcm.googleapis.com/x" }),
+							),
+						);
+						controller.close();
+					},
+				}),
+			}),
+			env,
+			context,
+		);
+		await waitOnExecutionContext(context);
+		expect(response.status).toBe(200);
+	});
+
 	test("returns 404 rather than 413 for an unknown subscription path", async () => {
 		const context = createExecutionContext();
 		const response = await worker.fetch(
