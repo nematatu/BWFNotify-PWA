@@ -415,6 +415,8 @@ describe("Worker integration", () => {
 			await waitOnExecutionContext(context);
 
 			expect(response.status).toBe(200);
+			// 保存データで返したときは、BWFへの失敗する取得を繰り返さないよう長めにキャッシュする
+			expect(response.headers.get("Cache-Control")).toBe("public, max-age=60");
 			expect(await response.json()).toEqual({
 				checkedAt: "2026-07-18T00:00:00.000Z",
 				source: "saved",
