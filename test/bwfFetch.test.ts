@@ -92,6 +92,23 @@ describe("fetchJapaneseMatches", () => {
 		expect(matches.some((match) => match.id.endsWith(DATES[1]))).toBe(false);
 	});
 
+	test("開催中の大会がなければ、例外にせず空の一覧を返す", async () => {
+		let dayRequests = 0;
+		globalThis.fetch = (async (input: string | URL | Request) => {
+			const url = new URL(input instanceof Request ? input.url : input);
+			if (url.pathname.endsWith("vue-current-live")) {
+				return Response.json({ results: [] });
+			}
+			dayRequests += 1;
+			return Response.json([]);
+		}) as unknown as typeof fetch;
+
+		expect(await fetchJapaneseMatches(undefined, [], { dates: DATES })).toEqual(
+			[],
+		);
+		expect(dayRequests).toBe(0);
+	});
+
 	test("すべての取得に失敗したら例外にする", async () => {
 		console.error = () => {};
 		globalThis.fetch = fakeBwf({ failing: () => true }).fetch;

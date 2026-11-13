@@ -58,6 +58,9 @@ export async function fetchJapaneseMatches(
 		await fetchBwfJson(BWF_LIVE_URL, options.upstreamCacheTtlSeconds),
 		dates,
 	);
+	// 開催中の大会がない週は、取得する試合がないだけで失敗ではない。
+	// 例外にするとCronが状態を保存できず、前の大会の「ライブ」「このあと」が残り続ける。
+	if (tournaments.length === 0) return [];
 	// 大会×日付の取得は互いに依存しないため同時に行い、待ち時間を1回分にする。
 	// 結果は大会・日付の順に並べ直し、直列取得していたときと同じ順序を保つ。
 	const dayResults = await Promise.all(
