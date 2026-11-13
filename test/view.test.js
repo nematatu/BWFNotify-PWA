@@ -24,6 +24,8 @@ import {
 	IDLE_TIMEOUT_MS,
 	idleRemainingMs,
 	LIVE_IDLE_TIMEOUT_MS,
+	msUntilNextStart,
+	needsLiveScores,
 	pollingMode,
 } from "../src/frontend/lib/pollingPolicy.ts";
 import {
@@ -72,6 +74,53 @@ describe("polling policy", () => {
 		expect(
 			pollingMode({ visible: true, idle: true, hasLiveMatches: true }),
 		).toBe("paused");
+	});
+});
+
+describe("live score policy", () => {
+	const now = Date.parse("2026-07-18T09:00:00Z");
+	const scheduled = (startTime) => ({
+		id: startTime,
+		tournament: "Japan Open",
+		players: [],
+		teams: [],
+		scores: [],
+		eventType: "scheduled",
+		startTime,
+	});
+
+	test("fetches live scores once a scheduled match reaches its start time", () => {
+		expect(needsLiveScores([scheduled("2026-07-18 08:59:00")], now)).toBe(true);
+		expect(needsLiveScores([scheduled("2026-07-18 09:30:00")], now)).toBe(
+			false,
+		);
+	});
+
+	test("stops waiting for a match that has not started three hours later", () => {
+		expect(needsLiveScores([scheduled("2026-07-18 05:59:00")], now)).toBe(
+			false,
+		);
+	});
+
+	test("ignores matches without a readable start time", () => {
+		expect(needsLiveScores([scheduled(undefined)], now)).toBe(false);
+		expect(needsLiveScores([scheduled("TBD")], now)).toBe(false);
+	});
+
+	test("finds the next start time among scheduled matches", () => {
+		expect(
+			msUntilNextStart(
+				[
+					scheduled("2026-07-18 09:30:00"),
+					scheduled("2026-07-18 09:05:00"),
+					scheduled("2026-07-18 08:00:00"),
+				],
+				now,
+			),
+		).toBe(5 * 60_000);
+		expect(msUntilNextStart([scheduled("2026-07-18 08:00:00")], now)).toBe(
+			undefined,
+		);
 	});
 });
 
