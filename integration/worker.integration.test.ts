@@ -428,6 +428,70 @@ describe("Worker integration", () => {
 		}
 	});
 
+	test("fetches live scores for saved tournaments without the BWF tournament list", async () => {
+		await env.NOTIFIED_MATCHES.put(
+			"push:state",
+			JSON.stringify({
+				checkedAt: "2026-07-18T00:00:00.000Z",
+				matches: [{ ...liveMatch, tournamentCode: "TOURNAMENT-1" }],
+			}),
+		);
+		const requested: string[] = [];
+		const fetchSpy = vi
+			.spyOn(globalThis, "fetch")
+			.mockImplementation(async (input) => {
+				const url = String(input instanceof Request ? input.url : input);
+				requested.push(url);
+				// 開催中の大会一覧は、利用者のリクエストからだと403で断られる
+				if (url.includes("vue-current-live")) {
+					return new Response("blocked", { status: 403 });
+				}
+				return Response.json([
+					{
+						id: "live-1",
+						tournamentName: "Japan Open",
+						matchStatus: "P",
+						team1: {
+							countryCode: "JPN",
+							players: [{ nameDisplay: "Akane YAMAGUCHI", countryCode: "JPN" }],
+						},
+						team2: {
+							countryCode: "CHN",
+							players: [{ nameDisplay: "CHEN Yu Fei", countryCode: "CHN" }],
+						},
+						score: [{ set: 1, home: 11, away: 9 }],
+					},
+				]);
+			});
+		try {
+			const context = createExecutionContext();
+			const response = await worker.fetch(
+				new Request("https://example.com/api/live"),
+				env,
+				context,
+			);
+			await waitOnExecutionContext(context);
+			const body = (await response.json()) as {
+				source: string;
+				matches: MatchSummary[];
+			};
+
+			expect(body.source).toBe("bwf");
+			expect(body.matches.map((match) => match.scores)).toEqual([
+				[{ game: 1, team1: 11, team2: 9 }],
+			]);
+			expect(body.matches[0].tournamentCode).toBe("TOURNAMENT-1");
+			expect(requested.some((url) => url.includes("vue-current-live"))).toBe(
+				false,
+			);
+			expect(
+				requested.every((url) => url.includes("tournamentCode=TOURNAMENT-1")),
+			).toBe(true);
+		} finally {
+			fetchSpy.mockRestore();
+		}
+	});
+
 	test("skips unchanged per-minute writes and keeps a bounded retry count", async () => {
 		let now = new Date("2026-07-18T00:00:00.000Z");
 		let notificationCalls = 0;

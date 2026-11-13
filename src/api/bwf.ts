@@ -32,7 +32,7 @@ const BWF_FETCH_HEADERS: HeadersInit[] = [
 	{ accept: "application/json,text/plain,*/*" },
 ];
 
-type Tournament = {
+export type Tournament = {
 	code: string;
 	name?: string;
 	logoUrl?: string;
@@ -46,6 +46,11 @@ type FetchJapaneseMatchesOptions = {
 	upstreamCacheTtlSeconds?: number;
 	enrichHeadToHead?: boolean;
 	dates?: string[];
+	/**
+	 * 取得する大会。指定すると、BWFの開催中の大会一覧（vue-current-live）を取らずに
+	 * この大会の日別試合だけを取る。
+	 */
+	tournaments?: Tournament[];
 };
 
 export async function fetchJapaneseMatches(
@@ -54,13 +59,16 @@ export async function fetchJapaneseMatches(
 	options: FetchJapaneseMatchesOptions = {},
 ): Promise<MatchSummary[]> {
 	const dates = options.dates || adjacentDates(todayJst());
-	const tournaments = tournamentsForDates(
-		await fetchBwfJson(BWF_LIVE_URL, options.upstreamCacheTtlSeconds),
-		dates,
-	);
+	const tournaments =
+		options.tournaments ||
+		tournamentsForDates(
+			await fetchBwfJson(BWF_LIVE_URL, options.upstreamCacheTtlSeconds),
+			dates,
+		);
 	// 開催中の大会がない週は、取得する試合がないだけで失敗ではない。
 	// 例外にするとCronが状態を保存できず、前の大会の「ライブ」「このあと」が残り続ける。
 	if (tournaments.length === 0) return [];
+	let lastDayError = "";
 	// 大会×日付の取得は互いに依存しないため同時に行い、待ち時間を1回分にする。
 	// 結果は大会・日付の順に並べ直し、直列取得していたときと同じ順序を保つ。
 	const dayResults = await Promise.all(
@@ -75,6 +83,7 @@ export async function fetchJapaneseMatches(
 						.map((value) => parseMatch(value, tournament))
 						.filter(isPresent);
 				} catch (error) {
+					lastDayError = errorMessage(error);
 					console.error(
 						JSON.stringify({
 							event: "bwf-day-matches-error",
@@ -89,7 +98,8 @@ export async function fetchJapaneseMatches(
 		),
 	);
 	if (!dayResults.some((result) => result !== null)) {
-		throw new Error("BWF day matches are unavailable");
+		// どの取得で何が起きたかを、呼び出し元の記録や応答から確かめられるようにする
+		throw new Error(`BWF day matches are unavailable (${lastDayError})`);
 	}
 	const matches: BwfMatch[] = dayResults.flatMap((result) => result || []);
 
@@ -163,6 +173,7 @@ function parseMatch(value: unknown, tournament: Tournament): BwfMatch | null {
 
 	return {
 		id: String(rawId),
+		tournamentCode: tournament.code,
 		tournamentName: optionalString(item.tournamentName) || tournament.name,
 		tournamentLogoUrl: tournament.logoUrl,
 		tournamentHeaderImageUrl: tournament.headerImageUrl,
