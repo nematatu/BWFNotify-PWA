@@ -1356,6 +1356,45 @@ test("normal polling switches to live score polling after a match starts", async
 	await expect.poll(() => liveCalls).toBe(1);
 });
 
+test("live scores keep updating while watched without touching the screen", async ({
+	page,
+}) => {
+	await page.clock.install({ time: new Date("2026-07-18T09:00:00.000Z") });
+	let liveCalls = 0;
+	await page.route("**/api/config", (route) =>
+		route.fulfill({ json: { vapidPublicKey: "" } }),
+	);
+	await page.route("**/api/status", (route) =>
+		route.fulfill({
+			json: {
+				checkedAt: "2026-07-18T09:00:00.000Z",
+				matches: [doublesMatch],
+			},
+		}),
+	);
+	await page.route("**/api/live", (route) => {
+		liveCalls += 1;
+		return route.fulfill({
+			json: { checkedAt: "2026-07-18T09:00:00.000Z", matches: [doublesMatch] },
+		});
+	});
+
+	await page.goto("/");
+	await expect(page.locator("#live-count")).toHaveText("1");
+
+	// 操作なしで10分。以前は5分で取得が止まり、得点が止まったままになっていた。
+	await page.clock.runFor(8 * 60_000);
+	const afterEightMinutes = liveCalls;
+	await page.clock.runFor(2 * 60_000);
+	await expect.poll(() => liveCalls).toBeGreaterThan(afterEightMinutes);
+
+	// 30分を過ぎたら止め、閉じ忘れた画面が取得し続けないようにする。
+	await page.clock.runFor(21 * 60_000);
+	const afterThirtyOneMinutes = liveCalls;
+	await page.clock.runFor(2 * 60_000);
+	expect(liveCalls).toBe(afterThirtyOneMinutes);
+});
+
 test("production build keeps its manifest and service worker", async ({
 	page,
 }) => {

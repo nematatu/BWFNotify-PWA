@@ -20,7 +20,12 @@ import {
 	resizedBwfImageUrl,
 	safeHttpsUrl,
 } from "../src/frontend/lib/media.ts";
-import { pollingMode } from "../src/frontend/lib/pollingPolicy.ts";
+import {
+	IDLE_TIMEOUT_MS,
+	idleRemainingMs,
+	LIVE_IDLE_TIMEOUT_MS,
+	pollingMode,
+} from "../src/frontend/lib/pollingPolicy.ts";
 import {
 	countOutcomes,
 	filterResults,
@@ -67,6 +72,30 @@ describe("polling policy", () => {
 		expect(
 			pollingMode({ visible: true, idle: true, hasLiveMatches: true }),
 		).toBe("paused");
+	});
+});
+
+describe("idle policy", () => {
+	test("keeps live scores updating while a match is watched without touching", () => {
+		// スマホで10分間、得点を眺めているだけ
+		expect(
+			idleRemainingMs({ elapsedMs: 10 * 60_000, hasLiveMatches: true }),
+		).toBeGreaterThan(0);
+		expect(
+			idleRemainingMs({
+				elapsedMs: LIVE_IDLE_TIMEOUT_MS,
+				hasLiveMatches: true,
+			}),
+		).toBeLessThanOrEqual(0);
+	});
+
+	test("still pauses after 5 minutes without a live match", () => {
+		expect(
+			idleRemainingMs({ elapsedMs: IDLE_TIMEOUT_MS, hasLiveMatches: false }),
+		).toBeLessThanOrEqual(0);
+		expect(idleRemainingMs({ elapsedMs: 60_000, hasLiveMatches: false })).toBe(
+			IDLE_TIMEOUT_MS - 60_000,
+		);
 	});
 });
 
