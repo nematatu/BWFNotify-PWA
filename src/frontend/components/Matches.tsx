@@ -79,6 +79,34 @@ const VIEW_TABS: Array<{
 	},
 ];
 
+/**
+ * タブの矢印キー操作（WAI-ARIA のタブの作法）。
+ * 左右の矢印で隣のタブ、Home / End で先頭・末尾のタブへ移り、そのタブを開く。
+ */
+function moveTabFocus(event: KeyboardEvent) {
+	const index = VIEW_TABS.findIndex((tab) => tab.view === currentView());
+	const last = VIEW_TABS.length - 1;
+	const next =
+		event.key === "ArrowRight"
+			? index === last
+				? 0
+				: index + 1
+			: event.key === "ArrowLeft"
+				? index === 0
+					? last
+					: index - 1
+				: event.key === "Home"
+					? 0
+					: event.key === "End"
+						? last
+						: undefined;
+	if (next === undefined) return;
+	event.preventDefault();
+	const view = VIEW_TABS[next].view;
+	setCurrentView(view);
+	document.getElementById(`${view}-tab`)?.focus();
+}
+
 export function MatchToolbar() {
 	const isMatchView = () =>
 		currentView() === "live" || currentView() === "scheduled";
@@ -86,7 +114,12 @@ export function MatchToolbar() {
 	return (
 		<>
 			<div class="match-toolbar">
-				<div class="match-tabs" role="tablist" aria-label="試合状態">
+				<div
+					class="match-tabs"
+					role="tablist"
+					aria-label="試合状態"
+					onKeyDown={moveTabFocus}
+				>
 					<For each={VIEW_TABS}>
 						{(tab) => (
 							<button
@@ -95,6 +128,8 @@ export function MatchToolbar() {
 								type="button"
 								role="tab"
 								aria-selected={currentView() === tab.view ? "true" : "false"}
+								// 選択中のタブだけをTabキーで止まる位置にし、タブ間は矢印キーで移る
+								tabIndex={currentView() === tab.view ? 0 : -1}
 								onClick={() => setCurrentView(tab.view)}
 							>
 								{tab.label} <span id={tab.countId}>{tab.count()}</span>
