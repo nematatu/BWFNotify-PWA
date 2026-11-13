@@ -1,13 +1,11 @@
 import { type Context, Hono, type MiddlewareHandler } from "hono";
 import type {
-	MatchSummary,
 	PublicState,
 	SaveSubscriptionRequest,
 	TestNotificationRequest,
 	UpdateSubscriptionPreferencesRequest,
 } from "../type";
 import { errorMessage, object, optionalString } from "../utils";
-import { fetchJapaneseMatches, type Tournament } from "./bwf";
 import { fetchBwfImage } from "./media";
 import {
 	runNotificationCheck,
@@ -28,12 +26,8 @@ import { defaultWorkerCache } from "./workerCache";
 
 const MAX_REQUEST_BYTES = 4096;
 const STATUS_CACHE_TTL_SECONDS = 30;
-const LIVE_CACHE_TTL_SECONDS = 10;
-/**
- * BWFから取れず保存データを返したときのキャッシュ時間。保存データはCronが2分ごとに
- * 更新するだけなので、短い間隔でBWFへの失敗する取得を繰り返さない。
- */
-const LIVE_FALLBACK_CACHE_TTL_SECONDS = 60;
+/** ライブ得点のキャッシュ時間。元のデータはCronが2分ごとに保存するため、それより十分短くする */
+const LIVE_CACHE_TTL_SECONDS = 20;
 /** 独自のCache-Controlを返すため、no-storeを付けないAPI。 */
 const CACHEABLE_PATHS = new Set(["/api/media", "/api/status", "/api/live"]);
 
@@ -103,66 +97,24 @@ app.get("/api/status", (c) =>
 );
 
 /**
- * 画面表示中だけ短い間隔で取得されるライブ得点。
- * Cronが保存した試合から日本人選手の試合がある大会を選び、その大会の日別試合だけを取る。
- * BWFの開催中の大会一覧（vue-current-live）は、利用者のリクエストからだと403で断られるため使わない。
- * BWFから取れないときはエラーにせず、Cronが保存した直近（最大2分前）のライブ試合を返す。
+ * 画面表示中だけ短い間隔で取得されるライブ得点。Cronが保存した直近（最大2分前）のライブ試合を返す。
+ * BWFは利用者のリクエストからの取得を403で断る（2026-11-13に開催中の大会一覧・日別試合の両方で確認）。
+ * Cronからの取得は通るため、BWFへはCronだけが取りに行き、ここでは断られる取得を繰り返さない。
  */
 app.get("/api/live", (c) =>
-	cachedJson(c, liveCacheTtl, async () => {
+	cachedJson(c, LIVE_CACHE_TTL_SECONDS, async () => {
 		const stored = await c.env.NOTIFIED_MATCHES.get<StoredState>(
 			STATE_KEY,
 			"json",
 		);
-		const storedMatches = Array.isArray(stored?.matches) ? stored.matches : [];
-		try {
-			const tournaments = currentTournaments(storedMatches);
-			// 上流のキャッシュ指定は付けず、Cronと同じ取り方にする（応答は cachedJson がキャッシュする）
-			const matches = await fetchJapaneseMatches(
-				undefined,
-				[],
-				tournaments.length > 0 ? { tournaments } : {},
-			);
-			return {
-				checkedAt: new Date().toISOString(),
-				source: "bwf",
-				matches: matches.filter((match) => match.eventType === "live"),
-			};
-		} catch (error) {
-			console.error(
-				JSON.stringify({
-					event: "live-fetch-error",
-					error: errorMessage(error),
-				}),
-			);
-			return {
-				checkedAt: stored?.checkedAt || null,
-				source: "saved",
-				// BWFから取れなかった理由（HTTPステータスなど）。ログを見られなくても原因を確かめられるようにする
-				reason: errorMessage(error).slice(0, 200),
-				matches: storedMatches.filter((match) => match.eventType === "live"),
-			};
-		}
+		const matches = Array.isArray(stored?.matches) ? stored.matches : [];
+		return {
+			checkedAt: stored?.checkedAt || null,
+			source: "saved",
+			matches: matches.filter((match) => match.eventType === "live"),
+		};
 	}),
 );
-
-/** 保存済みのライブ中・これからの試合がある大会（大会コードが分かるものだけ）。 */
-function currentTournaments(matches: MatchSummary[]): Tournament[] {
-	const tournaments = new Map<string, Tournament>();
-	for (const match of matches) {
-		if (match.eventType === "completed" || !match.tournamentCode) continue;
-		if (tournaments.has(match.tournamentCode)) continue;
-		tournaments.set(match.tournamentCode, {
-			code: match.tournamentCode,
-			name: match.tournament,
-			logoUrl: match.tournamentLogoUrl,
-			headerImageUrl: match.tournamentHeaderImageUrl,
-			headerImageMobileUrl: match.tournamentHeaderImageMobileUrl,
-			category: match.tournamentCategory,
-		});
-	}
-	return [...tournaments.values()];
-}
 
 // --- Push購読 ---
 
@@ -281,16 +233,9 @@ function publicState(state: StoredState | null): PublicState {
 }
 
 /** Workerのエッジキャッシュに応答を保存し、TTL内はloadを呼ばずに返す。 */
-/** BWFから取れたライブ得点は10秒、保存データで返したときは60秒キャッシュする。 */
-function liveCacheTtl(body: unknown): number {
-	return object(body).source === "saved"
-		? LIVE_FALLBACK_CACHE_TTL_SECONDS
-		: LIVE_CACHE_TTL_SECONDS;
-}
-
 async function cachedJson(
 	c: Context<AppBindings>,
-	ttlSeconds: number | ((body: unknown) => number),
+	ttlSeconds: number,
 	load: () => Promise<unknown>,
 ): Promise<Response> {
 	const cacheUrl = new URL(c.req.url);
@@ -304,10 +249,8 @@ async function cachedJson(
 		return response;
 	}
 
-	const body = await load();
-	const ttl = typeof ttlSeconds === "function" ? ttlSeconds(body) : ttlSeconds;
-	const response = c.json(body);
-	response.headers.set("Cache-Control", `public, max-age=${ttl}`);
+	const response = c.json(await load());
+	response.headers.set("Cache-Control", `public, max-age=${ttlSeconds}`);
 	response.headers.set("X-BWF-Cache", "MISS");
 	c.executionCtx.waitUntil(cache.put(cacheKey, response.clone()));
 	return response;
