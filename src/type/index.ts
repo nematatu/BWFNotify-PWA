@@ -16,6 +16,8 @@ export type BwfTeam = {
 
 export type BwfMatch = {
 	id: string;
+	/** BWFの大会コード（GUID）。日別試合の取得に使う */
+	tournamentCode?: string;
 	tournamentName?: string;
 	tournamentLogoUrl?: string;
 	tournamentHeaderImageUrl?: string;
@@ -84,6 +86,8 @@ export type MatchGameScore = {
 export type MatchSummary = {
 	id: string;
 	tournament: string;
+	/** BWFの大会コード（GUID）。ライブ得点を大会の一覧なしで取りに行くのに使う */
+	tournamentCode?: string;
 	tournamentLogoUrl?: string;
 	tournamentHeaderImageUrl?: string;
 	tournamentHeaderImageMobileUrl?: string;

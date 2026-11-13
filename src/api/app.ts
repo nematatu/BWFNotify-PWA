@@ -1,12 +1,13 @@
 import { type Context, Hono, type MiddlewareHandler } from "hono";
 import type {
+	MatchSummary,
 	PublicState,
 	SaveSubscriptionRequest,
 	TestNotificationRequest,
 	UpdateSubscriptionPreferencesRequest,
 } from "../type";
 import { errorMessage, object, optionalString } from "../utils";
-import { fetchJapaneseMatches } from "./bwf";
+import { fetchJapaneseMatches, type Tournament } from "./bwf";
 import { fetchBwfImage } from "./media";
 import {
 	runNotificationCheck,
@@ -103,13 +104,25 @@ app.get("/api/status", (c) =>
 
 /**
  * 画面表示中だけ短い間隔で取得されるライブ得点。
+ * Cronが保存した試合から日本人選手の試合がある大会を選び、その大会の日別試合だけを取る。
+ * BWFの開催中の大会一覧（vue-current-live）は、利用者のリクエストからだと403で断られるため使わない。
  * BWFから取れないときはエラーにせず、Cronが保存した直近（最大2分前）のライブ試合を返す。
  */
 app.get("/api/live", (c) =>
 	cachedJson(c, liveCacheTtl, async () => {
+		const stored = await c.env.NOTIFIED_MATCHES.get<StoredState>(
+			STATE_KEY,
+			"json",
+		);
+		const storedMatches = Array.isArray(stored?.matches) ? stored.matches : [];
 		try {
-			// 上流のキャッシュ指定は付けず、Cronと同じ取り方にする（応答は cachedJson が10秒キャッシュする）
-			const matches = await fetchJapaneseMatches();
+			const tournaments = currentTournaments(storedMatches);
+			// 上流のキャッシュ指定は付けず、Cronと同じ取り方にする（応答は cachedJson がキャッシュする）
+			const matches = await fetchJapaneseMatches(
+				undefined,
+				[],
+				tournaments.length > 0 ? { tournaments } : {},
+			);
 			return {
 				checkedAt: new Date().toISOString(),
 				source: "bwf",
@@ -122,22 +135,34 @@ app.get("/api/live", (c) =>
 					error: errorMessage(error),
 				}),
 			);
-			const stored = await c.env.NOTIFIED_MATCHES.get<StoredState>(
-				STATE_KEY,
-				"json",
-			);
 			return {
 				checkedAt: stored?.checkedAt || null,
 				source: "saved",
 				// BWFから取れなかった理由（HTTPステータスなど）。ログを見られなくても原因を確かめられるようにする
 				reason: errorMessage(error).slice(0, 200),
-				matches: (Array.isArray(stored?.matches) ? stored.matches : []).filter(
-					(match) => match.eventType === "live",
-				),
+				matches: storedMatches.filter((match) => match.eventType === "live"),
 			};
 		}
 	}),
 );
+
+/** 保存済みのライブ中・これからの試合がある大会（大会コードが分かるものだけ）。 */
+function currentTournaments(matches: MatchSummary[]): Tournament[] {
+	const tournaments = new Map<string, Tournament>();
+	for (const match of matches) {
+		if (match.eventType === "completed" || !match.tournamentCode) continue;
+		if (tournaments.has(match.tournamentCode)) continue;
+		tournaments.set(match.tournamentCode, {
+			code: match.tournamentCode,
+			name: match.tournament,
+			logoUrl: match.tournamentLogoUrl,
+			headerImageUrl: match.tournamentHeaderImageUrl,
+			headerImageMobileUrl: match.tournamentHeaderImageMobileUrl,
+			category: match.tournamentCategory,
+		});
+	}
+	return [...tournaments.values()];
+}
 
 // --- Push購読 ---
 

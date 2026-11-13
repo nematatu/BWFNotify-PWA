@@ -42,6 +42,7 @@ export function extractJapaneseMatches(matches: BwfMatch[]): MatchSummary[] {
 		result.push({
 			id: match.id,
 			tournament: match.tournamentName || "BWF",
+			tournamentCode: match.tournamentCode,
 			tournamentLogoUrl: match.tournamentLogoUrl,
 			tournamentHeaderImageUrl: match.tournamentHeaderImageUrl,
 			tournamentHeaderImageMobileUrl: match.tournamentHeaderImageMobileUrl,
