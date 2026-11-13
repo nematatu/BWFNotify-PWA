@@ -178,7 +178,7 @@ main {
 .h2h-wins,
 .result-day-heading span,
 .upcoming-grade,
-.upcoming-month-group > header,
+.upcoming-month-heading,
 .tournament-period-dates time,
 .tournament-period-end {
 	white-space: nowrap;
@@ -1496,21 +1496,24 @@ main {
 	border-bottom: 1px solid var(--color-line);
 }
 
-.upcoming-month-group > header {
+/* 月の見出し（h3）。大きさと太さは中の「◯月」「◯年」で決める */
+.upcoming-month-heading {
 	display: flex;
 	align-items: baseline;
 	gap: var(--space-1);
 	padding: var(--space-4) 0 0;
+	font-size: inherit;
+	font-weight: var(--weight-regular);
 }
 
-.upcoming-month-group > header strong {
+.upcoming-month-heading strong {
 	color: var(--color-text);
 	font-size: var(--text-xl);
 	font-weight: var(--weight-bold);
 	line-height: 1;
 }
 
-.upcoming-month-group > header span {
+.upcoming-month-heading span {
 	color: var(--color-text-tertiary);
 	font-size: var(--text-xs);
 }
@@ -2266,7 +2269,7 @@ button.upcoming-main:focus-visible {
 		grid-template-columns: minmax(0, 1fr);
 	}
 
-	.upcoming-month-group > header {
+	.upcoming-month-heading {
 		padding-bottom: var(--space-2);
 		border-bottom: 1px solid var(--color-line);
 	}

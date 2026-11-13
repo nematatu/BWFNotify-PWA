@@ -1046,6 +1046,48 @@ test("always starts in time order and stays inside a 320px screen", async ({
 	expect(Math.abs(lines[0] - lines[1])).toBeLessThan(4);
 });
 
+test("tabs follow the keyboard pattern and headings keep their order", async ({
+	page,
+}) => {
+	await preparePage(page);
+	const tabs = page.getByRole("tab");
+	// 選択中のタブだけがTabキーで止まる位置になる
+	await expect(page.locator('[role="tab"][tabindex="0"]')).toHaveCount(1);
+	await page.locator('[role="tab"][aria-selected="true"]').focus();
+	const selectedIndex = await tabs.evaluateAll((elements) =>
+		elements.findIndex((tab) => tab.getAttribute("aria-selected") === "true"),
+	);
+	// 右矢印で隣のタブへ移って開き、End / Home で末尾・先頭へ移る
+	await page.keyboard.press("ArrowRight");
+	await expect(tabs.nth(selectedIndex + 1)).toHaveAttribute(
+		"aria-selected",
+		"true",
+	);
+	await expect(tabs.nth(selectedIndex + 1)).toBeFocused();
+	await page.keyboard.press("End");
+	await expect(page.getByRole("tab", { name: /大会/ })).toBeFocused();
+	await expect(page.getByRole("tab", { name: /大会/ })).toHaveAttribute(
+		"aria-selected",
+		"true",
+	);
+	// 末尾から右矢印で先頭へ戻る
+	await page.keyboard.press("ArrowRight");
+	await expect(page.getByRole("tab", { name: /ライブ/ })).toBeFocused();
+	await page.keyboard.press("ArrowLeft");
+	await expect(page.getByRole("tab", { name: /大会/ })).toBeFocused();
+
+	// 大会一覧の見出しは h2（今後の大会）→ h3（月）→ h4（大会名）の順に並ぶ
+	const levels = await page
+		.locator(".view-panel:not([hidden]) :is(h2, h3, h4)")
+		.evaluateAll((headings) =>
+			headings.map((heading) => Number(heading.tagName.slice(1))),
+		);
+	expect(levels.slice(0, 3)).toEqual([2, 3, 4]);
+	for (let index = 1; index < levels.length; index++) {
+		expect(levels[index] - levels[index - 1]).toBeLessThanOrEqual(1);
+	}
+});
+
 test("opens results when there are no live or scheduled matches", async ({
 	page,
 }) => {

@@ -119,10 +119,10 @@ export function UpcomingSchedule() {
 							<For each={listGroups()}>
 								{(group) => (
 									<section class="upcoming-month-group">
-										<header>
+										<h3 class="upcoming-month-heading">
 											<strong>{group.month}月</strong>
 											<span>{group.year}年</span>
-										</header>
+										</h3>
 										<div class="upcoming-month-events">
 											<For each={group.tournaments}>
 												{(tournament) => (
