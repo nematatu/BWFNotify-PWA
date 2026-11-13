@@ -7,7 +7,12 @@ import {
 	mergeLiveMatches,
 	type SortOrder,
 } from "./matchList";
-import { type PollingMode, pollingMode } from "./pollingPolicy";
+import {
+	IDLE_TIMEOUT_MS,
+	idleRemainingMs,
+	type PollingMode,
+	pollingMode,
+} from "./pollingPolicy";
 import { reuseUnchanged } from "./stableItems";
 import {
 	browserStorage,
@@ -22,8 +27,6 @@ export type { MainView } from "./viewPolicy";
 const LIVE_POLL_MS = 15_000;
 /** 全試合情報（/api/status）の取得間隔。 */
 const FULL_POLL_MS = 2 * 60_000;
-/** この時間操作がなければ取得を止める。 */
-const IDLE_TIMEOUT_MS = 5 * 60_000;
 const ACTIVITY_THROTTLE_MS = 200;
 /** 以前は並び順を端末に保存していた。開くたびに「時間が早い順」から始めるため、残っていれば消す */
 const LEGACY_SORT_STORAGE_KEY = "bwf-sort-order";
@@ -61,6 +64,7 @@ let livePromise: Promise<void> | null = null;
 let liveTimer: ReturnType<typeof setTimeout> | null = null;
 let fullTimer: ReturnType<typeof setInterval> | null = null;
 let idleTimer: ReturnType<typeof setTimeout> | null = null;
+let lastActivityAt = Date.now();
 let currentPollingMode: PollingMode = "paused";
 /** 利用者がタブを選ぶまでは、取得結果に応じて初期タブを選び直す。 */
 let initialViewSelected = false;
@@ -199,11 +203,28 @@ const resetIdle = () => {
 		void refreshAll();
 		startPolling();
 	}
+	lastActivityAt = Date.now();
+	scheduleIdleCheck(IDLE_TIMEOUT_MS);
+};
+
+/**
+ * 操作がない時間が上限を超えたら取得を止める。上限はライブ試合の有無で
+ * 変わるため、期限が来たときに残り時間を計算し直し、残っていれば待ち直す。
+ */
+const scheduleIdleCheck = (delayMs: number) => {
 	if (idleTimer) clearTimeout(idleTimer);
 	idleTimer = setTimeout(() => {
+		const remaining = idleRemainingMs({
+			elapsedMs: Date.now() - lastActivityAt,
+			hasLiveMatches: hasLiveMatches(),
+		});
+		if (remaining > 0) {
+			scheduleIdleCheck(remaining);
+			return;
+		}
 		setIdle(true);
 		stopPolling();
-	}, IDLE_TIMEOUT_MS);
+	}, delayMs);
 };
 
 export const setSortOrder = (order: SortOrder) => {
