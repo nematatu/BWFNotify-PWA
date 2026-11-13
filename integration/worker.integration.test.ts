@@ -420,6 +420,7 @@ describe("Worker integration", () => {
 			expect(await response.json()).toEqual({
 				checkedAt: "2026-07-18T00:00:00.000Z",
 				source: "saved",
+				reason: "BWF request failed with status 403",
 				matches: [liveMatch],
 			});
 		} finally {
