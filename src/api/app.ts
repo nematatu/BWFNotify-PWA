@@ -129,6 +129,8 @@ app.get("/api/live", (c) =>
 			return {
 				checkedAt: stored?.checkedAt || null,
 				source: "saved",
+				// BWFから取れなかった理由（HTTPステータスなど）。ログを見られなくても原因を確かめられるようにする
+				reason: errorMessage(error).slice(0, 200),
 				matches: (Array.isArray(stored?.matches) ? stored.matches : []).filter(
 					(match) => match.eventType === "live",
 				),
