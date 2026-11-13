@@ -1356,6 +1356,45 @@ test("normal polling switches to live score polling after a match starts", async
 	await expect.poll(() => liveCalls).toBe(1);
 });
 
+test("a scheduled match moves to live soon after its start time", async ({
+	page,
+}) => {
+	await page.clock.install({ time: new Date("2026-07-18T09:00:00.000Z") });
+	const upcoming = {
+		...singlesMatch,
+		startTime: "2026-07-18 09:01:00",
+	};
+	let liveCalls = 0;
+	await page.route("**/api/config", (route) =>
+		route.fulfill({ json: { vapidPublicKey: "" } }),
+	);
+	// 全体の情報は、まだ「このあと」のまま（Cronの反映前）
+	await page.route("**/api/status", (route) =>
+		route.fulfill({
+			json: { checkedAt: "2026-07-18T09:00:00.000Z", matches: [upcoming] },
+		}),
+	);
+	await page.route("**/api/live", (route) => {
+		liveCalls += 1;
+		return route.fulfill({
+			json: {
+				checkedAt: "2026-07-18T09:01:15.000Z",
+				matches: [{ ...upcoming, eventType: "live" }],
+			},
+		});
+	});
+
+	await page.goto("/");
+	await expect(page.locator("#scheduled-count")).toHaveText("1");
+	expect(liveCalls).toBe(0);
+
+	// 開始時刻の1分後＋ライブ得点の取得間隔。2分ごとの全体取得より前に「ライブ」へ移る。
+	await page.clock.runFor(60_000 + 16_000);
+	await expect.poll(() => liveCalls).toBeGreaterThan(0);
+	await expect(page.locator("#live-count")).toHaveText("1");
+	await expect(page.locator("#scheduled-count")).toHaveText("0");
+});
+
 test("live scores keep updating while watched without touching the screen", async ({
 	page,
 }) => {

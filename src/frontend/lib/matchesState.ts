@@ -10,6 +10,8 @@ import {
 import {
 	IDLE_TIMEOUT_MS,
 	idleRemainingMs,
+	msUntilNextStart,
+	needsLiveScores,
 	type PollingMode,
 	pollingMode,
 } from "./pollingPolicy";
@@ -69,8 +71,10 @@ let currentPollingMode: PollingMode = "paused";
 /** 利用者がタブを選ぶまでは、取得結果に応じて初期タブを選び直す。 */
 let initialViewSelected = false;
 
-const hasLiveMatches = () =>
-	matches().some((match) => match.eventType === "live");
+let startTimer: ReturnType<typeof setTimeout> | null = null;
+
+/** ライブ得点を取りに行く必要があるか。開始時刻を過ぎた「このあと」の試合も含む。 */
+const hasLiveMatches = () => needsLiveScores(matches(), Date.now());
 const pageVisible = () => document.visibilityState === "visible";
 
 export const setCurrentView = (view: MainView) => {
@@ -167,10 +171,31 @@ const scheduleLive = () => {
 	}, LIVE_POLL_MS);
 };
 
+const clearStartTimer = () => {
+	if (startTimer) clearTimeout(startTimer);
+	startTimer = null;
+};
+
 const stopTimers = () => {
 	clearLiveTimer();
+	clearStartTimer();
 	if (fullTimer) clearInterval(fullTimer);
 	fullTimer = null;
+};
+
+/**
+ * 次の「このあと」の試合の開始時刻に取得モードを見直す。
+ * 2分ごとの全体取得を待たずに、開始時刻からライブ得点を取りに行く。
+ */
+const scheduleStartCheck = () => {
+	clearStartTimer();
+	if (currentPollingMode !== "active") return;
+	const delay = msUntilNextStart(matches(), Date.now());
+	if (delay === undefined) return;
+	startTimer = setTimeout(() => {
+		startTimer = null;
+		syncPollingMode();
+	}, delay);
 };
 
 /** 表示状態・操作状態・ライブ試合の有無から取得モードを決め、変化時だけタイマーを張り直す。 */
@@ -180,7 +205,10 @@ const syncPollingMode = () => {
 		idle: idle(),
 		hasLiveMatches: hasLiveMatches(),
 	});
-	if (next === currentPollingMode) return;
+	if (next === currentPollingMode) {
+		scheduleStartCheck();
+		return;
+	}
 
 	stopTimers();
 	currentPollingMode = next;
@@ -188,6 +216,7 @@ const syncPollingMode = () => {
 
 	fullTimer = setInterval(() => void loadStatus(), FULL_POLL_MS);
 	if (next === "live") scheduleLive();
+	scheduleStartCheck();
 };
 
 const startPolling = () => syncPollingMode();
