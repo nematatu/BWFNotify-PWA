@@ -4,6 +4,7 @@ import { api } from "./api";
 import { whenIdle } from "./browser";
 import {
 	DEFAULT_SORT_ORDER,
+	keepNewerLiveScores,
 	mergeLiveMatches,
 	type SortOrder,
 } from "./matchList";
@@ -72,6 +73,8 @@ let currentPollingMode: PollingMode = "paused";
 let initialViewSelected = false;
 
 let startTimer: ReturnType<typeof setTimeout> | null = null;
+/** 最後に反映した `/api/live` の取得時刻。全体の情報より新しければ得点を残す。 */
+let liveCheckedAt: string | null = null;
 
 /** ライブ得点を取りに行く必要があるか。開始時刻を過ぎた「このあと」の試合も含む。 */
 const hasLiveMatches = () => needsLiveScores(matches(), Date.now());
@@ -91,7 +94,17 @@ export const setCurrentView = (view: MainView) => {
 const applyStatus = (state: PublicState, fresh: boolean) => {
 	setCheckedAt(state.checkedAt);
 	// 内容が変わっていない試合は前回のオブジェクトを使い、カードを作り直さない
-	setMatches((previous) => reuseUnchanged(previous, state.matches || []));
+	setMatches((previous) =>
+		reuseUnchanged(
+			previous,
+			keepNewerLiveScores(
+				previous,
+				state.matches || [],
+				liveCheckedAt,
+				state.checkedAt,
+			),
+		),
+	);
 	setRecentResults((previous) =>
 		reuseUnchanged(previous, state.recentResults || []),
 	);
@@ -137,6 +150,7 @@ const loadLive = async () => {
 			setMatches((prev) =>
 				reuseUnchanged(prev, mergeLiveMatches(prev, state.matches)),
 			);
+			liveCheckedAt = state.checkedAt;
 			syncPollingMode();
 		} catch (error) {
 			console.error("Failed to load live:", error);

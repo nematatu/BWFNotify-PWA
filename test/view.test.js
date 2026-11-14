@@ -11,6 +11,7 @@ import {
 	teamLabel,
 } from "../src/frontend/lib/format.ts";
 import {
+	keepNewerLiveScores,
 	mergeLiveMatches,
 	sortedMatches,
 	tournamentGroups,
@@ -74,6 +75,75 @@ describe("polling policy", () => {
 		expect(
 			pollingMode({ visible: true, idle: true, hasLiveMatches: true }),
 		).toBe("paused");
+	});
+});
+
+describe("keepNewerLiveScores", () => {
+	const base = {
+		id: "m1",
+		tournament: "Japan Open",
+		players: [],
+		teams: [],
+	};
+	const live = {
+		...base,
+		eventType: "live",
+		scores: [{ game: 1, team1: 12, team2: 9 }],
+	};
+
+	test("keeps newer live scores over an older full status", () => {
+		const status = [
+			{
+				...base,
+				eventType: "live",
+				scores: [{ game: 1, team1: 10, team2: 8 }],
+			},
+		];
+		const result = keepNewerLiveScores(
+			[live],
+			status,
+			"2026-07-18T09:01:30Z",
+			"2026-07-18T09:00:00Z",
+		);
+		expect(result[0].scores).toEqual(live.scores);
+	});
+
+	test("does not move a started match back to scheduled", () => {
+		const status = [{ ...base, eventType: "scheduled", scores: [] }];
+		const result = keepNewerLiveScores(
+			[live],
+			status,
+			"2026-07-18T09:01:30Z",
+			"2026-07-18T09:00:00Z",
+		);
+		expect(result[0].eventType).toBe("live");
+	});
+
+	test("uses the full status when it is newer or the match finished", () => {
+		const newer = [
+			{
+				...base,
+				eventType: "live",
+				scores: [{ game: 1, team1: 15, team2: 9 }],
+			},
+		];
+		expect(
+			keepNewerLiveScores(
+				[live],
+				newer,
+				"2026-07-18T09:00:00Z",
+				"2026-07-18T09:02:00Z",
+			),
+		).toBe(newer);
+		const finished = [{ ...base, eventType: "completed", scores: [] }];
+		expect(
+			keepNewerLiveScores(
+				[live],
+				finished,
+				"2026-07-18T09:01:30Z",
+				"2026-07-18T09:00:00Z",
+			)[0].eventType,
+		).toBe("completed");
 	});
 });
 

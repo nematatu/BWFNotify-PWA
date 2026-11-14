@@ -88,6 +88,32 @@ export function mergeLiveMatches(
 	];
 }
 
+/**
+ * `/api/status` の結果を反映するときに、より新しい `/api/live` の得点を残す。
+ * 全体の情報はCron（2分ごと）の時点の値のため、15秒ごとに取得したライブ得点より
+ * 古いことがある。そのまま置き換えると、得点が一瞬戻ったり、始まった試合が
+ * 「このあと」へ戻ったりする。
+ */
+export function keepNewerLiveScores(
+	currentMatches: MatchSummary[],
+	statusMatches: MatchSummary[],
+	liveCheckedAt: string | null,
+	statusCheckedAt: string | null,
+): MatchSummary[] {
+	const liveTime = liveCheckedAt ? Date.parse(liveCheckedAt) : Number.NaN;
+	const statusTime = statusCheckedAt ? Date.parse(statusCheckedAt) : Number.NaN;
+	if (!(liveTime > statusTime)) return statusMatches;
+
+	const currentById = new Map(currentMatches.map((match) => [match.id, match]));
+	return statusMatches.map((match) => {
+		const current = currentById.get(match.id);
+		if (current?.eventType !== "live" || match.eventType === "completed") {
+			return match;
+		}
+		return { ...match, eventType: "live", scores: current.scores };
+	});
+}
+
 function changedScoreTeam(
 	current: MatchSummary | undefined,
 	fresh: MatchSummary,

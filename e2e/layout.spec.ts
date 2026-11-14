@@ -1395,6 +1395,50 @@ test("a scheduled match moves to live soon after its start time", async ({
 	await expect(page.locator("#scheduled-count")).toHaveText("0");
 });
 
+test("an older full status does not roll back newer live scores", async ({
+	page,
+}) => {
+	await page.clock.install({ time: new Date("2026-07-18T09:00:00.000Z") });
+	await page.route("**/api/config", (route) =>
+		route.fulfill({ json: { vapidPublicKey: "" } }),
+	);
+	// 全体の情報はCronの時点（09:00）の得点 10-8 のまま
+	await page.route("**/api/status", (route) =>
+		route.fulfill({
+			json: {
+				checkedAt: "2026-07-18T09:00:00.000Z",
+				matches: [
+					{ ...doublesMatch, scores: [{ game: 1, team1: 10, team2: 8 }] },
+				],
+			},
+		}),
+	);
+	// 1回目だけ新しい得点を返し、以降は失敗させる（ライブ得点の取得で上書きされないように）
+	let liveCalls = 0;
+	await page.route("**/api/live", (route) => {
+		liveCalls += 1;
+		return liveCalls === 1
+			? route.fulfill({
+					json: {
+						checkedAt: "2026-07-18T09:01:30.000Z",
+						matches: [
+							{ ...doublesMatch, scores: [{ game: 1, team1: 12, team2: 9 }] },
+						],
+					},
+				})
+			: route.abort();
+	});
+
+	await page.goto("/");
+	const score = page.locator(".live-match .current-score").first();
+	await expect(score).toContainText("12");
+
+	// 2分後に全体の情報を取り直しても、新しいライブ得点のまま
+	await page.clock.runFor(2 * 60_000 + 1_000);
+	await expect(score).toContainText("12");
+	await expect(score).not.toContainText("10");
+});
+
 test("live scores keep updating while watched without touching the screen", async ({
 	page,
 }) => {
