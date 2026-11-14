@@ -387,6 +387,8 @@ describe("Japanese player dictionary", () => {
 		["Shiori EBIHARA", "海老原詩織"],
 		["Suzuki MIZUI", "水井寿々妃"],
 		["Mihane ENDO", "遠藤美羽"],
+		["Anna IWAKI", "岩城杏奈"],
+		["Natsumi TAKASAKI", "髙崎夏実"],
 	] as const)("maps %s to %s", (source, expected) => {
 		expect(japanesePlayerName(source)).toBe(expected);
 	});

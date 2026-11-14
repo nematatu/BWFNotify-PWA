@@ -99,6 +99,8 @@ const JAPANESE_PLAYER_NAMES: Record<string, string> = {
 	"SHIORI EBIHARA": "海老原詩織", // WS2
 	"SUZUKI MIZUI": "水井寿々妃", // WS3
 	"MIHANE ENDO": "遠藤美羽", // WS5
+	"ANNA IWAKI": "岩城杏奈", // WS4
+	"NATSUMI TAKASAKI": "髙崎夏実", // WD1（遠藤美羽と組む）
 };
 
 const ROMANIZED_NAMES_BY_JAPANESE = Object.entries(
