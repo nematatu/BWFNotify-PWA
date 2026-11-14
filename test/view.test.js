@@ -848,6 +848,16 @@ describe("page structure", () => {
 		expect(headers).toContain("style-src 'self' https://fonts.googleapis.com");
 	});
 
+	test("turns off browser features the app does not use", async () => {
+		const headers = await Bun.file("public/_headers").text();
+		// カメラ・マイク・位置情報などは使わないため、ページや埋め込みから呼べないようにする
+		expect(headers).toContain(
+			"Permissions-Policy: camera=(), microphone=(), geolocation=(), payment=(), usb=()",
+		);
+		// 別のサイトから開かれても、そのサイトからこのページを操作できないようにする
+		expect(headers).toContain("Cross-Origin-Opener-Policy: same-origin");
+	});
+
 	test("includes complete OGP metadata", async () => {
 		const html = await Bun.file("index.html").text();
 		for (const property of [
