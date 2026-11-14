@@ -86,7 +86,7 @@ export type MatchGameScore = {
 export type MatchSummary = {
 	id: string;
 	tournament: string;
-	/** BWFの大会コード（GUID）。ライブ得点を大会の一覧なしで取りに行くのに使う */
+	/** BWFの大会コード（GUID） */
 	tournamentCode?: string;
 	tournamentLogoUrl?: string;
 	tournamentHeaderImageUrl?: string;

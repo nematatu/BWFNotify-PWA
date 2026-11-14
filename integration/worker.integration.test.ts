@@ -390,7 +390,7 @@ describe("Worker integration", () => {
 		expect(await response.json()).toEqual(body);
 	});
 
-	test("falls back to the saved live matches when BWF cannot be reached", async () => {
+	test("serves saved live matches without asking BWF", async () => {
 		await env.NOTIFIED_MATCHES.put(
 			"push:state",
 			JSON.stringify({
@@ -401,10 +401,8 @@ describe("Worker integration", () => {
 				],
 			}),
 		);
-		// BWFが確認画面（403）を返す状況
-		const fetchSpy = vi
-			.spyOn(globalThis, "fetch")
-			.mockResolvedValue(new Response("blocked", { status: 403 }));
+		// BWFは利用者のリクエストからの取得を403で断るため、ここからは取りに行かない
+		const fetchSpy = vi.spyOn(globalThis, "fetch");
 		try {
 			const context = createExecutionContext();
 			const response = await worker.fetch(
@@ -415,78 +413,13 @@ describe("Worker integration", () => {
 			await waitOnExecutionContext(context);
 
 			expect(response.status).toBe(200);
-			// 保存データで返したときは、BWFへの失敗する取得を繰り返さないよう長めにキャッシュする
-			expect(response.headers.get("Cache-Control")).toBe("public, max-age=60");
+			expect(response.headers.get("Cache-Control")).toBe("public, max-age=20");
 			expect(await response.json()).toEqual({
 				checkedAt: "2026-07-18T00:00:00.000Z",
 				source: "saved",
-				reason: "BWF request failed with status 403",
 				matches: [liveMatch],
 			});
-		} finally {
-			fetchSpy.mockRestore();
-		}
-	});
-
-	test("fetches live scores for saved tournaments without the BWF tournament list", async () => {
-		await env.NOTIFIED_MATCHES.put(
-			"push:state",
-			JSON.stringify({
-				checkedAt: "2026-07-18T00:00:00.000Z",
-				matches: [{ ...liveMatch, tournamentCode: "TOURNAMENT-1" }],
-			}),
-		);
-		const requested: string[] = [];
-		const fetchSpy = vi
-			.spyOn(globalThis, "fetch")
-			.mockImplementation(async (input) => {
-				const url = String(input instanceof Request ? input.url : input);
-				requested.push(url);
-				// 開催中の大会一覧は、利用者のリクエストからだと403で断られる
-				if (url.includes("vue-current-live")) {
-					return new Response("blocked", { status: 403 });
-				}
-				return Response.json([
-					{
-						id: "live-1",
-						tournamentName: "Japan Open",
-						matchStatus: "P",
-						team1: {
-							countryCode: "JPN",
-							players: [{ nameDisplay: "Akane YAMAGUCHI", countryCode: "JPN" }],
-						},
-						team2: {
-							countryCode: "CHN",
-							players: [{ nameDisplay: "CHEN Yu Fei", countryCode: "CHN" }],
-						},
-						score: [{ set: 1, home: 11, away: 9 }],
-					},
-				]);
-			});
-		try {
-			const context = createExecutionContext();
-			const response = await worker.fetch(
-				new Request("https://example.com/api/live"),
-				env,
-				context,
-			);
-			await waitOnExecutionContext(context);
-			const body = (await response.json()) as {
-				source: string;
-				matches: MatchSummary[];
-			};
-
-			expect(body.source).toBe("bwf");
-			expect(body.matches.map((match) => match.scores)).toEqual([
-				[{ game: 1, team1: 11, team2: 9 }],
-			]);
-			expect(body.matches[0].tournamentCode).toBe("TOURNAMENT-1");
-			expect(requested.some((url) => url.includes("vue-current-live"))).toBe(
-				false,
-			);
-			expect(
-				requested.every((url) => url.includes("tournamentCode=TOURNAMENT-1")),
-			).toBe(true);
+			expect(fetchSpy).not.toHaveBeenCalled();
 		} finally {
 			fetchSpy.mockRestore();
 		}
