@@ -1,5 +1,5 @@
 {
-	"generatedAt": "2026-11-14T10:30:26.431Z",
+	"generatedAt": "2026-11-15T10:59:14.868Z",
 	"tournaments": [
 		{
 			"id": "2026-11-10:熊本マスターズジャパン2026",
@@ -18,15 +18,6 @@
 			"grade": "Super 100",
 			"bwfUrl": "https://bwfbadminton.com/tournament/5652/victor-kaohsiung-masters-2026/info",
 			"bajUrl": "https://www.badminton.or.jp/storage/conventions/pdf/1407/contestant_20261001131919.pdf"
-		},
-		{
-			"id": "2026-11-11:アイルランドオープン2026",
-			"name": "アイルランドオープン2026",
-			"startDate": "2026-11-11",
-			"endDate": "2026-11-14",
-			"grade": "インターナショナルチャレンジ",
-			"bwfUrl": "https://bwfbadminton.com/tournament/5773/aig-victor-irish-open-2026/results/",
-			"bajUrl": "https://www.badminton.or.jp/storage/conventions/pdf/1409/guidelines_20261001155724.pdf"
 		},
 		{
 			"id": "2026-11-16:アジアシニア選手権2026",
@@ -70,6 +61,15 @@
 			"grade": "Super 300",
 			"bwfUrl": "https://bwfworldtour.bwfbadminton.com/tournament/5274/syed-modi-india-international-2026/results/2026-11-24",
 			"bajUrl": "https://www.badminton.or.jp/storage/conventions/pdf/1404/contestant_20261016094425.pdf"
+		},
+		{
+			"id": "2026-11-24:TOYOTAインターナショナルチャレンジ2026",
+			"name": "TOYOTAインターナショナルチャレンジ2026",
+			"startDate": "2026-11-24",
+			"endDate": "2026-11-29",
+			"grade": "インターナショナルチャレンジ",
+			"bwfUrl": "https://bwfbadminton.com/tournament/5714/toyota-international-challenge-2026/info",
+			"bajUrl": "https://www.badminton.or.jp/storage/conventions/pdf/1407/contestant_20261016110002.pdf"
 		}
 	]
 }
