@@ -1,24 +1,6 @@
 {
-	"generatedAt": "2026-11-15T10:59:14.868Z",
+	"generatedAt": "2026-11-16T11:27:52.942Z",
 	"tournaments": [
-		{
-			"id": "2026-11-10:熊本マスターズジャパン2026",
-			"name": "熊本マスターズジャパン2026",
-			"startDate": "2026-11-10",
-			"endDate": "2026-11-15",
-			"grade": "Super 500",
-			"bwfUrl": "https://bwfworldtour.bwfbadminton.com/tournament/5216/kumamoto-masters-japan-2026/results/2026-11-10",
-			"bajUrl": "https://www.badminton.or.jp/storage/conventions/pdf/1236/send_out_20261106152258.pdf"
-		},
-		{
-			"id": "2026-11-10:カオシュンマスターズ2026",
-			"name": "カオシュンマスターズ2026",
-			"startDate": "2026-11-10",
-			"endDate": "2026-11-15",
-			"grade": "Super 100",
-			"bwfUrl": "https://bwfbadminton.com/tournament/5652/victor-kaohsiung-masters-2026/info",
-			"bajUrl": "https://www.badminton.or.jp/storage/conventions/pdf/1407/contestant_20261001131919.pdf"
-		},
 		{
 			"id": "2026-11-16:アジアシニア選手権2026",
 			"name": "アジアシニア選手権2026",
@@ -70,6 +52,23 @@
 			"grade": "インターナショナルチャレンジ",
 			"bwfUrl": "https://bwfbadminton.com/tournament/5714/toyota-international-challenge-2026/info",
 			"bajUrl": "https://www.badminton.or.jp/storage/conventions/pdf/1407/contestant_20261016110002.pdf"
+		},
+		{
+			"id": "2026-11-26:ウェールズインターナショナルオープン2026",
+			"name": "ウェールズインターナショナルオープン2026",
+			"startDate": "2026-11-26",
+			"endDate": "2026-11-29",
+			"grade": "インターナショナルシリーズ",
+			"bwfUrl": "https://bwfbadminton.com/tournament/5848/yonex-welsh-international-open-2026/info",
+			"bajUrl": "https://www.badminton.or.jp/storage/conventions/pdf/1372/send_out_20261027150737.pdf"
+		},
+		{
+			"id": "2026-11-30:韓国ジュニアインターナショナルチャレンジ2026",
+			"name": "韓国ジュニアインターナショナルチャレンジ2026",
+			"startDate": "2026-11-30",
+			"endDate": "2026-12-06",
+			"bwfUrl": "https://bwfbadminton.com/tournament/5776/woncheon-yonex-korea-junior-international-challenge-2026/results/",
+			"bajUrl": "https://www.badminton.or.jp/storage/conventions/pdf/1310/send_out_20261113163310.pdf"
 		}
 	]
 }
