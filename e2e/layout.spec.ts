@@ -1538,6 +1538,9 @@ test("production build keeps its manifest and service worker", async ({
 			}),
 		)
 		.toBe(true);
+	// 保存済みの画面を先に返すため、版名は中身から決める。中身が変われば版名も変わり、新しい版が入る
+	const serviceWorker = await (await page.request.get("/pwa/sw.js")).text();
+	expect(serviceWorker).toMatch(/"bwfnotify-shell-v[0-9a-f]{16}"/);
 });
 
 test("a failed first load shows a retry instead of loading forever", async ({
