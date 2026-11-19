@@ -36,11 +36,16 @@ self.addEventListener("fetch", (event) => {
 		return;
 	}
 
+	// 画面（HTML）は、この版のService Workerが保存した画面をすぐ返す。
+	// 回線が遅くても、HTMLを待たずに開けるようにするため。保存した画面は同じ版のJS・CSSと
+	// 組で保存してあるので、表示が崩れない。新しい版の公開後は、ブラウザが開くたびに
+	// Service Workerの更新を確かめ、新しい版が入った次の起動から新しい画面になる。
 	if (event.request.mode === "navigate") {
 		event.respondWith(
-			fetch(event.request).catch(() =>
-				caches.match("/").then(requiredResponse),
-			),
+			caches
+				.match("/")
+				.then((cached) => cached || fetch(event.request))
+				.catch(() => caches.match("/").then(requiredResponse)),
 		);
 		return;
 	}
