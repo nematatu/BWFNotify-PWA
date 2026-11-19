@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
 import { defineConfig } from "vite";
@@ -96,32 +97,36 @@ function pwaPlugin() {
 
 			let swContent = fs.readFileSync(srcSwPath, "utf8");
 
-			// Generate timestamp-based version
-			const buildVersion = Date.now().toString();
+			const appShell = [
+				"/",
+				cssUrl,
+				jsUrl,
+				"/view/shuttle.svg",
+				"/view/sources/bwf.svg",
+				"/view/sources/baj.svg",
+				"/view/tournaments/daihatsu-japan-open-2026.jpg",
+				"/pwa/manifest.webmanifest",
+				"/pwa/icons/icon.svg",
+				"/pwa/icons/icon-192.png",
+				"/pwa/icons/icon-512.png",
+			];
+
+			// 版名は、保存する画面・ファイルとService Worker自身の中身から決める。
+			// 中身が変われば必ず版名が変わり、ブラウザが新しい版を入れる。
+			// 中身が同じなら版名も同じなので、無駄な入れ替えが起きない。
+			// （ビルドした時刻は、ビルド環境によっては変わらないことがあるため使わない）
+			const hash = createHash("sha256").update(swContent);
+			for (const url of appShell) {
+				const file = path.join(distDir, url === "/" ? "index.html" : url);
+				hash.update(url);
+				if (fs.existsSync(file)) hash.update(fs.readFileSync(file));
+			}
+			const buildVersion = hash.digest("hex").slice(0, 16);
 
 			// Replace placeholders in sw.js
 			swContent = swContent
 				.replace("__CACHE_NAME__", `"bwfnotify-shell-v${buildVersion}"`)
-				.replace(
-					"__APP_SHELL__",
-					JSON.stringify(
-						[
-							"/",
-							cssUrl,
-							jsUrl,
-							"/view/shuttle.svg",
-							"/view/sources/bwf.svg",
-							"/view/sources/baj.svg",
-							"/view/tournaments/daihatsu-japan-open-2026.jpg",
-							"/pwa/manifest.webmanifest",
-							"/pwa/icons/icon.svg",
-							"/pwa/icons/icon-192.png",
-							"/pwa/icons/icon-512.png",
-						],
-						null,
-						2,
-					),
-				);
+				.replace("__APP_SHELL__", JSON.stringify(appShell, null, 2));
 
 			// Write to dist/pwa/sw.js
 			const distPwaDir = path.join(distDir, "pwa");
