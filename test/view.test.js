@@ -68,13 +68,22 @@ describe("polling policy", () => {
 		).toBe("active");
 	});
 
-	test("pauses polling while hidden or idle", () => {
+	test("pauses polling while hidden", () => {
 		expect(
 			pollingMode({ visible: false, idle: false, hasLiveMatches: true }),
 		).toBe("paused");
 		expect(
-			pollingMode({ visible: true, idle: true, hasLiveMatches: true }),
+			pollingMode({ visible: false, idle: true, hasLiveMatches: false }),
 		).toBe("paused");
+	});
+
+	test("keeps refreshing slowly while visible without interaction", () => {
+		expect(
+			pollingMode({ visible: true, idle: true, hasLiveMatches: true }),
+		).toBe("idle");
+		expect(
+			pollingMode({ visible: true, idle: true, hasLiveMatches: false }),
+		).toBe("idle");
 	});
 });
 

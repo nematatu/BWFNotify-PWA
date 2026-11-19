@@ -9,6 +9,7 @@ import {
 	type SortOrder,
 } from "./matchList";
 import {
+	IDLE_POLL_MS,
 	IDLE_TIMEOUT_MS,
 	idleRemainingMs,
 	msUntilNextStart,
@@ -228,7 +229,10 @@ const syncPollingMode = () => {
 	currentPollingMode = next;
 	if (next === "paused") return;
 
-	fullTimer = setInterval(() => void loadStatus(), FULL_POLL_MS);
+	fullTimer = setInterval(
+		() => void loadStatus(),
+		next === "idle" ? IDLE_POLL_MS : FULL_POLL_MS,
+	);
 	if (next === "live") scheduleLive();
 	scheduleStartCheck();
 };
@@ -266,7 +270,7 @@ const scheduleIdleCheck = (delayMs: number) => {
 			return;
 		}
 		setIdle(true);
-		stopPolling();
+		syncPollingMode();
 	}, delayMs);
 };
 
@@ -303,9 +307,28 @@ export function initMatchesState() {
 		resetIdle();
 	};
 
-	const activityEvents = ["mousemove", "click", "keydown", "scroll"] as const;
-	const passiveEvents = new Set(["mousemove", "scroll"]);
+	// スマホでは、ボタン以外をタップしても click にならないため、指が触れたこと自体も操作に数える
+	const activityEvents = [
+		"mousemove",
+		"click",
+		"keydown",
+		"scroll",
+		"pointerdown",
+		"touchstart",
+	] as const;
+	const passiveEvents = new Set([
+		"mousemove",
+		"scroll",
+		"pointerdown",
+		"touchstart",
+	]);
 	document.addEventListener("visibilitychange", onVisibility);
+	// iPhoneのホーム画面版は、戻ってきたときに visibilitychange ではなく
+	// pageshow（ページの保存からの復元）だけが届くことがあるため、そこでも取り直す
+	const onPageShow = (event: PageTransitionEvent) => {
+		if (event.persisted) onVisibility();
+	};
+	window.addEventListener("pageshow", onPageShow);
 	for (const type of activityEvents) {
 		window.addEventListener(type, onActivity, {
 			passive: passiveEvents.has(type),
@@ -326,6 +349,7 @@ export function initMatchesState() {
 
 	window.addEventListener("beforeunload", () => {
 		document.removeEventListener("visibilitychange", onVisibility);
+		window.removeEventListener("pageshow", onPageShow);
 		for (const type of activityEvents) {
 			window.removeEventListener(type, onActivity);
 		}

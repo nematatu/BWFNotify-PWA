@@ -1,7 +1,14 @@
 import type { MatchSummary } from "../../type";
 import { parseMatchTime } from "./format";
 
-export type PollingMode = "paused" | "active" | "live";
+/**
+ * 取得モード。
+ * - paused: 画面が見えていない間は取得しない
+ * - idle: 見えているが操作がない間は、全体の情報だけをゆっくり取り直す
+ * - active: 全体の情報を2分ごとに取る
+ * - live: それに加えてライブ得点を15秒ごとに取る
+ */
+export type PollingMode = "paused" | "idle" | "active" | "live";
 
 /**
  * 開始時刻を過ぎた「このあと」の試合について、ライブ得点を取りに行く期間。
@@ -47,7 +54,13 @@ export function msUntilNextStart(
 	return next;
 }
 
-/** この時間操作がなければ取得を止める。 */
+/**
+ * 操作がない間（idle）に全体の情報を取り直す間隔。
+ * 閉じ忘れた画面でも、表示が10分より古くならないようにする。配信キャッシュがあるため負荷は小さい。
+ */
+export const IDLE_POLL_MS = 10 * 60_000;
+
+/** この時間操作がなければ、取得をゆっくりにする（idle）。 */
 export const IDLE_TIMEOUT_MS = 5 * 60_000;
 /**
  * ライブ試合があるときの操作なしの上限。スマホで得点を眺めているだけの間は
@@ -60,7 +73,10 @@ export function pollingMode(input: {
 	idle: boolean;
 	hasLiveMatches: boolean;
 }): PollingMode {
-	if (!input.visible || input.idle) return "paused";
+	if (!input.visible) return "paused";
+	// 操作がなくても見えている間は止めない。画面を開いたまま眺めているだけで
+	// 「更新」の時刻が古いまま止まってしまうため
+	if (input.idle) return "idle";
 	return input.hasLiveMatches ? "live" : "active";
 }
 

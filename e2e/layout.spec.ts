@@ -1478,6 +1478,48 @@ test("live scores keep updating while watched without touching the screen", asyn
 	expect(liveCalls).toBe(afterThirtyOneMinutes);
 });
 
+test("a screen left open keeps its update time fresh and resumes on a touch", async ({
+	page,
+}) => {
+	await page.clock.install({ time: new Date("2026-07-18T09:00:00.000Z") });
+	let statusCalls = 0;
+	let liveCalls = 0;
+	await page.route("**/api/config", (route) =>
+		route.fulfill({ json: { vapidPublicKey: "" } }),
+	);
+	await page.route("**/api/status", (route) => {
+		statusCalls += 1;
+		return route.fulfill({
+			json: {
+				checkedAt: new Date(Date.now()).toISOString(),
+				matches: [doublesMatch],
+			},
+		});
+	});
+	await page.route("**/api/live", (route) => {
+		liveCalls += 1;
+		return route.fulfill({
+			json: { checkedAt: "2026-07-18T09:00:00.000Z", matches: [doublesMatch] },
+		});
+	});
+
+	await page.goto("/");
+	await expect(page.locator("#live-count")).toHaveText("1");
+
+	// 操作なしで31分たつと、ライブ得点の取得は止まる
+	await page.clock.runFor(31 * 60_000);
+	const statusAfterIdle = statusCalls;
+	const liveAfterIdle = liveCalls;
+	// それでも画面が見えている間は、全体の情報を10分ごとに取り直す
+	await page.clock.runFor(10 * 60_000 + 1_000);
+	await expect.poll(() => statusCalls).toBeGreaterThan(statusAfterIdle);
+	expect(liveCalls).toBe(liveAfterIdle);
+
+	// ボタン以外の場所に触れるだけで、ライブ得点の取得に戻る
+	await page.locator(".app-header").dispatchEvent("pointerdown");
+	await expect.poll(() => liveCalls).toBeGreaterThan(liveAfterIdle);
+});
+
 test("production build keeps its manifest and service worker", async ({
 	page,
 }) => {
