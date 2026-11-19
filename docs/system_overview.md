@@ -162,7 +162,7 @@ BWFはローマ字表記（例: `Hina AKECHI`）で返すため、`src/config/ja
 
 ## PWA
 
-本番ビルド時だけManifestとApple向けPWAメタデータをHTMLへ追加し、ハッシュ付きJS/CSSをService Workerのアプリシェルへ埋め込みます。本番通知では日本人選手写真を`image`と`icon`へ設定し、写真がない場合はアプリアイコンへフォールバックします。
+本番ビルド時だけManifestとApple向けPWAメタデータをHTMLへ追加し、ハッシュ付きJS/CSSをService Workerのアプリシェルへ埋め込みます。画面（HTML）はService Workerが保存した版をすぐ返し、回線を待たずに開きます（サーバー応答を400ms遅らせた計測で、内容の表示は523msから100ms）。Service Workerの版名はビルドごとに変わるため、新しい版の公開後は、開いたときに裏で新しい版を入れ、その次に開いたときから新しい画面になります。本番通知では日本人選手写真を`image`と`icon`へ設定し、写真がない場合はアプリアイコンへフォールバックします。
 
 開発時はPWAを完全に無効化します。5173ではManifestを追加せず、起動時に同一オリジンのService Worker登録とCache Storageを削除します。`/pwa/sw.js`へアクセスされても、キャッシュやPush処理を持たず自身を解除する移行用Workerだけを返します。
 
