@@ -1,40 +1,6 @@
 {
-	"generatedAt": "2026-11-22T11:29:52.696Z",
+	"generatedAt": "2026-11-23T12:52:40.330Z",
 	"tournaments": [
-		{
-			"id": "2026-11-16:アジアシニア選手権2026",
-			"name": "アジアシニア選手権2026",
-			"startDate": "2026-11-16",
-			"endDate": "2026-11-22",
-			"bwfUrl": "https://bwfbadminton.com/tournament/5879/badminton-asia-senior-championships-2026/info",
-			"bajUrl": "https://www.badminton.or.jp/storage/conventions/pdf/1398/free_form_2_20260828_164131.pdf"
-		},
-		{
-			"id": "2026-11-16:パトゥムターニージュニアインターナショナルチャレンジ2026",
-			"name": "パトゥムターニージュニアインターナショナルチャレンジ2026",
-			"startDate": "2026-11-16",
-			"endDate": "2026-11-22",
-			"bwfUrl": "https://bwfbadminton.com/tournament/5774/li-ning-pathumthani-junior-international-challenge-2026/results/",
-			"bajUrl": "https://www.badminton.or.jp/storage/conventions/pdf/1402/contestant_20261016092655.pdf"
-		},
-		{
-			"id": "2026-11-17:香港オープン2026",
-			"name": "香港オープン2026",
-			"startDate": "2026-11-17",
-			"endDate": "2026-11-22",
-			"grade": "Super 500",
-			"bwfUrl": "https://bwfworldtour.bwfbadminton.com/tournament/5218/li-ning-hong-kong-open-2026/overview/",
-			"bajUrl": "https://www.badminton.or.jp/storage/conventions/pdf/1277/send_out_20261105145827.pdf"
-		},
-		{
-			"id": "2026-11-17:ジョクジャカルタインターナショナルチャレンジ2026",
-			"name": "ジョクジャカルタインターナショナルチャレンジ2026",
-			"startDate": "2026-11-17",
-			"endDate": "2026-11-22",
-			"grade": "インターナショナルチャレンジ",
-			"bwfUrl": "https://bwfbadminton.com/tournament/5576/polytron-yogyakarta-international-challenge-2026/results/",
-			"bajUrl": "https://www.badminton.or.jp/storage/conventions/pdf/1415/contestant_20261117135451.pdf"
-		},
 		{
 			"id": "2026-11-24:シドモディインドインターナショナル2026",
 			"name": "シドモディインドインターナショナル2026",
@@ -69,6 +35,41 @@
 			"endDate": "2026-12-06",
 			"bwfUrl": "https://bwfbadminton.com/tournament/5776/woncheon-yonex-korea-junior-international-challenge-2026/results/",
 			"bajUrl": "https://www.badminton.or.jp/storage/conventions/pdf/1310/send_out_20261120151326.pdf"
+		},
+		{
+			"id": "2026-12-01:グワハティマスターズ2026",
+			"name": "グワハティマスターズ2026",
+			"startDate": "2026-12-01",
+			"endDate": "2026-12-06",
+			"grade": "Super 100",
+			"bwfUrl": "https://bwfbadminton.com/tournament/5276/yonex-sunrise-guwahati-masters-2026/results/",
+			"bajUrl": "https://www.badminton.or.jp/storage/conventions/pdf/1373/send_out_20261112150517.pdf"
+		},
+		{
+			"id": "2026-12-01:FELETベトナムインターナショナルシリーズ2026",
+			"name": "FELETベトナムインターナショナルシリーズ2026",
+			"startDate": "2026-12-01",
+			"endDate": "2026-12-06",
+			"grade": "インターナショナルシリーズ",
+			"bwfUrl": "https://bwfbadminton.com/tournament/5851/felet-vietnam-international-series-2026/info",
+			"bajUrl": "https://www.badminton.or.jp/storage/conventions/pdf/1411/contestant_20261023131808.pdf"
+		},
+		{
+			"id": "2026-12-01:カナダインターナショナルチャレンジ2026",
+			"name": "カナダインターナショナルチャレンジ2026",
+			"startDate": "2026-12-01",
+			"endDate": "2026-12-06",
+			"grade": "インターナショナルチャレンジ",
+			"bwfUrl": "https://bwfbadminton.com/tournament/5764/2026-yonex-canadian-international-challenge/info",
+			"bajUrl": "https://www.badminton.or.jp/storage/conventions/pdf/1410/contestant_20261023131635.pdf"
+		},
+		{
+			"id": "2026-12-08:台北ジュニアインターナショナルシリーズ2026",
+			"name": "台北ジュニアインターナショナルシリーズ2026",
+			"startDate": "2026-12-08",
+			"endDate": "2026-12-13",
+			"bwfUrl": "https://bwfbadminton.com/tournament/5740/chailease-joinhome-victor-taipei-junior-international-series-2026/results/",
+			"bajUrl": "https://www.badminton.or.jp/storage/conventions/pdf/1311/send_out_20261120151340.pdf"
 		}
 	]
 }
