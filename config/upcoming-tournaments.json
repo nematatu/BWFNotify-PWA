@@ -1,5 +1,5 @@
 {
-	"generatedAt": "2026-11-26T12:40:47.433Z",
+	"generatedAt": "2026-11-27T12:28:25.458Z",
 	"tournaments": [
 		{
 			"id": "2026-11-24:シドモディインドインターナショナル2026",
@@ -34,7 +34,7 @@
 			"startDate": "2026-11-30",
 			"endDate": "2026-12-06",
 			"bwfUrl": "https://bwfbadminton.com/tournament/5776/woncheon-yonex-korea-junior-international-challenge-2026/results/",
-			"bajUrl": "https://www.badminton.or.jp/storage/conventions/pdf/1310/send_out_20261126104412.pdf"
+			"bajUrl": "https://www.badminton.or.jp/storage/conventions/pdf/1310/send_out_20261127104630.pdf"
 		},
 		{
 			"id": "2026-12-01:グワハティマスターズ2026",
@@ -43,7 +43,7 @@
 			"endDate": "2026-12-06",
 			"grade": "Super 100",
 			"bwfUrl": "https://bwfbadminton.com/tournament/5276/yonex-sunrise-guwahati-masters-2026/results/",
-			"bajUrl": "https://www.badminton.or.jp/storage/conventions/pdf/1373/send_out_20261112150517.pdf"
+			"bajUrl": "https://www.badminton.or.jp/storage/conventions/pdf/1373/send_out_20261127141241.pdf"
 		},
 		{
 			"id": "2026-12-01:FELETベトナムインターナショナルシリーズ2026",
@@ -69,7 +69,7 @@
 			"startDate": "2026-12-08",
 			"endDate": "2026-12-13",
 			"bwfUrl": "https://bwfbadminton.com/tournament/5740/chailease-joinhome-victor-taipei-junior-international-series-2026/results/",
-			"bajUrl": "https://www.badminton.or.jp/storage/conventions/pdf/1311/send_out_20261126104424.pdf"
+			"bajUrl": "https://www.badminton.or.jp/storage/conventions/pdf/1311/send_out_20261127104804.pdf"
 		}
 	]
 }
